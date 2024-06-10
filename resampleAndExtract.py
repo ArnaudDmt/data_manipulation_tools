@@ -3,8 +3,9 @@ import re
 import matplotlib.pyplot as plt
 import numpy as np
 
-import matplotlib.animation as animation
-from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as go
+
+
 from scipy.spatial.transform import Rotation as R
 
 from mpl_toolkits.mplot3d import proj3d
@@ -194,18 +195,29 @@ for index, row in resampled_df.iterrows():
 errorR = R.from_dcm(errorWithRigidBody_mats)
 errorQuat = errorR.as_quat()
 xs = [x for x in range(len(errorQuat))]
+fig1 = go.Figure()
+# Add traces for each line in the first plot
+
 errorQuat_x = [quat[0] for quat in errorQuat]
 errorQuat_y = [quat[1] for quat in errorQuat]
 errorQuat_z = [quat[2] for quat in errorQuat]
 errorQuat_w = [quat[3] for quat in errorQuat]
-fig1, ax1 = plt.subplots(1, 1)
 
-ax1.plot(xs, errorQuat_x, label='errorQuat_x')
-ax1.plot(xs, errorQuat_y, label='errorQuat_y')
-ax1.plot(xs, errorQuat_z, label='errorQuat_z')
-ax1.plot(xs, errorQuat_w, label='errorQuat_w')
+fig1.add_trace(go.Scatter(x=xs, y=errorQuat_x, mode='lines', name='errorQuat_x'))
+fig1.add_trace(go.Scatter(x=xs, y=errorQuat_y, mode='lines', name='errorQuat_y'))
+fig1.add_trace(go.Scatter(x=xs, y=errorQuat_z, mode='lines', name='errorQuat_z'))
 
-ax1.legend()
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["worldHeadOri_qx"], mode='lines', name='worldHeadOri_qx'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["worldHeadOri_qy"], mode='lines', name='worldHeadOri_qy'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["worldHeadOri_qz"], mode='lines', name='worldHeadOri_qz'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["worldHeadOri_qw"], mode='lines', name='worldHeadOri_qw'))
+
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["RigidBody001_qX"], mode='lines', name='RigidBody001_qX'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["RigidBody001_qY"], mode='lines', name='RigidBody001_qY'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["RigidBody001_qZ"], mode='lines', name='RigidBody001_qZ'))
+fig1.add_trace(go.Scatter(x=xs, y=resampled_df["RigidBody001_qW"], mode='lines', name='RigidBody001_qW'))
+# Show the plotly figures
+fig1.show()
 
 
 # Create a 3D plot
@@ -279,12 +291,10 @@ ax.set_zlim([z_min, z_max])
 plt.show()
 
 
-
-
 # Remove the useless columns
 
 # Specify your patterns
-patterns = ['Marker', 'threePoints', 'RigidBody']
+patterns = ['Marker', 'threePoints']
 # Get columns that contain any of the patterns
 cols_to_drop = resampled_df.columns[resampled_df.columns.str.contains('|'.join(patterns))]
 # Drop these columns
@@ -293,6 +303,6 @@ resampled_df = convert_mm_to_m(resampled_df)
 
 
 # Save the DataFrame to a new CSV file
-output_csv_file_path = 'output_file.csv'
+output_csv_file_path = 'resampledMocapData.csv'
 resampled_df.to_csv(output_csv_file_path, index=False)
 print("Output CSV file has been saved to", output_csv_file_path)
