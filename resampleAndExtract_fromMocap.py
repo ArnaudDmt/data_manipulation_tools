@@ -13,10 +13,15 @@ from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib.patches import FancyArrowPatch
 
+import sys
+
 
 ###############################  User input for the timestep  ###############################
 
-timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
+if(len(sys.argv) != 0):
+    timeStepInput = sys.argv[1]
+else:
+    timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
 # Convert the input to a double
 try:
@@ -31,15 +36,15 @@ except ValueError:
 
 ###############################  Main variables initialization  ###############################
 
-csv_file_path = 'ExpeRhps1.csv'
+csv_file_path = 'mocapData.csv'
 output_csv_file_path = 'resampledMocapData.csv'
 # Define a list of patterns you want to match
 pattern1 = ['Time(Seconds)','Marker1', 'Marker2', 'Marker3']  # Add more patterns as needed
 pattern2 = r'RigidBody(?!.*Marker)'
 # Position of the markers in the head frame
-head_P1_pos = np.array([-114.6, 1.4, 191.3])
-head_P2_pos = np.array([95.2, -49.9, 202.6])
-head_P3_pos = np.array([46.6, 71.1, 4.9])
+head_P1_Pos = np.array([-114.6, 1.4, 191.3])
+head_P2_Pos = np.array([95.2, -49.9, 202.6])
+head_P3_Pos = np.array([46.6, 71.1, 4.9])
 
 
 
@@ -166,189 +171,226 @@ if plotOriginalVsResampled.lower() == 'y':
 
 
 # We retrieve directly the orientation the mocap's rigid body in the world frame
-worldRigidBodyOri_R = R.from_quat(resampled_df[["RigidBody001_qX", "RigidBody001_qY", "RigidBody001_qZ", "RigidBody001_qW"]].values)
-rRigidBody_mats = worldRigidBodyOri_R.as_dcm()
-
-# Initialization of the DataFrame's columns
-resampled_df['worldHeadPos_x'] = np.nan
-resampled_df['worldHeadPos_y'] = np.nan
-resampled_df['worldHeadPos_z'] = np.nan
-resampled_df['worldHeadOri_qx'] = np.nan
-resampled_df['worldHeadOri_qy'] = np.nan
-resampled_df['worldHeadOri_qz'] = np.nan
-resampled_df['worldHeadOri_qw'] = np.nan
-
-resampled_df['world_threePointsFrame_x'] = np.nan
-resampled_df['world_threePointsFrame_y'] = np.nan
-resampled_df['world_threePointsFrame_z'] = np.nan
-resampled_df['world_threePointsFrame_qx'] = np.nan
-resampled_df['world_threePointsFrame_qy'] = np.nan
-resampled_df['world_threePointsFrame_qz'] = np.nan
-resampled_df['world_threePointsFrame_qw'] = np.nan
+world_RigidBody_Pos = np.array([resampled_df['RigidBody001_tX'], resampled_df['RigidBody001_tY'], resampled_df['RigidBody001_tZ']]).T
+world_RigidBody_Ori_R = R.from_quat(resampled_df[["RigidBody001_qX", "RigidBody001_qY", "RigidBody001_qZ", "RigidBody001_qW"]].values)
+world_RigidBody_Ori_mat = world_RigidBody_Ori_R.as_dcm()
 
 
 # Pose of the frame defined by the three points in the head frame.
-head_threePointsFrame_pos = (head_P1_pos + head_P2_pos + head_P3_pos) / 3
-head_threePointsFrame_x = (head_P2_pos - head_P1_pos)
-head_threePointsFrame_x = head_threePointsFrame_x / np.linalg.norm(head_threePointsFrame_x)
-head_threePointsFrame_y = np.cross(head_threePointsFrame_x, head_P3_pos - head_P1_pos)
-head_threePointsFrame_y = head_threePointsFrame_y / np.linalg.norm(head_threePointsFrame_y)
-head_threePointsFrame_z = np.cross(head_threePointsFrame_x, head_threePointsFrame_y)
-head_threePointsFrame_z = head_threePointsFrame_z / np.linalg.norm(head_threePointsFrame_z)
-head_threePointsFrame_ori = np.column_stack((head_threePointsFrame_x, head_threePointsFrame_y, head_threePointsFrame_z))
-threePointsFrame_head_ori = head_threePointsFrame_ori.T
-threePointsFrame_head_pos = -np.matmul(threePointsFrame_head_ori, head_threePointsFrame_pos)
-threePointsFrame_head_R = R.from_dcm(threePointsFrame_head_ori)
-
-# Update world_P1_pos, world_P2_pos, and world_P3_pos from the current row
-world_P1_pos = np.array([resampled_df['Marker1_tX'], resampled_df['Marker1_tY'], resampled_df['Marker1_tZ']]).T
-world_P2_pos = np.array([resampled_df['Marker2_tX'], resampled_df['Marker2_tY'], resampled_df['Marker2_tZ']]).T
-world_P3_pos = np.array([resampled_df['Marker3_tX'], resampled_df['Marker3_tY'], resampled_df['Marker3_tZ']]).T
-
-# We compute the unit vectors of a frame defined by the three points
-worldThreePointsFramePos = (world_P1_pos + world_P2_pos + world_P3_pos) / 3
-world_threePointsFrame_x = (world_P2_pos - world_P1_pos)
-norms_x = np.linalg.norm(world_threePointsFrame_x, axis=1)
-# Reshape norms to enable broadcasting
-norms_x = norms_x.reshape(-1, 1)
-world_threePointsFrame_x = world_threePointsFrame_x / norms_x
-world_threePointsFrame_y = np.cross(world_threePointsFrame_x, world_P3_pos - world_P1_pos)
-norms_y = np.linalg.norm(world_threePointsFrame_y, axis=1)
-# Reshape norms to enable broadcasting
-norms_y = norms_y.reshape(-1, 1)
-world_threePointsFrame_y = world_threePointsFrame_y / norms_y
-world_threePointsFrame_z = np.cross(world_threePointsFrame_x, world_threePointsFrame_y)
-norms_z = np.linalg.norm(world_threePointsFrame_z, axis=1)
-# Reshape norms to enable broadcasting
-norms_z = norms_z.reshape(-1, 1)
-world_threePointsFrame_z = world_threePointsFrame_z / norms_z
-
-# We stack the unit vectors to obtain the rotation matrix
-world_threePointsFrame_ori_mat = np.stack((world_threePointsFrame_x, world_threePointsFrame_y, world_threePointsFrame_z), axis=-1)
-# The rotation matrix is transformed to a Rotation object
-world_threePointsFrame_R = R.from_dcm(world_threePointsFrame_ori_mat)
+head_ThreePointsFrame_Pos = (head_P1_Pos + head_P2_Pos + head_P3_Pos) / 3
+head_ThreePointsFrame_x = (head_P2_Pos - head_P1_Pos)
+head_ThreePointsFrame_x = head_ThreePointsFrame_x / np.linalg.norm(head_ThreePointsFrame_x)
+head_ThreePointsFrame_y = np.cross(head_ThreePointsFrame_x, head_P3_Pos - head_P1_Pos)
+head_ThreePointsFrame_y = head_ThreePointsFrame_y / np.linalg.norm(head_ThreePointsFrame_y)
+head_ThreePointsFrame_z = np.cross(head_ThreePointsFrame_x, head_ThreePointsFrame_y)
+head_ThreePointsFrame_z = head_ThreePointsFrame_z / np.linalg.norm(head_ThreePointsFrame_z)
+head_ThreePointsFrame_Ori = np.column_stack((head_ThreePointsFrame_x, head_ThreePointsFrame_y, head_ThreePointsFrame_z))
+threePointsFrame_Head_Ori = head_ThreePointsFrame_Ori.T
+threePointsFrame_Head_Pos = -np.matmul(threePointsFrame_Head_Ori, head_ThreePointsFrame_Pos)
+threePointsFrame_Head_Ori_R = R.from_dcm(threePointsFrame_Head_Ori)
 
 
-# We finally get the head's pose in the world by composing the ones of the two frames.
-worldHeadOri_R = world_threePointsFrame_R * threePointsFrame_head_R
-worldHeadPos = worldThreePointsFramePos + world_threePointsFrame_R.apply(threePointsFrame_head_pos)
+# We get the position of the markers in the world
+world_P1_Pos = np.array([resampled_df['Marker1_tX'], resampled_df['Marker1_tY'], resampled_df['Marker1_tZ']]).T
+world_P2_Pos = np.array([resampled_df['Marker2_tX'], resampled_df['Marker2_tY'], resampled_df['Marker2_tZ']]).T
+world_P3_Pos = np.array([resampled_df['Marker3_tX'], resampled_df['Marker3_tY'], resampled_df['Marker3_tZ']]).T
 
+rigidBody_World_Ori = world_RigidBody_Ori_R.inv()
+rigidBody_World_Pos = - rigidBody_World_Ori.apply(world_RigidBody_Pos)
+
+rigidBody_Marker1_Pos = np.mean(rigidBody_World_Pos + rigidBody_World_Ori.apply(world_P1_Pos), axis=0)
+rigidBody_Marker2_Pos = np.mean(rigidBody_World_Pos + rigidBody_World_Ori.apply(world_P2_Pos), axis=0)
+rigidBody_Marker3_Pos = np.mean(rigidBody_World_Pos + rigidBody_World_Ori.apply(world_P3_Pos), axis=0)
+
+rigidBody_ThreePointsFrame_Pos = (rigidBody_Marker1_Pos + rigidBody_Marker2_Pos + rigidBody_Marker3_Pos) / 3
+rigidBody_ThreePointsFrame_x = rigidBody_Marker2_Pos - rigidBody_Marker1_Pos
+rigidBody_ThreePointsFrame_x = rigidBody_ThreePointsFrame_x / np.linalg.norm(rigidBody_ThreePointsFrame_x)
+
+rigidBody_ThreePointsFrame_y = np.cross(rigidBody_ThreePointsFrame_x, rigidBody_Marker3_Pos - rigidBody_Marker1_Pos)
+rigidBody_ThreePointsFrame_y = rigidBody_ThreePointsFrame_y / np.linalg.norm(rigidBody_ThreePointsFrame_y)
+rigidBody_ThreePointsFrame_z = np.cross(rigidBody_ThreePointsFrame_x, rigidBody_ThreePointsFrame_y)
+rigidBody_ThreePointsFrame_z = rigidBody_ThreePointsFrame_z / np.linalg.norm(rigidBody_ThreePointsFrame_z)
+rigidBody_ThreePointsFrame_Ori_mat = np.column_stack((rigidBody_ThreePointsFrame_x, rigidBody_ThreePointsFrame_y, rigidBody_ThreePointsFrame_z))
+rigidBody_ThreePointsFrame_Ori_R = R.from_dcm(rigidBody_ThreePointsFrame_Ori_mat)
+
+rigidBody_Head_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_Head_Ori_R
+rigidBody_Head_Pos = rigidBody_ThreePointsFrame_Pos + rigidBody_ThreePointsFrame_Ori_R.apply(threePointsFrame_Head_Pos)
+
+world_Head_Ori_R = world_RigidBody_Ori_R * rigidBody_Head_Ori_R
+world_Head_Pos = world_RigidBody_Pos + rigidBody_Head_Ori_R.apply(rigidBody_Head_Pos)
+
+
+###############################  Storage of the pose of the head in the world  ###############################
 
 # Converting the orientations in the world back to quaternions for the plots and storage
-worldHeadOri_quat = worldHeadOri_R.as_quat()
-world_threePointsFrame_ori_quat = world_threePointsFrame_R.as_quat()
-# if(index > 0 ):
-#     if (np.dot(worldHeadOri_quat, previous_head_quaternion) < 0):
-#         worldHeadOri_quat = -worldHeadOri_quat
-#     if (np.dot(world_threePointsFrame_ori_quat, previous_tpf_quaternion) < 0):
-#         world_threePointsFrame_ori_quat = -world_threePointsFrame_ori_quat
-# previous_head_quaternion = worldHeadOri_quat
-# previous_tpf_quaternion = world_threePointsFrame_ori_quat
+world_ThreePointsFrame_Ori_R = world_RigidBody_Ori_R * rigidBody_ThreePointsFrame_Ori_R
+world_ThreePointsFrame_Pos = world_RigidBody_Pos + world_RigidBody_Ori_R.apply(rigidBody_ThreePointsFrame_Pos)
 
-resampled_df['worldHeadPos_x'] = worldHeadPos[:,0]
-resampled_df['worldHeadPos_y'] = worldHeadPos[:,1]
-resampled_df['worldHeadPos_z'] = worldHeadPos[:,2]
-resampled_df['worldHeadOri_qx'] = worldHeadOri_quat[:,0]
-resampled_df['worldHeadOri_qy'] = worldHeadOri_quat[:,1]
-resampled_df['worldHeadOri_qz'] = worldHeadOri_quat[:,2]
-resampled_df['worldHeadOri_qw'] = worldHeadOri_quat[:,3]
+world_Head_Ori_quat = world_Head_Ori_R.as_quat()
+world_ThreePointsFrame_Ori_quat = world_ThreePointsFrame_Ori_R.as_quat()
 
-resampled_df['world_threePointsFrame_x'] = worldThreePointsFramePos[:,0]
-resampled_df['world_threePointsFrame_y'] = worldThreePointsFramePos[:,1]
-resampled_df['world_threePointsFrame_z'] = worldThreePointsFramePos[:,2]
-resampled_df['world_threePointsFrame_qx'] = world_threePointsFrame_ori_quat[:,0]
-resampled_df['world_threePointsFrame_qy'] = world_threePointsFrame_ori_quat[:,1]
-resampled_df['world_threePointsFrame_qz'] = world_threePointsFrame_ori_quat[:,2]
-resampled_df['world_threePointsFrame_qw'] = world_threePointsFrame_ori_quat[:,3]
+# Initialization of the DataFrame's columns
+resampled_df['world_Head_Pos_x'] = np.nan
+resampled_df['world_Head_Pos_y'] = np.nan
+resampled_df['world_Head_Pos_z'] = np.nan
+resampled_df['world_Head_Ori_qx'] = np.nan
+resampled_df['world_Head_Ori_qy'] = np.nan
+resampled_df['world_Head_Ori_qz'] = np.nan
+resampled_df['world_Head_Ori_qw'] = np.nan
+resampled_df['world_ThreePointsFrame_x'] = np.nan
+resampled_df['world_ThreePointsFrame_y'] = np.nan
+resampled_df['world_ThreePointsFrame_z'] = np.nan
+resampled_df['world_ThreePointsFrame_qx'] = np.nan
+resampled_df['world_ThreePointsFrame_qy'] = np.nan
+resampled_df['world_ThreePointsFrame_qz'] = np.nan
+resampled_df['world_ThreePointsFrame_qw'] = np.nan
+
+
+resampled_df['world_Head_Pos_x'] = world_Head_Pos[:,0]
+resampled_df['world_Head_Pos_y'] = world_Head_Pos[:,1]
+resampled_df['world_Head_Pos_z'] = world_Head_Pos[:,2]
+resampled_df['world_Head_Ori_qx'] = world_Head_Ori_quat[:,0]
+resampled_df['world_Head_Ori_qy'] = world_Head_Ori_quat[:,1]
+resampled_df['world_Head_Ori_qz'] = world_Head_Ori_quat[:,2]
+resampled_df['world_Head_Ori_qw'] = world_Head_Ori_quat[:,3]
+resampled_df['world_ThreePointsFrame_x'] = world_ThreePointsFrame_Pos[:,0]
+resampled_df['world_ThreePointsFrame_y'] = world_ThreePointsFrame_Pos[:,1]
+resampled_df['world_ThreePointsFrame_z'] = world_ThreePointsFrame_Pos[:,2]
+resampled_df['world_ThreePointsFrame_qx'] = world_ThreePointsFrame_Ori_quat[:,0]
+resampled_df['world_ThreePointsFrame_qy'] = world_ThreePointsFrame_Ori_quat[:,1]
+resampled_df['world_ThreePointsFrame_qz'] = world_ThreePointsFrame_Ori_quat[:,2]
+resampled_df['world_ThreePointsFrame_qw'] = world_ThreePointsFrame_Ori_quat[:,3]
+
+
+
+###############################  Plot of the resulting positions  ###############################
 
 
 # Plot of the resulting poses
-fig2 = go.Figure()
+figPositions = go.Figure()
 
-world_threePointsFrame_ori_euler = world_threePointsFrame_R.as_euler("xyz")
-worldHeadOri_euler = worldHeadOri_R.as_euler("xyz")
-worldRigidBodyOri_euler = worldRigidBodyOri_R.as_euler("xyz")
-# world_threePointsFrame_ori_euler_continuous = continuous_euler(world_threePointsFrame_ori_euler)
-# worldHeadOri_euler_continuous = continuous_euler(worldHeadOri_euler)
-# worldRigidBodyOri_euler_continuous = continuous_euler(worldRigidBodyOri_euler)
+rigidBody_ThreePointsFrame_Pos_plot = np.full((len(resampled_df), 3), rigidBody_ThreePointsFrame_Pos)
 
-world_threePointsFrame_ori_euler_continuous = world_threePointsFrame_ori_euler
-worldHeadOri_euler_continuous = worldHeadOri_euler
-worldRigidBodyOri_euler_continuous = worldRigidBodyOri_euler
 
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_threePointsFrame_ori_euler_continuous[:,0], mode='lines', name='world_threePointsFrame_ori_roll'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_threePointsFrame_ori_euler_continuous[:,1], mode='lines', name='world_threePointsFrame_ori_pitch'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_threePointsFrame_ori_euler_continuous[:,2], mode='lines', name='world_threePointsFrame_ori_yaw'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadOri_euler_continuous[:,0], mode='lines', name='world_Head_ori_roll'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadOri_euler_continuous[:,1], mode='lines', name='world_Head_ori_pitch'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadOri_euler_continuous[:,2], mode='lines', name='world_Head_ori_yaw'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyOri_euler_continuous[:,0], mode='lines', name='world_RigidBody_ori_roll'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyOri_euler_continuous[:,1], mode='lines', name='world_RigidBody_ori_pitch'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyOri_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tX"], mode='lines', name='world_RigidBody_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tY"], mode='lines', name='world_RigidBody_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tZ"], mode='lines', name='world_RigidBody_Pos_z'))
 
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_threePointsFrame_x"], mode='lines', name='world_threePointsFrame_pos_x'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_threePointsFrame_y"], mode='lines', name='world_threePointsFrame_pos_y'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_threePointsFrame_z"], mode='lines', name='world_threePointsFrame_pos_z'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["worldHeadPos_x"], mode='lines', name='world_Head_pos_x'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["worldHeadPos_y"], mode='lines', name='world_Head_pos_y'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["worldHeadPos_z"], mode='lines', name='world_Head_pos_z'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tX"], mode='lines', name='world_RigidBody_pos_x'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tY"], mode='lines', name='world_RigidBody_pos_y'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tZ"], mode='lines', name='world_RigidBody_pos_z'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Pos_z'))
 
-errorWithRigidBody_R = worldHeadOri_R.inv() * worldRigidBodyOri_R
-errorWithRigidBody_euler = errorWithRigidBody_R.as_euler("xyz")
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_x"], mode='lines', name='world_ThreePointsFrame_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_y"], mode='lines', name='world_ThreePointsFrame_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_z"], mode='lines', name='world_ThreePointsFrame_Pos_z'))
 
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=errorWithRigidBody_euler[:,0], mode='lines', name='errorWithRigidBody_roll'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=errorWithRigidBody_euler[:,1], mode='lines', name='errorWithRigidBody_pitch'))
-fig2.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=errorWithRigidBody_euler[:,2], mode='lines', name='errorWithRigidBody_yaw'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_Head_Pos_x"], mode='lines', name='world_Head_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_Head_Pos_y"], mode='lines', name='world_Head_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_Head_Pos_z"], mode='lines', name='world_Head_Pos_z'))
 
-fig2.update_layout(title="Resulting poses in the world")
+
+figPositions.update_layout(title="Resulting positions in the world")
 
 # Show the plotly figures
-fig2.show()
+figPositions.show()
 
 
 
+
+
+
+###############################  Plot of the resulting orientations  ###############################
+
+
+# Plot of the resulting poses
+figOrientations = go.Figure()
+
+world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
+rigidBody_ThreePointsFrame_Ori_euler = rigidBody_ThreePointsFrame_Ori_R.as_euler("xyz")
+threePointsFrame_Head_Ori_euler = threePointsFrame_Head_Ori_R.as_euler("xyz")
+world_ThreePointsFrame_Ori_euler = world_ThreePointsFrame_Ori_R.as_euler("xyz")
+world_Head_Ori_euler = world_Head_Ori_R.as_euler("xyz")
+
+rigidBody_Head_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_Head_Ori_R
+rigidBody_Head_Ori_euler = rigidBody_Head_Ori_R.as_euler("xyz")
+rigidBody_Head_Ori_euler_plot = np.full((len(world_RigidBody_Ori_euler), 3), rigidBody_Head_Ori_euler)
+threePointsFrame_Head_Ori_euler = np.full((len(world_RigidBody_Ori_euler), 3), threePointsFrame_Head_Ori_euler)
+
+# world_ThreePointsFrame_Ori_euler_continuous = continuous_euler(world_ThreePointsFrame_Ori_euler)
+# world_Head_Ori_euler_continuous = continuous_euler(world_Head_Ori_euler)
+# world_RigidBody_Ori_euler_continuous = continuous_euler(world_RigidBody_Ori_euler)
+
+world_RigidBody_Ori_euler_continuous = world_RigidBody_Ori_euler
+rigidBody_ThreePointsFrame_Ori_euler = np.full((len(world_RigidBody_Ori_euler_continuous), 3), rigidBody_ThreePointsFrame_Ori_euler)
+world_ThreePointsFrame_Ori_euler_continuous = world_ThreePointsFrame_Ori_euler
+world_Head_Ori_euler_continuous = world_Head_Ori_euler
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_Head_Ori_euler[:,0], mode='lines', name='threePointsFrame_Head_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_Head_Ori_euler[:,1], mode='lines', name='threePointsFrame_Head_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_Head_Ori_euler[:,2], mode='lines', name='threePointsFrame_Head_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_Head_Ori_euler_plot[:,0], mode='lines', name='rigidBody_Head_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_Head_Ori_euler_plot[:,1], mode='lines', name='rigidBody_Head_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_Head_Ori_euler_plot[:,2], mode='lines', name='rigidBody_Head_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,0], mode='lines', name='world_ThreePointsFrame_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,1], mode='lines', name='world_ThreePointsFrame_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,2], mode='lines', name='world_ThreePointsFrame_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_Ori_euler_continuous[:,0], mode='lines', name='world_Head_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_Ori_euler_continuous[:,1], mode='lines', name='world_Head_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_Ori_euler_continuous[:,2], mode='lines', name='world_Head_Ori_yaw'))
+
+figOrientations.update_layout(title="Resulting orientations in the world")
+
+# Show the plotly figures
+figOrientations.show()
 
 
 ###############################  Local linear velocity of the head in the world  ###############################
 
 # We compute the velocity of the head in the world
-worldHeadVel_x = resampled_df['worldHeadPos_x'].diff()/timeStepFloat*1000.0
-worldHeadVel_y = resampled_df['worldHeadPos_y'].diff()/timeStepFloat*1000.0
-worldHeadVel_z = resampled_df['worldHeadPos_z'].diff()/timeStepFloat*1000.0
-worldHeadVel_x[0] = 0.0
-worldHeadVel_y[0] = 0.0
-worldHeadVel_z[0] = 0.0
-worldHeadVel = np.stack((worldHeadVel_x, worldHeadVel_y, worldHeadVel_z), axis = 1)
+world_Head_Vel_x = resampled_df['world_Head_Pos_x'].diff()/timeStepFloat*1000.0
+world_Head_Vel_y = resampled_df['world_Head_Pos_y'].diff()/timeStepFloat*1000.0
+world_Head_Vel_z = resampled_df['world_Head_Pos_z'].diff()/timeStepFloat*1000.0
+world_Head_Vel_x[0] = 0.0
+world_Head_Vel_y[0] = 0.0
+world_Head_Vel_z[0] = 0.0
+world_Head_Vel = np.stack((world_Head_Vel_x, world_Head_Vel_y, world_Head_Vel_z), axis = 1)
 # We compute the velocity of the mocap's rigid body in the world
-worldRigidBodyVel_x = resampled_df['RigidBody001_tX'].diff()/timeStepFloat*1000.0
-worldRigidBodyVel_y = resampled_df['RigidBody001_tY'].diff()/timeStepFloat*1000.0
-worldRigidBodyVel_z = resampled_df['RigidBody001_tZ'].diff()/timeStepFloat*1000.0
-worldRigidBodyVel_x[0] = 0.0
-worldRigidBodyVel_y[0] = 0.0
-worldRigidBodyVel_z[0] = 0.0
+world_RigidBody_Vel_x = resampled_df['RigidBody001_tX'].diff()/timeStepFloat*1000.0
+world_RigidBody_Vel_y = resampled_df['RigidBody001_tY'].diff()/timeStepFloat*1000.0
+world_RigidBody_Vel_z = resampled_df['RigidBody001_tZ'].diff()/timeStepFloat*1000.0
+world_RigidBody_Vel_x[0] = 0.0
+world_RigidBody_Vel_y[0] = 0.0
+world_RigidBody_Vel_z[0] = 0.0
 
-worldRigidBodyVel = np.stack((worldRigidBodyVel_x, worldRigidBodyVel_y, worldRigidBodyVel_z), axis = 1)
+world_RigidBody_Vel = np.stack((world_RigidBody_Vel_x, world_RigidBody_Vel_y, world_RigidBody_Vel_z), axis = 1)
 
-worldHeadLocVel = worldHeadOri_R.apply(worldHeadVel, inverse=True)
-worldRigidBodyLocVel = worldRigidBodyOri_R.apply(worldRigidBodyVel, inverse=True)
+world_Head_LocVel = world_Head_Ori_R.apply(world_Head_Vel, inverse=True)
+world_RigidBody_LocVel = world_RigidBody_Ori_R.apply(world_RigidBody_Vel, inverse=True)
 
 # Plot of the resulting poses
 fig3 = go.Figure()
 
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadLocVel[:,0], mode='lines', name='world_Head_LocalLinVel_x'))
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadLocVel[:,1], mode='lines', name='world_Head_LocalLinVel_y'))
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldHeadLocVel[:,2], mode='lines', name='world_Head_LocalLinVel_z'))
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyLocVel[:,0], mode='lines', name='world_RigidBody_LocalLinVel_x'))
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyLocVel[:,1], mode='lines', name='world_RigidBody_LocalLinVel_y'))
-fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=worldRigidBodyLocVel[:,2], mode='lines', name='world_RigidBody_LocalLinVel_z'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_LocVel[:,0], mode='lines', name='world_Head_LocalLinVel_x'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_LocVel[:,1], mode='lines', name='world_Head_LocalLinVel_y'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_Head_LocVel[:,2], mode='lines', name='world_Head_LocalLinVel_z'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_LocVel[:,0], mode='lines', name='world_RigidBody_LocalLinVel_x'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_LocVel[:,1], mode='lines', name='world_RigidBody_LocalLinVel_y'))
+fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_LocVel[:,2], mode='lines', name='world_RigidBody_LocalLinVel_z'))
 
 fig3.update_layout(title="Local linear velocity of the head in the world / vs the one of the rigid body")
 # Show the plotly figures
 fig3.show()
-
 
 
 
@@ -366,38 +408,39 @@ if plot3dTrajectory.lower() == 'y':
     fig, ax = plt.subplots(1, 1)
     ax = fig.add_subplot(111, projection='3d')
 
-    worldHeadOri_mat = worldHeadOri_R.as_dcm()
+    world_Head_Ori_mat = world_Head_Ori_R.as_dcm()
+    world_ThreePointsFrame_Ori_mat = world_ThreePointsFrame_Ori_R.as_dcm()
 
-    x_min = min(resampled_df["worldHeadPos_x"].min(), resampled_df["RigidBody001_tX"].min())
-    y_min = min(resampled_df["worldHeadPos_y"].min(), resampled_df["RigidBody001_tY"].min())
-    z_min = min(resampled_df["worldHeadPos_z"].min(), resampled_df["RigidBody001_tZ"].min())
+    x_min = min(resampled_df["world_Head_Pos_x"].min(), resampled_df["RigidBody001_tX"].min())
+    y_min = min(resampled_df["world_Head_Pos_y"].min(), resampled_df["RigidBody001_tY"].min())
+    z_min = min(resampled_df["world_Head_Pos_z"].min(), resampled_df["RigidBody001_tZ"].min())
     x_min = x_min - np.abs(x_min*0.2)
     y_min = y_min - np.abs(y_min*0.2)
     z_min = z_min - np.abs(z_min*0.2)
 
-    x_max = max(resampled_df["worldHeadPos_x"].max(), resampled_df["RigidBody001_tX"].max())
-    y_max = max(resampled_df["worldHeadPos_y"].max(), resampled_df["RigidBody001_tY"].max())
-    z_max = max(resampled_df["worldHeadPos_z"].max(), resampled_df["RigidBody001_tZ"].max())
+    x_max = max(resampled_df["world_Head_Pos_x"].max(), resampled_df["RigidBody001_tX"].max())
+    y_max = max(resampled_df["world_Head_Pos_y"].max(), resampled_df["RigidBody001_tY"].max())
+    z_max = max(resampled_df["world_Head_Pos_z"].max(), resampled_df["RigidBody001_tZ"].max())
     x_max = x_max + np.abs(x_max*0.2)
     y_max = y_max + np.abs(y_max*0.2)
     z_max = z_max + np.abs(z_max*0.2)
 
     for t in range(0,len(resampled_df), 1000):
-        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *rRigidBody_mats[t,:,0], color='red', linewidth=4, length=70)
-        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *rRigidBody_mats[t,:,1], color='red', linewidth=1, length=50)
-        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *rRigidBody_mats[t,:,2], color='red', linewidth=3, length=50)
+        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *world_RigidBody_Ori_mat[t,:,0], color='red', linewidth=4, length=70)
+        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *world_RigidBody_Ori_mat[t,:,1], color='red', linewidth=1, length=50)
+        quiverRigidBody = ax.quiver(resampled_df["RigidBody001_tX"][t], resampled_df["RigidBody001_tY"][t], resampled_df["RigidBody001_tZ"][t], *world_RigidBody_Ori_mat[t,:,2], color='red', linewidth=3, length=50)
         
-        quiverRigidBody = ax.quiver(resampled_df["world_threePointsFrame_x"][t], resampled_df["world_threePointsFrame_y"][t], resampled_df["world_threePointsFrame_z"][t], *world_threePointsFrame_ori_mat[t][:,0], color='orange', linewidth=3, length=70)
-        quiverRigidBody = ax.quiver(resampled_df["world_threePointsFrame_x"][t], resampled_df["world_threePointsFrame_y"][t], resampled_df["world_threePointsFrame_z"][t], *world_threePointsFrame_ori_mat[t][:,1], color='orange', linewidth=1, length=50)
-        quiverRigidBody = ax.quiver(resampled_df["world_threePointsFrame_x"][t], resampled_df["world_threePointsFrame_y"][t], resampled_df["world_threePointsFrame_z"][t], *world_threePointsFrame_ori_mat[t][:,2], color='orange', linewidth=1, length=50)
+        quiverRigidBody = ax.quiver(resampled_df["world_ThreePointsFrame_x"][t], resampled_df["world_ThreePointsFrame_y"][t], resampled_df["world_ThreePointsFrame_z"][t], *world_ThreePointsFrame_Ori_mat[t][:,0], color='orange', linewidth=3, length=70)
+        quiverRigidBody = ax.quiver(resampled_df["world_ThreePointsFrame_x"][t], resampled_df["world_ThreePointsFrame_y"][t], resampled_df["world_ThreePointsFrame_z"][t], *world_ThreePointsFrame_Ori_mat[t][:,1], color='orange', linewidth=1, length=50)
+        quiverRigidBody = ax.quiver(resampled_df["world_ThreePointsFrame_x"][t], resampled_df["world_ThreePointsFrame_y"][t], resampled_df["world_ThreePointsFrame_z"][t], *world_ThreePointsFrame_Ori_mat[t][:,2], color='orange', linewidth=1, length=50)
 
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *worldHeadOri_mat[t][:,0], color='blue', linewidth=4, length=70)
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *worldHeadOri_mat[t][:,1], color='blue', linewidth=1, length=50)
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *worldHeadOri_mat[t][:,2], color='blue', linewidth=3, length=50)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *world_Head_Ori_mat[t][:,0], color='blue', linewidth=4, length=70)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *world_Head_Ori_mat[t][:,1], color='blue', linewidth=1, length=50)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *world_Head_Ori_mat[t][:,2], color='blue', linewidth=3, length=50)
 
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *head_threePointsFrame_ori[:,0], color='green', linewidth=8, length=70)
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *head_threePointsFrame_ori[:,1], color='green', linewidth=1, length=50)
-        quiverHead = ax.quiver(resampled_df["worldHeadPos_x"][t], resampled_df["worldHeadPos_y"][t], resampled_df["worldHeadPos_z"][t], *head_threePointsFrame_ori[:,2], color='green', linewidth=3, length=50)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *head_ThreePointsFrame_Ori[:,0], color='green', linewidth=8, length=70)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *head_ThreePointsFrame_Ori[:,1], color='green', linewidth=1, length=50)
+        quiverHead = ax.quiver(resampled_df["world_Head_Pos_x"][t], resampled_df["world_Head_Pos_y"][t], resampled_df["world_Head_Pos_z"][t], *head_ThreePointsFrame_Ori[:,2], color='green', linewidth=3, length=50)
 
     # Adding the axes arrows
     class Arrow3D(FancyArrowPatch):
@@ -418,8 +461,8 @@ if plot3dTrajectory.lower() == 'y':
     ax.add_artist(arrow_z)
 
     ax.plot(resampled_df["RigidBody001_tX"], resampled_df["RigidBody001_tY"], resampled_df["RigidBody001_tZ"], color='darkred')
-    ax.plot(resampled_df["world_threePointsFrame_x"], resampled_df["world_threePointsFrame_y"], resampled_df["world_threePointsFrame_z"], color='darkorange')
-    ax.plot(resampled_df["worldHeadPos_x"], resampled_df["worldHeadPos_y"], resampled_df["worldHeadPos_z"], color='darkblue')
+    ax.plot(resampled_df["world_ThreePointsFrame_x"], resampled_df["world_ThreePointsFrame_y"], resampled_df["world_ThreePointsFrame_z"], color='darkorange')
+    ax.plot(resampled_df["world_Head_Pos_x"], resampled_df["world_Head_Pos_y"], resampled_df["world_Head_Pos_z"], color='darkblue')
 
 
     ax.set_xlabel('X')
