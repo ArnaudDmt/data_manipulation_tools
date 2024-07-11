@@ -1,3 +1,4 @@
+from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -24,7 +25,7 @@ except ValueError:
 
 ###############################  Main variables initialization  ###############################
 
-output_csv_file_path = 'realignedmocapLimbData.csv'
+output_csv_file_path = 'realignedMocapLimbData.csv'
 
 
 
@@ -292,7 +293,6 @@ def realignData(data1, data2, data1_name, data2_name):
     fig.update_layout(title="Previsualization of data after alignment.")
     fig.show()
 
-    print(f"The observer_data will be shifted by {shift} indexes.")
     return data2, shift
 
 
@@ -349,7 +349,7 @@ world_RigidBody_Ori_R = R.from_quat(realignedMocapData[["RigidBody001_qX", "Rigi
 world_mocapLimb_Pos = np.array([realignedMocapData['world_MocapLimb_Pos_x'], realignedMocapData['world_MocapLimb_Pos_y'], realignedMocapData['world_MocapLimb_Pos_z']]).T
 world_mocapLimb_Ori_R = R.from_quat(realignedMocapData[["world_MocapLimb_Ori_qx", "world_MocapLimb_Ori_qy", "world_MocapLimb_Ori_qz", "world_MocapLimb_Ori_qw"]].values)
 
-print(realignedMocapData.columns)
+
 ###############################  Visualization of the extracted poses  ###############################
 
 
@@ -410,9 +410,12 @@ figOrientations_realigned.show()
 ###############################  Orientation difference wrt the initial orientation  ###############################
 
 
-world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R[0].inv() * world_mocapLimb_Ori_R
-world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R[0].inv() * world_RigidBody_Ori_R
-world_VanyteBody_Ori_R_transfo = world_VanyteBody_Ori_R[0].inv() * world_VanyteBody_Ori_R
+world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R * world_mocapLimb_Ori_R[0].inv()
+#world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R_transfo.inv()
+world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R * world_RigidBody_Ori_R[0].inv()
+#world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R_transfo.inv()
+world_VanyteBody_Ori_R_transfo = world_VanyteBody_Ori_R * world_VanyteBody_Ori_R[0].inv()
+#world_VanyteBody_Ori_R_transfo = world_VanyteBody_Ori_R_transfo.inv()
 
 world_mocapLimb_Ori_transfo_euler = world_mocapLimb_Ori_R_transfo.as_euler("xyz")
 world_RigidBody_Ori_transfo_euler = world_RigidBody_Ori_R_transfo.as_euler("xyz")
@@ -421,7 +424,6 @@ world_VanyteBody_Ori_transfo_euler = world_VanyteBody_Ori_R_transfo.as_euler("xy
 world_mocapLimb_Ori_transfo_euler_continuous = continuous_euler(world_mocapLimb_Ori_transfo_euler)
 world_RigidBody_Ori_transfo_euler_continuous = continuous_euler(world_RigidBody_Ori_transfo_euler)
 world_VanyteBody_Ori_transfo_euler_continuous = continuous_euler(world_VanyteBody_Ori_transfo_euler)
-
 
 fig3 = go.Figure()
 
@@ -445,7 +447,7 @@ fig3.show()
 
 
 world_mocapLimb_Ori_quat = world_mocapLimb_Ori_R.as_quat()
-output_df = pd.DataFrame({'t': observer_data['t'], 'realignedWorldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'realignedWorldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'realignedWorldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'realignedWorldMocapLimbOri_x': world_mocapLimb_Ori_quat[:,0], 'realignedWorldMocapLimbOri_y': world_mocapLimb_Ori_quat[:,1], 'realignedWorldMocapLimbOri_z': world_mocapLimb_Ori_quat[:,2], 'realignedWorldMocapLimbOri_w': world_mocapLimb_Ori_quat[:,3]});
+output_df = pd.DataFrame({'t': observer_data['t'], 'realignedWorldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'realignedWorldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'realignedWorldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'realignedWorldMocapLimbOri_x': world_mocapLimb_Ori_quat[:,0], 'realignedWorldMocapLimbOri_y': world_mocapLimb_Ori_quat[:,1], 'realignedWorldMocapLimbOri_z': world_mocapLimb_Ori_quat[:,2], 'realignedWorldMocapLimbOri_w': world_mocapLimb_Ori_quat[:,3]})
 
 
 
