@@ -1,4 +1,3 @@
-from matplotlib import pyplot as plt
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -409,13 +408,9 @@ figOrientations_realigned.show()
 
 ###############################  Orientation difference wrt the initial orientation  ###############################
 
-
 world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R * world_mocapLimb_Ori_R[0].inv()
-#world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R_transfo.inv()
 world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R * world_RigidBody_Ori_R[0].inv()
-#world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R_transfo.inv()
 world_VanyteBody_Ori_R_transfo = world_VanyteBody_Ori_R * world_VanyteBody_Ori_R[0].inv()
-#world_VanyteBody_Ori_R_transfo = world_VanyteBody_Ori_R_transfo.inv()
 
 world_mocapLimb_Ori_transfo_euler = world_mocapLimb_Ori_R_transfo.as_euler("xyz")
 world_RigidBody_Ori_transfo_euler = world_RigidBody_Ori_R_transfo.as_euler("xyz")
