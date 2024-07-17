@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -7,9 +8,24 @@ from scipy.spatial.transform import Rotation as R
 
 
 
-###############################  User input for the timestep  ###############################
 
-timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
+###############################  Main variables initialization  ###############################
+
+output_csv_file_path = 'realignedMocapLimbData.csv'
+displayLogs = True
+
+
+
+
+###############################  User inputs  ###############################
+
+
+if(len(sys.argv) > 1):
+    timeStepInput = sys.argv[1]
+    if(len(sys.argv) > 2):
+        displayLogs = sys.argv[2].lower() == 'true'
+else:
+    timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
 # Convert the input to a double
 try:
@@ -19,12 +35,6 @@ try:
 except ValueError:
     print("That's not a valid int!")
 
-
-
-
-###############################  Main variables initialization  ###############################
-
-output_csv_file_path = 'realignedMocapLimbData.csv'
 
 
 
@@ -77,55 +87,56 @@ world_VanyteLimb_Ori_R = world_VanyteLimb_Ori_R.inv()
 ###############################  Visualization of the extracted poses  ###############################
 
 
-# Plot of the resulting positions
-figPositions = go.Figure()
+if(displayLogs):
+    # Plot of the resulting positions
+    figPositions = go.Figure()
 
-figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_Vanyte_Body_pos_x'))
-figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_Vanyte_Body_pos_y'))
-figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_Vanyte_Body_pos_z'))
+    figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_Vanyte_Body_pos_x'))
+    figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_Vanyte_Body_pos_y'))
+    figPositions.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_Vanyte_Body_pos_z'))
 
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,0], mode='lines', name='world_mocapLimb_Pos_x'))
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,1], mode='lines', name='world_mocapLimb_Pos_y'))
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,2], mode='lines', name='world_mocapLimb_Pos_z'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,0], mode='lines', name='world_mocapLimb_Pos_x'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,1], mode='lines', name='world_mocapLimb_Pos_y'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,2], mode='lines', name='world_mocapLimb_Pos_z'))
 
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tX"], mode='lines', name='world_RigidBody_pos_x'))
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tY"], mode='lines', name='world_RigidBody_pos_y'))
-figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tZ"], mode='lines', name='world_RigidBody_pos_z'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tX"], mode='lines', name='world_RigidBody_pos_x'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tY"], mode='lines', name='world_RigidBody_pos_y'))
+    figPositions.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=mocapData["RigidBody001_tZ"], mode='lines', name='world_RigidBody_pos_z'))
 
-figPositions.update_layout(title="Resulting positions")
+    figPositions.update_layout(title="Resulting positions")
 
-# Show the plotly figures
-figPositions.show()
-
-
-# Plot of the resulting orientations
-figOrientations = go.Figure()
-
-world_VanyteLimb_Ori_euler = world_VanyteLimb_Ori_R.as_euler("xyz")
-world_mocapLimb_Ori_euler = world_mocapLimb_Ori_R.as_euler("xyz")
-world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
-
-world_VanyteLimb_Ori_euler_continuous = continuous_euler(world_VanyteLimb_Ori_euler)
-world_mocapLimb_Ori_euler_continuous = continuous_euler(world_mocapLimb_Ori_euler)
-world_RigidBody_Ori_euler_continuous = continuous_euler(world_RigidBody_Ori_euler)
-
-figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,0], mode='lines', name='world_Vanyte_Body_ori_roll'))
-figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,1], mode='lines', name='world_Vanyte_Body_ori_pitch'))
-figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,2], mode='lines', name='world_Vanyte_Body_ori_yaw'))
-
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll'))
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch'))
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw'))
-
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_ori_roll'))
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_ori_pitch'))
-figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw'))
+    # Show the plotly figures
+    figPositions.show()
 
 
-figOrientations.update_layout(title="Resulting orientations")
+    # Plot of the resulting orientations
+    figOrientations = go.Figure()
 
-# Show the plotly figures
-figOrientations.show()
+    world_VanyteLimb_Ori_euler = world_VanyteLimb_Ori_R.as_euler("xyz")
+    world_mocapLimb_Ori_euler = world_mocapLimb_Ori_R.as_euler("xyz")
+    world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
+
+    world_VanyteLimb_Ori_euler_continuous = continuous_euler(world_VanyteLimb_Ori_euler)
+    world_mocapLimb_Ori_euler_continuous = continuous_euler(world_mocapLimb_Ori_euler)
+    world_RigidBody_Ori_euler_continuous = continuous_euler(world_RigidBody_Ori_euler)
+
+    figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,0], mode='lines', name='world_Vanyte_Body_ori_roll'))
+    figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,1], mode='lines', name='world_Vanyte_Body_ori_pitch'))
+    figOrientations.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,2], mode='lines', name='world_Vanyte_Body_ori_yaw'))
+
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll'))
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch'))
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw'))
+
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_ori_roll'))
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_ori_pitch'))
+    figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw'))
+
+
+    figOrientations.update_layout(title="Resulting orientations")
+
+    # Show the plotly figures
+    figOrientations.show()
 
 
 
@@ -164,22 +175,24 @@ world_mocapLimb_LocVel = world_mocapLimb_Ori_R.apply(world_mocapLimb_Vel, invers
 world_RigidBody_LocVel = world_RigidBody_Ori_R.apply(world_RigidBody_Vel, inverse=True)
 world_VanyteLimb_LocVel = world_VanyteLimb_Ori_R.apply(world_VanyteLimb_Vel, inverse=True)
 
-# Plot of the resulting poses
-fig2 = go.Figure()
 
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,0], mode='lines', name='world_mocapLimb_LocVel_x'))
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,1], mode='lines', name='world_mocapLimb_LocVel_y'))
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,2], mode='lines', name='world_mocapLimb_LocVel_z'))
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,0], mode='lines', name='world_RigidBody_LocalLinVel_x'))
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,1], mode='lines', name='world_RigidBody_LocalLinVel_y'))
-fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,2], mode='lines', name='world_RigidBody_LocalLinVel_z'))
-fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,0], mode='lines', name='world_VanyteLimb_LocVel_x'))
-fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,1], mode='lines', name='world_VanyteLimb_LocVel_y'))
-fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,2], mode='lines', name='world_VanyteLimb_LocVel_z'))
+if(displayLogs):
+    # Plot of the resulting poses
+    fig2 = go.Figure()
 
-fig2.update_layout(title="Local linear velocity of the mocapLimb in the world / vs the one of the rigid body")
-# Show the plotly figures
-fig2.show()
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,0], mode='lines', name='world_mocapLimb_LocVel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,1], mode='lines', name='world_mocapLimb_LocVel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,2], mode='lines', name='world_mocapLimb_LocVel_z'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,0], mode='lines', name='world_RigidBody_LocalLinVel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,1], mode='lines', name='world_RigidBody_LocalLinVel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_LocVel[:,2], mode='lines', name='world_RigidBody_LocalLinVel_z'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,0], mode='lines', name='world_VanyteLimb_LocVel_x'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,1], mode='lines', name='world_VanyteLimb_LocVel_y'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_LocVel[:,2], mode='lines', name='world_VanyteLimb_LocVel_z'))
+
+    fig2.update_layout(title="Local linear velocity of the mocapLimb in the world / vs the one of the rigid body")
+    # Show the plotly figures
+    fig2.show()
 
 
 
@@ -239,21 +252,22 @@ def add_rows(df, num_rows, atEnd=True):
     return df
 
 def realignData(data1, data2, data1_name, data2_name):
-    figInit = go.Figure()
-
     data2 = match_array_length(data2, len(data1))
 
-    time1 = np.arange(0, len(data1), step=1)
-    time2 = np.arange(0, len(data2), step=1)
-    figInit.add_trace(go.Scatter(x=time1, y=data1[:,0], mode='lines', name=f'{data1_name}_1'))
-    figInit.add_trace(go.Scatter(x=time1, y=data1[:,1], mode='lines', name=f'{data1_name}_2'))
-    figInit.add_trace(go.Scatter(x=time1, y=data1[:,2], mode='lines', name=f'{data1_name}_3'))
+    if(displayLogs):
+        figInit = go.Figure()
 
-    figInit.add_trace(go.Scatter(x=time2, y=data2[:,0], mode='lines', name=f'{data2_name}_1'))
-    figInit.add_trace(go.Scatter(x=time2, y=data2[:,1], mode='lines', name=f'{data2_name}_2'))
-    figInit.add_trace(go.Scatter(x=time2, y=data2[:,2], mode='lines', name=f'{data2_name}_3'))
-    figInit.update_layout(title="Data before alignment.")
-    figInit.show()
+        time1 = np.arange(0, len(data1), step=1)
+        time2 = np.arange(0, len(data2), step=1)
+        figInit.add_trace(go.Scatter(x=time1, y=data1[:,0], mode='lines', name=f'{data1_name}_1'))
+        figInit.add_trace(go.Scatter(x=time1, y=data1[:,1], mode='lines', name=f'{data1_name}_2'))
+        figInit.add_trace(go.Scatter(x=time1, y=data1[:,2], mode='lines', name=f'{data1_name}_3'))
+
+        figInit.add_trace(go.Scatter(x=time2, y=data2[:,0], mode='lines', name=f'{data2_name}_1'))
+        figInit.add_trace(go.Scatter(x=time2, y=data2[:,1], mode='lines', name=f'{data2_name}_2'))
+        figInit.add_trace(go.Scatter(x=time2, y=data2[:,2], mode='lines', name=f'{data2_name}_3'))
+        figInit.update_layout(title="Data before alignment.")
+        figInit.show()
 
     
     # Remove the mean from the signals
@@ -278,19 +292,20 @@ def realignData(data1, data2, data1_name, data2_name):
 
     data2_shifted = np.roll(data2, shift, axis=0)
 
-    fig = go.Figure()
-    time1 = np.arange(0, len(data1), step=1)
-    time2 = np.arange(0, len(data2), step=1)
+    if(displayLogs):
+        fig = go.Figure()
+        time1 = np.arange(0, len(data1), step=1)
+        time2 = np.arange(0, len(data2), step=1)
 
-    fig.add_trace(go.Scatter(x=time1, y=data1[:,0], mode='lines', name=f'{data1_name}_1'))
-    fig.add_trace(go.Scatter(x=time1, y=data1[:,1], mode='lines', name=f'{data1_name}_2'))
-    fig.add_trace(go.Scatter(x=time1, y=data1[:,2], mode='lines', name=f'{data1_name}_3'))
+        fig.add_trace(go.Scatter(x=time1, y=data1[:,0], mode='lines', name=f'{data1_name}_1'))
+        fig.add_trace(go.Scatter(x=time1, y=data1[:,1], mode='lines', name=f'{data1_name}_2'))
+        fig.add_trace(go.Scatter(x=time1, y=data1[:,2], mode='lines', name=f'{data1_name}_3'))
 
-    fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,0], mode='lines', name=f'{data2_name}_1'))
-    fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,1], mode='lines', name=f'{data2_name}_2'))
-    fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,2], mode='lines', name=f'{data2_name}_3'))
-    fig.update_layout(title="Previsualization of data after alignment.")
-    fig.show()
+        fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,0], mode='lines', name=f'{data2_name}_1'))
+        fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,1], mode='lines', name=f'{data2_name}_2'))
+        fig.add_trace(go.Scatter(x=time2, y=data2_shifted[:,2], mode='lines', name=f'{data2_name}_3'))
+        fig.update_layout(title="Previsualization of data after alignment.")
+        fig.show()
 
     return data2, shift
 
@@ -322,16 +337,17 @@ def realignData(data_to_shift,  shift):
         # Removing last diffIndexFinal rows
         data_shifted = data_shifted.iloc[:diffIndexFinal]
 
-    figAlignedIndexes = go.Figure()
-    time = np.arange(0, len(data_shifted), step=1)
-    figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_x'], mode='lines', name='world_MocapLimb_Pos_x'))
-    figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_y'], mode='lines', name='world_MocapLimb_Pos_y'))
-    figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_z'], mode='lines', name='world_MocapLimb_Pos_z'))
-    figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_VanyteLimb_Pos_x'))
-    figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_VanyteLimb_Pos_y'))
-    figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_VanyteLimb_Pos_z'))
-    figAlignedIndexes.update_layout(title="Data after index alignment.")
-    figAlignedIndexes.show()
+    if(displayLogs):
+        figAlignedIndexes = go.Figure()
+
+        figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_x'], mode='lines', name='world_MocapLimb_Pos_x'))
+        figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_y'], mode='lines', name='world_MocapLimb_Pos_y'))
+        figAlignedIndexes.add_trace(go.Scatter(x=data_shifted.index, y=data_shifted['world_MocapLimb_Pos_z'], mode='lines', name='world_MocapLimb_Pos_z'))
+        figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_VanyteLimb_Pos_x'))
+        figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_VanyteLimb_Pos_y'))
+        figAlignedIndexes.add_trace(go.Scatter(x=observer_data.index, y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_VanyteLimb_Pos_z'))
+        figAlignedIndexes.update_layout(title="Data after index alignment.")
+        figAlignedIndexes.show()
 
     data_shifted['Time(Seconds)'] = observer_data["t"]
 
@@ -352,54 +368,55 @@ world_mocapLimb_Ori_R = R.from_quat(realignedMocapData[["world_MocapLimb_Ori_qx"
 ###############################  Visualization of the extracted poses  ###############################
 
 
-# Plot of the resulting positions
-figPositions_realigned = go.Figure()
+if(displayLogs):
+    # Plot of the resulting positions
+    figPositions_realigned = go.Figure()
 
-figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_Vanyte_Body_pos_x_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_Vanyte_Body_pos_y_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_Vanyte_Body_pos_z_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,0], mode='lines', name='world_Vanyte_Body_pos_x_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,1], mode='lines', name='world_Vanyte_Body_pos_y_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Pos[:,2], mode='lines', name='world_Vanyte_Body_pos_z_realigned'))
 
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,0], mode='lines', name='world_mocapLimb_Pos_x_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,1], mode='lines', name='world_mocapLimb_Pos_y_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,2], mode='lines', name='world_mocapLimb_Pos_z_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,0], mode='lines', name='world_mocapLimb_Pos_x_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,1], mode='lines', name='world_mocapLimb_Pos_y_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Pos[:,2], mode='lines', name='world_mocapLimb_Pos_z_realigned'))
 
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tX"], mode='lines', name='world_RigidBody_pos_x_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tY"], mode='lines', name='world_RigidBody_pos_y_realigned'))
-figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tZ"], mode='lines', name='world_RigidBody_pos_z_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tX"], mode='lines', name='world_RigidBody_pos_x_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tY"], mode='lines', name='world_RigidBody_pos_y_realigned'))
+    figPositions_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=realignedMocapData["RigidBody001_tZ"], mode='lines', name='world_RigidBody_pos_z_realigned'))
 
-figPositions_realigned.update_layout(title="Realigned positions")
+    figPositions_realigned.update_layout(title="Realigned positions")
 
-# Show the plotly figures
-figPositions_realigned.show()
+    # Show the plotly figures
+    figPositions_realigned.show()
 
 
-# Plot of the resulting orientations
-figOrientations_realigned = go.Figure()
+    # Plot of the resulting orientations
+    figOrientations_realigned = go.Figure()
 
-#world_VanyteLimb_Ori_euler = world_VanyteLimb_Ori_R.as_euler("xyz")
-world_mocapLimb_Ori_euler = world_mocapLimb_Ori_R.as_euler("xyz")
-world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
+    #world_VanyteLimb_Ori_euler = world_VanyteLimb_Ori_R.as_euler("xyz")
+    world_mocapLimb_Ori_euler = world_mocapLimb_Ori_R.as_euler("xyz")
+    world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
 
-#world_VanyteLimb_Ori_euler_continuous = continuous_euler(world_VanyteLimb_Ori_euler)
-world_mocapLimb_Ori_euler_continuous = continuous_euler(world_mocapLimb_Ori_euler)
-world_RigidBody_Ori_euler_continuous = continuous_euler(world_RigidBody_Ori_euler)
+    #world_VanyteLimb_Ori_euler_continuous = continuous_euler(world_VanyteLimb_Ori_euler)
+    world_mocapLimb_Ori_euler_continuous = continuous_euler(world_mocapLimb_Ori_euler)
+    world_RigidBody_Ori_euler_continuous = continuous_euler(world_RigidBody_Ori_euler)
 
-figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,0], mode='lines', name='world_Vanyte_Body_ori_roll_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,1], mode='lines', name='world_Vanyte_Body_ori_pitch_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,2], mode='lines', name='world_Vanyte_Body_ori_yaw_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,0], mode='lines', name='world_Vanyte_Body_ori_roll_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,1], mode='lines', name='world_Vanyte_Body_ori_pitch_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,2], mode='lines', name='world_Vanyte_Body_ori_yaw_realigned'))
 
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw_realigned'))
 
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_ori_roll_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_ori_pitch_realigned'))
-figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_ori_roll_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_ori_pitch_realigned'))
+    figOrientations_realigned.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw_realigned'))
 
-figOrientations_realigned.update_layout(title="Realigned orientations")
+    figOrientations_realigned.update_layout(title="Realigned orientations")
 
-# Show the plotly figures
-figOrientations_realigned.show()
+    # Show the plotly figures
+    figOrientations_realigned.show()
 
 
 
@@ -409,48 +426,49 @@ figOrientations_realigned.show()
 #####################  Orientation and position difference wrt the initial frame  #####################
 
 
-world_mocapLimb_pos_transfo = world_mocapLimb_Ori_R[0].apply(world_mocapLimb_Pos - world_mocapLimb_Pos[0], inverse=True)
-world_VanyteLimb_pos_transfo = world_VanyteLimb_Ori_R[0].apply(world_VanyteLimb_Pos - world_VanyteLimb_Pos[0], inverse=True)
+if(displayLogs):
+    world_mocapLimb_pos_transfo = world_mocapLimb_Ori_R[0].apply(world_mocapLimb_Pos - world_mocapLimb_Pos[0], inverse=True)
+    world_VanyteLimb_pos_transfo = world_VanyteLimb_Ori_R[0].apply(world_VanyteLimb_Pos - world_VanyteLimb_Pos[0], inverse=True)
 
-world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R * world_mocapLimb_Ori_R[0].inv()
-world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R * world_RigidBody_Ori_R[0].inv()
-world_VanyteLimb_Ori_R_transfo = world_VanyteLimb_Ori_R * world_VanyteLimb_Ori_R[0].inv()
+    world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R * world_mocapLimb_Ori_R[0].inv()
+    world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R * world_RigidBody_Ori_R[0].inv()
+    world_VanyteLimb_Ori_R_transfo = world_VanyteLimb_Ori_R * world_VanyteLimb_Ori_R[0].inv()
 
-world_mocapLimb_Ori_transfo_euler = world_mocapLimb_Ori_R_transfo.as_euler("xyz")
-world_RigidBody_Ori_transfo_euler = world_RigidBody_Ori_R_transfo.as_euler("xyz")
-world_VanyteLimb_Ori_transfo_euler = world_VanyteLimb_Ori_R_transfo.as_euler("xyz")
+    world_mocapLimb_Ori_transfo_euler = world_mocapLimb_Ori_R_transfo.as_euler("xyz")
+    world_RigidBody_Ori_transfo_euler = world_RigidBody_Ori_R_transfo.as_euler("xyz")
+    world_VanyteLimb_Ori_transfo_euler = world_VanyteLimb_Ori_R_transfo.as_euler("xyz")
 
-world_mocapLimb_Ori_transfo_euler_continuous = continuous_euler(world_mocapLimb_Ori_transfo_euler)
-world_RigidBody_Ori_transfo_euler_continuous = continuous_euler(world_RigidBody_Ori_transfo_euler)
-world_VanyteLimb_Ori_transfo_euler_continuous = continuous_euler(world_VanyteLimb_Ori_transfo_euler)
+    world_mocapLimb_Ori_transfo_euler_continuous = continuous_euler(world_mocapLimb_Ori_transfo_euler)
+    world_RigidBody_Ori_transfo_euler_continuous = continuous_euler(world_RigidBody_Ori_transfo_euler)
+    world_VanyteLimb_Ori_transfo_euler_continuous = continuous_euler(world_VanyteLimb_Ori_transfo_euler)
 
-figTransfo = go.Figure()
+    figTransfo = go.Figure()
 
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_transfo_roll'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_transfo_pitch'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_transfo_yaw'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_transfo_roll'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_transfo_pitch'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_transfo_yaw'))
 
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_RigidBody_Ori_transfo_roll'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_RigidBody_Ori_transfo_pitch'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_RigidBody_Ori_transfo_yaw'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_RigidBody_Ori_transfo_roll'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_RigidBody_Ori_transfo_pitch'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_RigidBody_Ori_transfo_yaw'))
 
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_VanyteLimb_Ori_transfo_roll'))
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_VanyteLimb_Ori_transfo_pitch'))
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_VanyteLimb_Ori_transfo_yaw'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_VanyteLimb_Ori_transfo_roll'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_VanyteLimb_Ori_transfo_pitch'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_VanyteLimb_Ori_transfo_yaw'))
 
 
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,0], mode='lines', name='world_mocapLimb_pos_transfo_x'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,1], mode='lines', name='world_mocapLimb_pos_transfo_y'))
-figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,2], mode='lines', name='world_mocapLimb_pos_transfo_z'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,0], mode='lines', name='world_mocapLimb_pos_transfo_x'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,1], mode='lines', name='world_mocapLimb_pos_transfo_y'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,2], mode='lines', name='world_mocapLimb_pos_transfo_z'))
 
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,0], mode='lines', name='world_VanyteLimb_pos_transfo_x'))
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,1], mode='lines', name='world_VanyteLimb_pos_transfo_y'))
-figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,2], mode='lines', name='world_VanyteLimb_pos_transfo_z'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,0], mode='lines', name='world_VanyteLimb_pos_transfo_x'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,1], mode='lines', name='world_VanyteLimb_pos_transfo_y'))
+    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_pos_transfo[:,2], mode='lines', name='world_VanyteLimb_pos_transfo_z'))
 
-figTransfo.update_layout(title="Orientation transformations")
+    figTransfo.update_layout(title="Orientation transformations")
 
-# Show the plotly figures
-figTransfo.show()
+    # Show the plotly figures
+    figTransfo.show()
 
 
 
@@ -460,9 +478,14 @@ output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_
 
 
 # Save the DataFrame to a new CSV file
-save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
+if(len(sys.argv) > 3):
+    save_csv = sys.argv[3].lower()
+else:
+    save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
+    save_csv = save_csv.lower()
 
-if save_csv.lower() == 'y':
+
+if save_csv == 'y':
     output_df.to_csv(output_csv_file_path, index=False)
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
