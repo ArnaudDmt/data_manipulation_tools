@@ -184,14 +184,14 @@ if(displayLogs):
     new_world_mocapLimb_Ori_euler = new_world_mocapLimb_Ori_R.as_euler("xyz")
     world_VanyteLimb_Ori_euler = world_VanyteLimb_Ori_R.as_euler("xyz")
 
-    world_mocapLimb_Ori_euler_continuous = continuous_euler(world_mocapLimb_Ori_euler)
+    new_world_mocapLimb_Ori_euler_continuous = continuous_euler(new_world_mocapLimb_Ori_euler)
     world_VanyteLimb_Ori_euler_continuous = continuous_euler(world_VanyteLimb_Ori_euler)
 
     figNewPose = go.Figure()
 
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw'))
+    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_mocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_mocapLimb_Ori_roll'))
+    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_mocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_mocapLimb_Ori_pitch'))
+    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_mocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_mocapLimb_Ori_yaw'))
 
     figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,0], mode='lines', name='world_VanyteLimb_Ori_roll'))
     figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_VanyteLimb_Ori_euler_continuous[:,1], mode='lines', name='world_VanyteLimb_Ori_pitch'))
@@ -255,9 +255,9 @@ if(displayLogs):
 
 new_world_mocapLimb_Ori_quat = new_world_mocapLimb_Ori_R.as_quat()
 
-mocapData['worldMocapLimbPos_x'] = world_mocapLimb_Pos[:,0]
-mocapData['worldMocapLimbPos_y'] = world_mocapLimb_Pos[:,1]
-mocapData['worldMocapLimbPos_z'] = world_mocapLimb_Pos[:,2]
+mocapData['worldMocapLimbPos_x'] = new_world_mocapLimb_Pos[:,0]
+mocapData['worldMocapLimbPos_y'] = new_world_mocapLimb_Pos[:,1]
+mocapData['worldMocapLimbPos_z'] = new_world_mocapLimb_Pos[:,2]
 mocapData['worldMocapLimbOri_qx'] = new_world_mocapLimb_Ori_quat[:,0]
 mocapData['worldMocapLimbOri_qy'] = new_world_mocapLimb_Ori_quat[:,1]
 mocapData['worldMocapLimbOri_qz'] = new_world_mocapLimb_Ori_quat[:,2]
