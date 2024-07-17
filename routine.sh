@@ -3,7 +3,11 @@
 cwd=$(pwd)
 
 
-mocapLog="mocapData.csv"
+rawDataPath="raw_data"
+outputDataPath="output_data"
+scriptsPath="scripts"
+
+mocapLog="$rawDataPath/mocapData.csv"
 if [ -f "$mocapLog" ]; then
     echo "The log file of the mocap was found."
 else
@@ -11,7 +15,7 @@ else
     exit
 fi
 
-logReplayCSV="logReplay.csv"
+logReplayCSV="$outputDataPath/logReplay.csv"
 if [ -f "$logReplayCSV" ]; then
     if [[ $(ag "mocap_worldBodyKine" $logReplayCSV) ]]; then
         echo "The csv file of the replay with the observers has been found."
@@ -20,12 +24,12 @@ if [ -f "$logReplayCSV" ]; then
         exit
 fi
 else
-    logReplayBin="logReplay.bin"
+    logReplayBin="$outputDataPath/logReplay.bin"
     if [ -f "$logReplayBin" ]; then
         echo "The bin file of the replay with the observers has been found. Converting to csv."
         mc_bin_to_log $logReplayBin
     else
-        mcrtcLog="controllerLog.bin"
+        mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found."
             yamlFile="$HOME/.config/mc_rtc/controllers/Passthrough.yaml"
@@ -44,8 +48,8 @@ else
             mc_rtc_ticker --replay-outputs -e -l $mcrtcLog
             cd /tmp/
             LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep ".bin" | tail -1)
-            mv $LOG $cwd/logReplay.bin
-            mc_bin_to_log logReplay.bin
+            mv $LOG $logReplayBin
+            mc_bin_to_log $logReplayBin
         else
             echo "The log file of the controller does not exist or is not named as expected. Expected: $mcrtcLog."
             exit
@@ -53,7 +57,7 @@ else
     fi
 fi
 
-logReplayCSV="logReplay.csv"
+logReplayCSV="$outputDataPath/logReplay.csv"
 
 # Prompt the user for input
 echo "Please enter the timestep of the controller in milliseconds: "
@@ -71,7 +75,7 @@ else
     echo "Resampling of the mocap's signal completed."
 fi
 
-lightData="lightData.csv"
+lightData="$outputDataPath/lightData.csv"
 if [ -f "$lightData" ]; then
     echo "The light version of the observer's data has already been extracted. Using the existing data."
 else
@@ -80,7 +84,7 @@ else
     echo "Extraction of the light version of the observer's data completed."
 fi
 
-realignedMocapLimbData="realignedMocapLimbData.csv"
+realignedMocapLimbData="$outputDataPath/realignedMocapLimbData.csv"
 if [ -f "$realignedMocapLimbData" ]; then
     echo "The temporally aligned version of the mocap's data already exists. Using the existing data."
 else
@@ -89,7 +93,7 @@ else
     echo "Temporal alignement of the mocap's data with the observer's data completed."
 fi
 
-resultMocapLimbData="resultMocapLimbData.csv"
+resultMocapLimbData="$outputDataPath/resultMocapLimbData.csv"
 if [ -f "$resultMocapLimbData" ]; then
     echo "The mocap's data has already been completely treated. Using the existing data."
 else
@@ -103,7 +107,7 @@ fi
 echo "Do you want to replay the log with the obtained mocap's data?"
 select replayWithMocap in "Yes" "No"; do
     case $replayWithMocap in
-        Yes ) mcrtcLog="controllerLog.bin"; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $yamlFile; mc_rtc_ticker --replay-outputs -e -l $mcrtcLog; break;;
+        Yes ) mcrtcLog="$rawDataPath/controllerLog.bin"; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $yamlFile; mc_rtc_ticker --replay-outputs -e -l $mcrtcLog; break;;
         No ) exit;;
     esac
 done
