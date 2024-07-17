@@ -3,6 +3,24 @@
 set -e
 
 
+
+
+# files of the resulting data after each step
+resampledMocapData="$outputDataPath/resampledMocapData.csv"
+lightData="$outputDataPath/lightData.csv"
+realignedMocapLimbData="$outputDataPath/realignedMocapLimbData.csv"
+resultMocapLimbData="$outputDataPath/resultMocapLimbData.csv"
+
+
+if [ ! -f "$realignedMocapLimbData" ]; then
+    # Prompt the user for input
+    echo "Please enter the timestep of the controller in milliseconds. This must match the timestep set in ".config/mc_rtc/controllers/Passthrough.yaml": "
+    read timeStep
+fi
+
+
+
+
 cwd=$(pwd)
 
 
@@ -61,18 +79,7 @@ fi
 
 cd $cwd
 
-# Prompt the user for input
-echo "Please enter the timestep of the controller in milliseconds: "
-read timeStep
 
-echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
-read matchTime
-
-# 
-resampledMocapData="$outputDataPath/resampledMocapData.csv"
-lightData="$outputDataPath/lightData.csv"
-realignedMocapLimbData="$outputDataPath/realignedMocapLimbData.csv"
-resultMocapLimbData="$outputDataPath/resultMocapLimbData.csv"
 
 
 
@@ -118,7 +125,9 @@ cd $cwd
 if [ -f "$resultMocapLimbData" ]; then
     echo "The mocap's data has already been completely treated. Using the existing data."
 else
-    echo "Matching the pose of the mocap with the pose of the observer at $matchTime seconds."
+    # Prompt the user for input
+    echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
+    read matchTime
     cd $cwd/$scriptsPath
     python matchInitPose.py "$matchTime" "False" "y"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
