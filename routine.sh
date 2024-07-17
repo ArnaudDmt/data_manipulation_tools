@@ -57,6 +57,53 @@ logReplayCSV="logReplay.csv"
 
 # Prompt the user for input
 echo "Please enter the timestep of the controller in milliseconds: "
-
 read timeStep
-python resampleAndExtract_fromMocap.py "$timeStep"
+
+echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
+read matchTime
+
+resampledMocapData="resampledMocapData.csv"
+if [ -f "$resampledMocapData" ]; then
+    echo "The mocap's data has already been resampled. Using the existing data."
+else
+    echo "Starting the resampling of the mocap's signal."
+    python resampleAndExtract_fromMocap.py "$timeStep" "False" "y"
+    echo "Resampling of the mocap's signal completed."
+fi
+
+lightData="lightData.csv"
+if [ -f "$lightData" ]; then
+    echo "The light version of the observer's data has already been extracted. Using the existing data."
+else
+    echo "Starting the extraction of the light version of the observer's data."
+    python extractLightReplayVersion.py
+    echo "Extraction of the light version of the observer's data completed."
+fi
+
+realignedMocapLimbData="realignedMocapLimbData.csv"
+if [ -f "$realignedMocapLimbData" ]; then
+    echo "The temporally aligned version of the mocap's data already exists. Using the existing data."
+else
+    echo "Starting the cross correlation for temporal data alignement."
+    python crossCorrelation.py "$timeStep" "False" "y"
+    echo "Temporal alignement of the mocap's data with the observer's data completed."
+fi
+
+resultMocapLimbData="resultMocapLimbData.csv"
+if [ -f "$resultMocapLimbData" ]; then
+    echo "The mocap's data has already been completely treated. Using the existing data."
+else
+    echo "Matching the pose of the mocap with the pose of the observer at $matchTime seconds."
+    python matchInitPose.py "$matchTime" "False" "y"
+    echo "Matching of the pose of the mocap with the pose of the observer completed."
+fi
+
+
+
+echo "Do you want to replay the log with the obtained mocap's data?"
+select replayWithMocap in "Yes" "No"; do
+    case $replayWithMocap in
+        Yes ) mcrtcLog="controllerLog.bin"; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $yamlFile; mc_rtc_ticker --replay-outputs -e -l $mcrtcLog; break;;
+        No ) exit;;
+    esac
+done
