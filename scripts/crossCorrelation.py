@@ -11,7 +11,7 @@ from scipy.spatial.transform import Rotation as R
 
 ###############################  Main variables initialization  ###############################
 
-output_csv_file_path = 'realignedMocapLimbData.csv'
+output_csv_file_path = '../output_data/realignedMocapLimbData.csv'
 displayLogs = True
 
 
@@ -63,8 +63,8 @@ def continuous_euler(angles):
 
 
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv('lightData.csv')
-mocapData = pd.read_csv('resampledMocapData.csv', delimiter=',')
+observer_data = pd.read_csv('../output_data/lightData.csv')
+mocapData = pd.read_csv('../output_data/resampledMocapData.csv', delimiter=',')
 
 ###############################  Poses retrieval  ###############################
 

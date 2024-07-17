@@ -10,11 +10,11 @@ import plotly.graph_objects as go
 ###############################  Main variables initialization  ###############################
 
 
-output_csv_file_path = 'resultMocapLimbData.csv'
+output_csv_file_path = '../output_data/resultMocapLimbData.csv'
 
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv('lightData.csv')
-mocapData = pd.read_csv('realignedMocapLimbData.csv', delimiter=',')
+observer_data = pd.read_csv('../output_data/lightData.csv')
+mocapData = pd.read_csv('../output_data/realignedMocapLimbData.csv', delimiter=',')
 averageInterval = 10
 displayLogs = True
 matchTime = 0

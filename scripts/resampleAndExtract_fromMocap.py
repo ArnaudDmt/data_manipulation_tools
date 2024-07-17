@@ -17,8 +17,8 @@ import sys
 
 ###############################  Main variables initialization  ###############################
 
-csv_file_path = 'mocapData.csv'
-output_csv_file_path = 'resampledMocapData.csv'
+csv_file_path = '../raw_data/mocapData.csv'
+output_csv_file_path = '../output_data/resampledMocapData.csv'
 # Define a list of patterns you want to match
 pattern1 = ['Time(Seconds)','Marker1', 'Marker2', 'Marker3']  # Add more patterns as needed
 pattern2 = r'RigidBody(?!.*Marker)'

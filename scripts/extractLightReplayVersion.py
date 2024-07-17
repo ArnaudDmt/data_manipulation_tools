@@ -4,7 +4,8 @@ import pandas as pd
 # Define a list of patterns you want to match
 partial_pattern = ['Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase', 'Observers_MainObserverPipeline_MCVanytEstimator_mocap', 'Observers_MainObserverPipeline_MocapVisualizer_mocap_bodyFbPose']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
-output_csv_file_path = 'lightData.csv'
+input_csv_file_path = '../output_data/logReplay.csv'
+output_csv_file_path = '../output_data/lightData.csv'
 
 # Filter columns based on the predefined patterns
 def filterColumns(dataframe, partial_pattern, exact_patterns):
@@ -16,7 +17,7 @@ def filterColumns(dataframe, partial_pattern, exact_patterns):
     return filtered_columns
 
 # Load the CSV files into pandas dataframes
-replayData = pd.read_csv('logReplay.csv', delimiter=';')
+replayData = pd.read_csv('../output_data/logReplay.csv', delimiter=';')
 light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
 replayData_light = replayData[light_columns].copy()
 
