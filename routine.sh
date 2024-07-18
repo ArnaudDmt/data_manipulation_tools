@@ -19,8 +19,6 @@ if [ ! -f "$realignedMocapLimbData" ]; then
 fi
 
 
-
-
 cwd=$(pwd)
 
 
@@ -56,9 +54,35 @@ else
         mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found. Replaying the log with the observer."
-            if ! ag -i "MocapVisualizer" $yamlFile || ! ag -i "firstRun:" $yamlFile || ! ag -i "bodyName:" $yamlFile; then
+            
+            pluginConfPath="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
+            if [ ! -f "$pluginConfPath" ]; then
+                mkdir -p $HOME/.config/mc_rtc/plugins 
+                touch $pluginConfPath
+            fi
+            if ! grep -v '^#' $pluginConfPath | grep -q "bodyName"; then
+                echo "Please give the name of the body the mocap markers are set on: "
+                read bodyName
+                if [ -s $pluginConfPath ]; then
+                    awk -i inplace -v name="$bodyName" 'FNR==1 {print "bodyName:", name}1' $pluginConfPath
+                else
+                    echo "bodyName: $bodyName" > $pluginConfPath
+                fi
+            fi
+            pluginActivated=true
+            if ! grep -v '^#' $HOME/.config/mc_rtc/mc_rtc.yaml | grep -q "MocapAligner"; then
+                pluginActivated=false
+                echo "The plugin MocapAligner was not activated. Activating it for the replay."
+                if [ -s $HOME/.config/mc_rtc/mc_rtc.yaml ]; then
+                    awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $HOME/.config/mc_rtc/mc_rtc.yaml
+                else
+                    echo "Plugins: [MocapAligner]" > $HOME/.config/mc_rtc/mc_rtc.yaml
+                fi
+            fi
+
+            if ! ag -i "MocapVisualizer" $yamlFile || ! ag -i "firstRun:" $yamlFile; then
                 # Execute your action here if both patterns are found
-                echo "Please add the MocapVisualizer observer to the list of the observers and check that the configuration firstRun exists, and that the name of the body is passed to the MCVanytEstimator under the category mocap/bodyName"
+                echo "Please add the MocapVisualizer observer to the list of the observers and check that the configuration firstRun exists"
                 exit
             fi
             sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"true"/" $yamlFile
