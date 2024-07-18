@@ -4,6 +4,12 @@ set -e
 
 
 
+cwd=$(pwd)
+
+
+rawDataPath="raw_data"
+outputDataPath="output_data"
+scriptsPath="scripts"
 
 # files of the resulting data after each step
 resampledMocapData="$outputDataPath/resampledMocapData.csv"
@@ -12,19 +18,13 @@ realignedMocapLimbData="$outputDataPath/realignedMocapLimbData.csv"
 resultMocapLimbData="$outputDataPath/resultMocapLimbData.csv"
 
 
+
+
 if [ ! -f "$realignedMocapLimbData" ]; then
     # Prompt the user for input
     echo "Please enter the timestep of the controller in milliseconds. This must match the timestep set in ".config/mc_rtc/controllers/Passthrough.yaml": "
     read timeStep
 fi
-
-
-cwd=$(pwd)
-
-
-rawDataPath="raw_data"
-outputDataPath="output_data"
-scriptsPath="scripts"
 
 yamlFile="$HOME/.config/mc_rtc/controllers/Passthrough.yaml"
 if [ ! -f "$yamlFile" ]; then
@@ -158,6 +158,14 @@ else
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 echo 
+
+echo "Do you want to match the pose of the mocap and of the observer at a different timing?"
+select changeMatchTime in "Yes" "No"; do
+    case $changeMatchTime in
+        Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "False" "y"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
+        No ) exit;;
+    esac
+done
 
 cd $cwd
 
