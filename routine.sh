@@ -64,7 +64,8 @@ else
             sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"true"/" $yamlFile
             mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
             cd /tmp/
-            LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep ".bin" | tail -1)
+            LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
+            echo "Copying the replay's bin file ($LOG) to the output_data folder"
             mv $LOG $cwd/$logReplayBin
             cd $cwd/$outputDataPath
             mc_bin_to_log logReplay.bin
