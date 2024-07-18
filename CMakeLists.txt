@@ -29,6 +29,11 @@ set(plugin_HDR mc_rtc_plugin/src/MocapAligner.h)
 # The add_plugin macro is provided by mc_rtc
 add_plugin(MocapAligner "${plugin_SRC}" "${plugin_HDR}")
 
+find_package(mc_state_observation REQUIRED)
+target_link_libraries(
+  ${PROJECT_NAME} PUBLIC mc_state_observation::mc_state_observation
+)
+
 if(BUILD_TESTING)
   add_subdirectory(mc_rtc_plugin/tests)
 endif()
