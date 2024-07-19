@@ -69,9 +69,9 @@ else
                     echo "bodyName: $bodyName" > $pluginConfPath
                 fi
             fi
-            pluginActivated=true
+            pluginWasActivated=true
             if ! grep -v '^#' $HOME/.config/mc_rtc/mc_rtc.yaml | grep -q "MocapAligner"; then
-                pluginActivated=false
+                pluginWasActivated=false
                 echo "The plugin MocapAligner was not activated. Activating it for the replay."
                 if [ -s $HOME/.config/mc_rtc/mc_rtc.yaml ]; then
                     awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $HOME/.config/mc_rtc/mc_rtc.yaml
@@ -94,6 +94,11 @@ else
             cd $cwd/$outputDataPath
             mc_bin_to_log logReplay.bin
             cd $cwd
+
+            if ! pluginWasActivated; then
+                sed -i '1d' $HOME/.config/mc_rtc/mc_rtc.yaml
+            fi
+
         else
             echo "The log file of the controller does not exist or is not named as expected. Expected: $mcrtcLog."
             exit
@@ -148,8 +153,15 @@ cd $cwd
 
 
 if [ -f "$resultMocapLimbData" ]; then
-    echo "The mocap's data has already been completely treated. Using the existing data."
-else
+    echo "The mocap's data has already been completely treated."
+    echo "Do you want to match the pose of the mocap and of the observer at a different timing?"
+    select changeMatchTime in "Yes" "No"; do
+        case $changeMatchTime in
+            Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "False" "y"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
+            No ) break;;
+        esac
+    done
+    else
     # Prompt the user for input
     echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
     read matchTime
@@ -159,16 +171,8 @@ else
 fi
 echo 
 
-echo "Do you want to match the pose of the mocap and of the observer at a different timing?"
-select changeMatchTime in "Yes" "No"; do
-    case $changeMatchTime in
-        Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "False" "y"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
-        No ) exit;;
-    esac
-done
 
 cd $cwd
-
 
 echo "Do you want to replay the log with the obtained mocap's data?"
 select replayWithMocap in "Yes" "No"; do
