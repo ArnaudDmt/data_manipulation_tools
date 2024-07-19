@@ -337,6 +337,13 @@ def realignData(data_to_shift,  shift):
         # Removing last diffIndexFinal rows
         data_shifted = data_shifted.iloc[:diffIndexFinal]
 
+    overlapIndex = []
+    for i in range(len(data_shifted)):
+        if(i > diffIndexInit and i < len(data_shifted) + diffIndexFinal):
+            overlapIndex.append(1)
+        else:
+            overlapIndex.append(0)
+
     if(displayLogs):
         figAlignedIndexes = go.Figure()
 
@@ -350,6 +357,7 @@ def realignData(data_to_shift,  shift):
         figAlignedIndexes.show()
 
     data_shifted['Time(Seconds)'] = observer_data["t"]
+    data_shifted['overlapTime'] = overlapIndex
 
     return data_shifted
 
@@ -473,8 +481,7 @@ if(displayLogs):
 
 
 world_mocapLimb_Ori_quat = world_mocapLimb_Ori_R.as_quat()
-output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'worldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'worldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'worldMocapLimbOri_qx': world_mocapLimb_Ori_quat[:,0], 'worldMocapLimbOri_qy': world_mocapLimb_Ori_quat[:,1], 'worldMocapLimbOri_qz': world_mocapLimb_Ori_quat[:,2], 'worldMocapLimbOri_qw': world_mocapLimb_Ori_quat[:,3]})
-
+output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'worldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'worldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'worldMocapLimbOri_qx': world_mocapLimb_Ori_quat[:,0], 'worldMocapLimbOri_qy': world_mocapLimb_Ori_quat[:,1], 'worldMocapLimbOri_qz': world_mocapLimb_Ori_quat[:,2], 'worldMocapLimbOri_qw': world_mocapLimb_Ori_quat[:,3], 'overlapTime': realignedMocapData['overlapTime']})
 
 
 # Save the DataFrame to a new CSV file
