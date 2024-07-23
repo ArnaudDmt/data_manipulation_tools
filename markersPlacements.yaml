@@ -1,9 +1,5 @@
-EnabledBody: HEAD_P_LINK
-EnabledRobot: RHPS1_sake2_sake2
-#EnabledRobot: RHPS1_sake2_sake2
-#EnabledRobot: HRP5P
-#EnabledBody: BODY
-
+EnabledBody:
+EnabledRobot:
 
 robots:
   - name: HRP5P
@@ -11,8 +7,8 @@ robots:
       - name: BODY
         markers:
           - Marker1: {x: 148.5, y: 0, z: 142.3}
-          - Marker2: {x: -177.4, y: 112.0, z: 217.0}
-          - Marker3: {x: -179.7, y: -109.0, z: 215.7}
+          - Marker2: {x: -174.1, y: 116.5, z: 138.1}
+          - Marker3: {x: -174.0, y: -116.5, z: 139.4}
   - name: RHPS1_sake2_sake2
     bodies:
       - name: HEAD_P_LINK

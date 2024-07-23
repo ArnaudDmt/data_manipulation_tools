@@ -34,15 +34,14 @@ if(len(sys.argv) > 1):
 else:
     timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
-# Convert the input to a double
 try:
-    if(int(timeStepInput) == 0):
-        timeStep_s = float(timeStepInput)
-        timeStep_ms = int(timeStep_s*1000.0)
-    else:
+    # Check if the timestep was given in milliseconds
+    if(timeStepInput.isdigit()):
         timeStep_ms = int(timeStepInput)
         timeStep_s = float(timeStep_ms)/1000.0
-    
+    else:
+        timeStep_s = float(timeStepInput)
+        timeStep_ms = int(timeStep_s*1000.0)
     resample_str = f'{timeStep_ms}ms'
     print(f"Resampling the MoCap data at {timeStep_ms} ms")
 except ValueError:

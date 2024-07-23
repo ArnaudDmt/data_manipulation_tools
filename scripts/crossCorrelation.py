@@ -27,13 +27,18 @@ if(len(sys.argv) > 1):
 else:
     timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
-# Convert the input to a double
 try:
-    timeStepInt = int(timeStepInput)
-    timeStepFloat = float(timeStepInput)/1000.0
-    resample_str = f'{timeStepInt}ms'
+    # Check if the timestep was given in milliseconds
+    if(timeStepInput.isdigit()):
+        timeStep_ms = int(timeStepInput)
+        timeStep_s = float(timeStep_ms)/1000.0
+    else:
+        timeStep_s = float(timeStepInput)
+        timeStep_ms = int(timeStep_s*1000.0)
+    resample_str = f'{timeStep_ms}ms'
+    print(f"Resampling the MoCap data at {timeStep_ms} ms")
 except ValueError:
-    print("That's not a valid int!")
+    print(f"The input timestep is not valid: {timeStepInput}")
 
 
 
@@ -143,27 +148,27 @@ if(displayLogs):
 ###############################  Local linear velocity of the mocapLimb in the world  ###############################
 
 # We compute the velocity of the mocapLimb in the world
-world_mocapLimb_Vel_x = np.diff(world_mocapLimb_Pos[:,0])/timeStepFloat
-world_mocapLimb_Vel_y = np.diff(world_mocapLimb_Pos[:,1])/timeStepFloat
-world_mocapLimb_Vel_z = np.diff(world_mocapLimb_Pos[:,2])/timeStepFloat
+world_mocapLimb_Vel_x = np.diff(world_mocapLimb_Pos[:,0])/timeStep_s
+world_mocapLimb_Vel_y = np.diff(world_mocapLimb_Pos[:,1])/timeStep_s
+world_mocapLimb_Vel_z = np.diff(world_mocapLimb_Pos[:,2])/timeStep_s
 world_mocapLimb_Vel_x = np.insert(world_mocapLimb_Vel_x, 0, 0.0, axis=0)
 world_mocapLimb_Vel_y = np.insert(world_mocapLimb_Vel_y, 0, 0.0, axis=0)
 world_mocapLimb_Vel_z = np.insert(world_mocapLimb_Vel_z, 0, 0.0, axis=0)
 world_mocapLimb_Vel = np.stack((world_mocapLimb_Vel_x, world_mocapLimb_Vel_y, world_mocapLimb_Vel_z), axis = 1)
 
 # We compute the velocity of the mocap's rigid body in the world
-world_RigidBody_Vel_x = np.diff(world_mocapRigidBody_Pos[:,0])/timeStepFloat
-world_RigidBody_Vel_y = np.diff(world_mocapRigidBody_Pos[:,1])/timeStepFloat
-world_RigidBody_Vel_z = np.diff(world_mocapRigidBody_Pos[:,2])/timeStepFloat
+world_RigidBody_Vel_x = np.diff(world_mocapRigidBody_Pos[:,0])/timeStep_s
+world_RigidBody_Vel_y = np.diff(world_mocapRigidBody_Pos[:,1])/timeStep_s
+world_RigidBody_Vel_z = np.diff(world_mocapRigidBody_Pos[:,2])/timeStep_s
 world_RigidBody_Vel_x = np.insert(world_RigidBody_Vel_x, 0, 0.0, axis=0)
 world_RigidBody_Vel_y = np.insert(world_RigidBody_Vel_y, 0, 0.0, axis=0)
 world_RigidBody_Vel_z = np.insert(world_RigidBody_Vel_z, 0, 0.0, axis=0)
 world_RigidBody_Vel = np.stack((world_RigidBody_Vel_x, world_RigidBody_Vel_y, world_RigidBody_Vel_z), axis = 1)
 
 # We compute the velocity estimated by the Observer in the world
-world_ObserverLimb_Vel_x = np.diff(world_ObserverLimb_Pos[:,0])/timeStepFloat
-world_ObserverLimb_Vel_y = np.diff(world_ObserverLimb_Pos[:,1])/timeStepFloat
-world_ObserverLimb_Vel_z = np.diff(world_ObserverLimb_Pos[:,2])/timeStepFloat
+world_ObserverLimb_Vel_x = np.diff(world_ObserverLimb_Pos[:,0])/timeStep_s
+world_ObserverLimb_Vel_y = np.diff(world_ObserverLimb_Pos[:,1])/timeStep_s
+world_ObserverLimb_Vel_z = np.diff(world_ObserverLimb_Pos[:,2])/timeStep_s
 world_ObserverLimb_Vel_x = np.insert(world_ObserverLimb_Vel_x, 0, 0.0, axis=0)
 world_ObserverLimb_Vel_y = np.insert(world_ObserverLimb_Vel_y, 0, 0.0, axis=0)
 world_ObserverLimb_Vel_z = np.insert(world_ObserverLimb_Vel_z, 0, 0.0, axis=0)
