@@ -1,0 +1,27 @@
+EnabledBody: HEAD_P_LINK
+EnabledRobot: RHPS1_sake2_sake2
+#EnabledRobot: RHPS1_sake2_sake2
+#EnabledRobot: HRP5P
+#EnabledBody: BODY
+
+
+robots:
+  - name: HRP5P
+    bodies:
+      - name: BODY
+        markers:
+          - Marker1: {x: 148.5, y: 0, z: 142.3}
+          - Marker2: {x: -177.4, y: 112.0, z: 217.0}
+          - Marker3: {x: -179.7, y: -109.0, z: 215.7}
+  - name: RHPS1_sake2_sake2
+    bodies:
+      - name: HEAD_P_LINK
+        markers:
+          - Marker1: {x: -114.6, y: 1.4, z: 191.3}
+          - Marker2: {x: 95.2, y: -49.9, z: 202.6}
+          - Marker3: {x: 46.6, y: 71.1, z: 4.9}
+      - name: BODY
+        markers:
+          - Marker1: {x: -109.9, y: 98.3, z: 34.5}
+          - Marker2: {x: -110.5, y: -98.7, z: 33.4}
+          - Marker3: {x: 49.0, y: 98.8, z: 6.5}

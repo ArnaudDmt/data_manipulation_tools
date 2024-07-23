@@ -11,6 +11,8 @@ from scipy.spatial.transform import Rotation as R
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib.patches import FancyArrowPatch
 
+import yaml
+
 import sys
 
 
@@ -22,34 +24,85 @@ output_csv_file_path = '../output_data/resampledMocapData.csv'
 # Define a list of patterns you want to match
 pattern1 = ['Time(Seconds)','Marker1', 'Marker2', 'Marker3']  # Add more patterns as needed
 pattern2 = r'RigidBody(?!.*Marker)'
-# Position of the markers in the mocapLimb frame
-mocapLimb_P1_Pos = np.array([-114.6, 1.4, 191.3])
-mocapLimb_P2_Pos = np.array([95.2, -49.9, 202.6])
-mocapLimb_P3_Pos = np.array([46.6, 71.1, 4.9])
+
 displayLogs = True
-
-
-
-
-###############################  User inputs  ###############################
-
 
 if(len(sys.argv) > 1):
     timeStepInput = sys.argv[1]
     if(len(sys.argv) > 2):
         displayLogs = sys.argv[2].lower() == 'true'
-
 else:
     timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
 # Convert the input to a double
 try:
-    timeStepInt = int(timeStepInput)
-    timeStepFloat = float(timeStepInput)*1000.0
-    resample_str = f'{timeStepInt}ms'
-    print(f"Resampling the MoCap data at {timeStepInt} ms")
+    if(int(timeStepInput) == 0):
+        timeStep_s = float(timeStepInput)
+        timeStep_ms = int(timeStep_s*1000.0)
+    else:
+        timeStep_ms = int(timeStepInput)
+        timeStep_s = float(timeStep_ms)/1000.0
+    
+    resample_str = f'{timeStep_ms}ms'
+    print(f"Resampling the MoCap data at {timeStep_ms} ms")
 except ValueError:
-    print("That's not a valid int!")
+    print(f"The input timestep is not valid: {timeStepInput}")
+
+
+
+
+###############################  Configuration reading  ###############################
+
+def get_markers(robot_name, body_name):
+    # Iterate over the robots
+    for robot in yamlData['robots']:
+        # If the robot name matches
+        if robot['name'] == robot_name:
+            # Iterate over the bodies of the robot
+            for body in robot['bodies']:
+                # If the body name matches
+                if body['name'] == body_name:
+                    # Return the markers
+                    markers = body['markers']
+                    marker1 = markers[0]['Marker1']
+                    marker2 = markers[1]['Marker2']
+                    marker3 = markers[2]['Marker3']
+                    marker1_pos = np.array([marker1['x'], marker1['y'], marker1['z']]) / 1000.0
+                    marker2_pos = np.array([marker2['x'], marker2['y'], marker2['z']]) / 1000.0
+                    marker3_pos = np.array([marker3['x'], marker3['y'], marker3['z']]) / 1000.0
+                    return marker1_pos, marker2_pos, marker3_pos
+
+    # If no matching robot and body were found, return None
+    print("The pair robot / body given in the file markersPlacements.yaml doesn't have marker positions. Please give a valid pair.")
+    sys.exit()
+
+with open('../markersPlacements.yaml', 'r') as file:
+    try:
+        yaml_string = file.read()
+        yamlData = yaml.safe_load(yaml_string)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# Get the value of EnabledRobot and EnabledBody
+enabled_robot = yamlData.get('EnabledRobot')
+enabled_body = yamlData.get('EnabledBody')
+
+# Check if EnabledRobot exists and is uncommented
+if enabled_robot is not None:
+    print(f"EnabledRobot: {enabled_robot}")
+else:
+    print("EnabledRobot does not exist or is commented out.")
+    enabled_robot = input("Please enter the name of the robot: ")
+
+# Check if EnabledBody exists and is uncommented
+if enabled_body is not None:
+    print(f"EnabledBody: {enabled_body}")
+else:
+    print("EnabledBody does not exist or is commented out.")
+    enabled_body = input("Please enter the name of the limb: ")
+
+# Get the markers and print them
+marker1_pos, marker2_pos, marker3_pos = get_markers(enabled_robot, enabled_body)
 
 
 
@@ -66,9 +119,9 @@ def filterColumns(dataframe, pattern1, pattern2):
     return filtered_columns
 
 def convert_mm_to_m(dataframe):
-    for col in dataframe.columns:
-        if ('Pos' in col) or ('RigidBody001_t' in col):
-            dataframe[col] = dataframe[col] / 1000
+    position_columns = [col for col in dataframe.columns if 'Position' in col]
+    for col in position_columns:
+        dataframe[col] = dataframe[col] / 1000.0
     return dataframe
 
 def rename_columns(dataframe):
@@ -105,6 +158,8 @@ df1 = df.drop(df.columns[[0, 1]], axis=1)
 df1.columns = ['_'.join(map(str, col)).strip() for col in df1.columns.values]
 df_time = pd.read_csv(csv_file_path, header=5, usecols=['Time (Seconds)'])
 df2 = pd.concat([df_time,df1], axis=1, sort=False)
+
+df2 = convert_mm_to_m(df2)
 
 df2.columns = df2.columns.str.replace('Position_', 't') 
 df2.columns = df2.columns.str.replace('Rotation_', 'q') 
@@ -165,7 +220,7 @@ if plotOriginalVsResampled.lower() == 'y':
     fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tZ"], mode='lines', name='Resampled_Marker2_tZ'))
     fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tZ"], mode='lines', name='Resampled_Marker3_tZ'))
 
-    fig1.update_layout(title="Resampled data vs original one")
+    fig1.update_layout(title="Resampled data vs original one. Position in mm.")
     
     # Show the plotly figures
     fig1.show()
@@ -178,15 +233,16 @@ if plotOriginalVsResampled.lower() == 'y':
 
 # We retrieve directly the orientation the mocap's rigid body in the world frame
 world_RigidBody_Pos = np.array([resampled_df['RigidBody001_tX'], resampled_df['RigidBody001_tY'], resampled_df['RigidBody001_tZ']]).T
+
 world_RigidBody_Ori_R = R.from_quat(resampled_df[["RigidBody001_qX", "RigidBody001_qY", "RigidBody001_qZ", "RigidBody001_qW"]].values)
 world_RigidBody_Ori_mat = world_RigidBody_Ori_R.as_dcm()
 
 
 # Pose of the frame defined by the three points in the mocapLimb frame.
-mocapLimb_ThreePointsFrame_Pos = (mocapLimb_P1_Pos + mocapLimb_P2_Pos + mocapLimb_P3_Pos) / 3
-mocapLimb_ThreePointsFrame_x = (mocapLimb_P2_Pos - mocapLimb_P1_Pos)
+mocapLimb_ThreePointsFrame_Pos = (marker1_pos + marker2_pos + marker3_pos) / 3
+mocapLimb_ThreePointsFrame_x = (marker2_pos - marker1_pos)
 mocapLimb_ThreePointsFrame_x = mocapLimb_ThreePointsFrame_x / np.linalg.norm(mocapLimb_ThreePointsFrame_x)
-mocapLimb_ThreePointsFrame_y = np.cross(mocapLimb_ThreePointsFrame_x, mocapLimb_P3_Pos - mocapLimb_P1_Pos)
+mocapLimb_ThreePointsFrame_y = np.cross(mocapLimb_ThreePointsFrame_x, marker3_pos - marker1_pos)
 mocapLimb_ThreePointsFrame_y = mocapLimb_ThreePointsFrame_y / np.linalg.norm(mocapLimb_ThreePointsFrame_y)
 mocapLimb_ThreePointsFrame_z = np.cross(mocapLimb_ThreePointsFrame_x, mocapLimb_ThreePointsFrame_y)
 mocapLimb_ThreePointsFrame_z = mocapLimb_ThreePointsFrame_z / np.linalg.norm(mocapLimb_ThreePointsFrame_z)
@@ -224,6 +280,7 @@ rigidBody_MocapLimb_Pos = rigidBody_ThreePointsFrame_Pos + rigidBody_ThreePoints
 
 world_MocapLimb_Ori_R = world_RigidBody_Ori_R * rigidBody_MocapLimb_Ori_R
 world_MocapLimb_Pos = world_RigidBody_Pos + rigidBody_MocapLimb_Ori_R.apply(rigidBody_MocapLimb_Pos)
+
 
 
 ###############################  Storage of the pose of the mocapLimb in the world  ###############################
@@ -277,7 +334,6 @@ if(displayLogs):
     figPositions = go.Figure()
 
     rigidBody_ThreePointsFrame_Pos_plot = np.full((len(resampled_df), 3), rigidBody_ThreePointsFrame_Pos)
-
 
     figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tX"], mode='lines', name='world_RigidBody_Pos_x'))
     figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tY"], mode='lines', name='world_RigidBody_Pos_y'))
@@ -363,17 +419,17 @@ if(displayLogs):
 
 if(displayLogs):
     # We compute the velocity of the mocapLimb in the world
-    world_MocapLimb_Vel_x = resampled_df['world_MocapLimb_Pos_x'].diff()/timeStepFloat*1000.0
-    world_MocapLimb_Vel_y = resampled_df['world_MocapLimb_Pos_y'].diff()/timeStepFloat*1000.0
-    world_MocapLimb_Vel_z = resampled_df['world_MocapLimb_Pos_z'].diff()/timeStepFloat*1000.0
+    world_MocapLimb_Vel_x = resampled_df['world_MocapLimb_Pos_x'].diff()/timeStep_s
+    world_MocapLimb_Vel_y = resampled_df['world_MocapLimb_Pos_y'].diff()/timeStep_s
+    world_MocapLimb_Vel_z = resampled_df['world_MocapLimb_Pos_z'].diff()/timeStep_s
     world_MocapLimb_Vel_x[0] = 0.0
     world_MocapLimb_Vel_y[0] = 0.0
     world_MocapLimb_Vel_z[0] = 0.0
     world_MocapLimb_Vel = np.stack((world_MocapLimb_Vel_x, world_MocapLimb_Vel_y, world_MocapLimb_Vel_z), axis = 1)
     # We compute the velocity of the mocap's rigid body in the world
-    world_RigidBody_Vel_x = resampled_df['RigidBody001_tX'].diff()/timeStepFloat*1000.0
-    world_RigidBody_Vel_y = resampled_df['RigidBody001_tY'].diff()/timeStepFloat*1000.0
-    world_RigidBody_Vel_z = resampled_df['RigidBody001_tZ'].diff()/timeStepFloat*1000.0
+    world_RigidBody_Vel_x = resampled_df['RigidBody001_tX'].diff()/timeStep_s
+    world_RigidBody_Vel_y = resampled_df['RigidBody001_tY'].diff()/timeStep_s
+    world_RigidBody_Vel_z = resampled_df['RigidBody001_tZ'].diff()/timeStep_s
     world_RigidBody_Vel_x[0] = 0.0
     world_RigidBody_Vel_y[0] = 0.0
     world_RigidBody_Vel_z[0] = 0.0
@@ -492,7 +548,6 @@ patterns = ['Marker', 'threePoints']
 cols_to_drop = resampled_df.columns[resampled_df.columns.str.contains('|'.join(patterns))]
 # Drop these columns
 resampled_df = resampled_df.drop(columns=cols_to_drop)
-resampled_df = convert_mm_to_m(resampled_df)
 
 
 # Save the DataFrame to a new CSV file
