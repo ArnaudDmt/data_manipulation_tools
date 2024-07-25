@@ -36,7 +36,6 @@ try:
         timeStep_s = float(timeStepInput)
         timeStep_ms = int(timeStep_s*1000.0)
     resample_str = f'{timeStep_ms}ms'
-    print(f"Resampling the MoCap data at {timeStep_ms} ms")
 except ValueError:
     print(f"The input timestep is not valid: {timeStepInput}")
 
@@ -208,25 +207,20 @@ if(displayLogs):
 ###############################  Cross correlation  ###############################
 
 def match_array_length(arr, desired_length):
-    """
-    Appends a row containing the final value of each column until the array length matches the desired length.
-    
-    Args:
-        arr (np.ndarray): Input array.
-        desired_length (int): Desired length of the array.
-    
-    Returns:
-        np.ndarray: Array with the desired length.
-    """
-    # Get the final values of each column
-    final_values = arr[-1]
+    len_diff = len(arr) - desired_length
+    # If the array to resize is bigger, we delete the data at the end.
+    if(len_diff > 0):
+        result = arr[:desired_length, :]
+    else:
+        # Get the final values of each column
+        final_values = arr[-1]
 
-    # Repeat the final values to match the desired length
-    num_repeats = max(0, desired_length - len(arr))
-    repeated_values = np.tile(final_values, (num_repeats, 1))
+        # Repeat the final values to match the desired length
+        num_repeats = max(0, desired_length - len(arr))
+        repeated_values = np.tile(final_values, (num_repeats, 1))
 
-    # Append the repeated values to the original array
-    result = np.vstack([arr, repeated_values])
+        # Append the repeated values to the original array
+        result = np.vstack([arr, repeated_values])
 
     return result
 
