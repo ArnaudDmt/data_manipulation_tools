@@ -15,8 +15,6 @@ mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
 
 
 
-
-
 if [ ! -f "$replay_yaml" ]; then
     echo "The scripts excepts to find a configuration file named $replay_yaml."
     exit
@@ -117,6 +115,13 @@ logReplayBin="$outputDataPath/logReplay.bin"
 # configuration files
 projectConfig="$projectPath/projectConfig.yaml"
 #mocapMarkersConf="markersPlacements.yaml"
+
+
+if [[ $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF: //') == "true" ]]; then
+    useHartley=true
+else
+    useHartley=false
+fi
 
 
 
@@ -250,15 +255,23 @@ else
                     echo "bodyName: $bodyName" > $mocapPlugin_yaml
                 fi
             fi
+
             pluginWasActivated=true
             if ! grep -v '^#' $mc_rtc_yaml | grep -q "MocapAligner"; then
                 pluginWasActivated=false
                 echo "The plugin MocapAligner was not activated. Activating it for the replay."
-                if grep -v '^#' $mc_rtc_yaml | grep "Plugins" | grep -v "MocapAligner"; then
-                    echo "The replay needs to activate the plugin MocapAligner but another plugin is already enabled in $mc_rtc_yaml. Please remove the conflicting plugin or add manually MocapAligner to the existing list."
-                    exit
+                
+                if useHartley; then
+                    awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner, HartleyIEKF] \n"}1' $mc_rtc_yaml
+                else
+                    awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $mc_rtc_yaml
                 fi
-                awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $mc_rtc_yaml
+            else
+                if ! grep -v '^#' $mc_rtc_yaml | grep -q "HartleyIEKF"; then
+                    if useHartley; then
+                        grep -v '^#' $mc_rtc_yaml | grep -q "MocapAligner" | sed -i "s/Plugins:.*/Plugins: [MocapAligner, HartleyIEKF]/" $mc_rtc_yaml
+                    fi
+                fi
             fi
             
             
@@ -358,5 +371,9 @@ select replayWithMocap in "Yes" "No"; do
         No ) exit;;
     esac
 done
+
+# if useHartley; then
+#     hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
+# fi
 
 echo "The pipeline finished without any issue. If you are not satisfied with the result, please re-run the scripts one by one and help yourself with the logs for the debug. Please also make sure that the time you set for the matching of the mocap and the observer is correct."
