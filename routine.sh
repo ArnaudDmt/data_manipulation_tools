@@ -125,6 +125,7 @@ fi
 
 
 
+
 ############################ Checking if a robot was given to select the mocap markers ############################
 
 
@@ -261,14 +262,14 @@ else
                 pluginWasActivated=false
                 echo "The plugin MocapAligner was not activated. Activating it for the replay."
                 
-                if useHartley; then
+                if $useHartley; then
                     awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner, HartleyIEKF] \n"}1' $mc_rtc_yaml
                 else
                     awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $mc_rtc_yaml
                 fi
             else
                 if ! grep -v '^#' $mc_rtc_yaml | grep -q "HartleyIEKF"; then
-                    if useHartley; then
+                    if $useHartley; then
                         grep -v '^#' $mc_rtc_yaml | grep -q "MocapAligner" | sed -i "s/Plugins:.*/Plugins: [MocapAligner, HartleyIEKF]/" $mc_rtc_yaml
                     fi
                 fi
@@ -372,7 +373,7 @@ select replayWithMocap in "Yes" "No"; do
     esac
 done
 
-# if useHartley; then
+# if $useHartley; then
 #     hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
 # fi
 
