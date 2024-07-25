@@ -9,12 +9,8 @@ import plotly.graph_objects as go
 
 ###############################  Main variables initialization  ###############################
 
+path_to_project = ".."
 
-output_csv_file_path = '../output_data/resultMocapLimbData.csv'
-
-# Load the CSV files into pandas dataframes
-observer_data = pd.read_csv('../output_data/lightData.csv')
-mocapData = pd.read_csv('../output_data/realignedMocapLimbData.csv', delimiter=',')
 averageInterval = 10
 displayLogs = True
 matchTime = 0
@@ -28,10 +24,17 @@ if(len(sys.argv) > 1):
     matchTime = int(sys.argv[1])
     if(len(sys.argv) > 2):
         displayLogs = sys.argv[2].lower() == 'true'
+    if(len(sys.argv) > 4):
+        path_to_project = sys.argv[4]
 else:
     matchTime = float(input("When do you want the mocap pose to match the observer's one? "))
 
 
+
+output_csv_file_path = f'{path_to_project}/output_data/resultMocapLimbData.csv'
+# Load the CSV files into pandas dataframes
+observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv')
+mocapData = pd.read_csv(f'{path_to_project}/output_data/realignedMocapLimbData.csv', delimiter=',')
 
 
 

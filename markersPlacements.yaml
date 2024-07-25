@@ -1,6 +1,3 @@
-EnabledBody:
-EnabledRobot:
-
 robots:
   - name: HRP5P
     bodies:

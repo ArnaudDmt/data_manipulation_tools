@@ -19,18 +19,23 @@ import sys
 
 ###############################  Main variables initialization  ###############################
 
-csv_file_path = '../raw_data/mocapData.csv'
-output_csv_file_path = '../output_data/resampledMocapData.csv'
+path_to_project = ".."
+displayLogs = True
 # Define a list of patterns you want to match
 pattern1 = ['Time(Seconds)','Marker1', 'Marker2', 'Marker3']  # Add more patterns as needed
 pattern2 = r'RigidBody(?!.*Marker)'
 
-displayLogs = True
+
+
+###############################  User inputs  ###############################
+
 
 if(len(sys.argv) > 1):
     timeStepInput = sys.argv[1]
     if(len(sys.argv) > 2):
         displayLogs = sys.argv[2].lower() == 'true'
+    if(len(sys.argv) > 4):
+        path_to_project = sys.argv[4]
 else:
     timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
@@ -48,13 +53,16 @@ except ValueError:
     print(f"The input timestep is not valid: {timeStepInput}")
 
 
+csv_file_path = f'{path_to_project}/raw_data/mocapData.csv'
+output_csv_file_path = f'{path_to_project}/output_data/resampledMocapData.csv'
+
 
 
 ###############################  Configuration reading  ###############################
 
 def get_markers(robot_name, body_name):
     # Iterate over the robots
-    for robot in yamlData['robots']:
+    for robot in markers_yamlData['robots']:
         # If the robot name matches
         if robot['name'] == robot_name:
             # Iterate over the bodies of the robot
@@ -77,28 +85,32 @@ def get_markers(robot_name, body_name):
 
 with open('../markersPlacements.yaml', 'r') as file:
     try:
-        yaml_string = file.read()
-        yamlData = yaml.safe_load(yaml_string)
+        markers_yaml_str = file.read()
+        markers_yamlData = yaml.safe_load(markers_yaml_str)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+with open(f'{path_to_project}/projectConfig.yaml', 'r') as file:
+    try:
+        projConf_yaml_str = file.read()
+        projConf_yamlData = yaml.safe_load(projConf_yaml_str)
     except yaml.YAMLError as exc:
         print(exc)
 
 # Get the value of EnabledRobot and EnabledBody
-enabled_robot = yamlData.get('EnabledRobot')
-enabled_body = yamlData.get('EnabledBody')
+enabled_robot = projConf_yamlData.get('EnabledRobot')
+enabled_body = projConf_yamlData.get('EnabledBody')
 
 # Check if EnabledRobot exists and is uncommented
-if enabled_robot is not None:
-    print(f"EnabledRobot: {enabled_robot}")
-else:
+if enabled_robot is None:
     print("EnabledRobot does not exist or is commented out.")
     enabled_robot = input("Please enter the name of the robot: ")
 
 # Check if EnabledBody exists and is uncommented
-if enabled_body is not None:
-    print(f"EnabledBody: {enabled_body}")
-else:
+if enabled_body is None:
     print("EnabledBody does not exist or is commented out.")
     enabled_body = input("Please enter the name of the limb: ")
+    
 
 # Get the markers and print them
 marker1_pos, marker2_pos, marker3_pos = get_markers(enabled_robot, enabled_body)

@@ -11,10 +11,8 @@ from scipy.spatial.transform import Rotation as R
 
 ###############################  Main variables initialization  ###############################
 
-output_csv_file_path = '../output_data/realignedMocapLimbData.csv'
 displayLogs = True
-
-
+path_to_project = ".."
 
 
 ###############################  User inputs  ###############################
@@ -24,6 +22,8 @@ if(len(sys.argv) > 1):
     timeStepInput = sys.argv[1]
     if(len(sys.argv) > 2):
         displayLogs = sys.argv[2].lower() == 'true'
+    if(len(sys.argv) > 4):
+        path_to_project = sys.argv[4]
 else:
     timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
@@ -40,6 +40,11 @@ try:
 except ValueError:
     print(f"The input timestep is not valid: {timeStepInput}")
 
+
+output_csv_file_path = f'{path_to_project}/output_data/realignedMocapLimbData.csv'
+# Load the CSV files into pandas dataframes
+observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv')
+mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=',')
 
 
 
@@ -67,9 +72,7 @@ def continuous_euler(angles):
     return continuous_angles
 
 
-# Load the CSV files into pandas dataframes
-observer_data = pd.read_csv('../output_data/lightData.csv')
-mocapData = pd.read_csv('../output_data/resampledMocapData.csv', delimiter=',')
+
 
 ###############################  Poses retrieval  ###############################
 

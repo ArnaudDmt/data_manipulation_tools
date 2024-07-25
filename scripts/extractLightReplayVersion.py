@@ -1,11 +1,19 @@
+import sys
 import pandas as pd
 
 
+
+path_to_project = ".."
+
+if(len(sys.argv) > 1):
+    path_to_project = sys.argv[1]
+
+        
 # Define a list of patterns you want to match
 partial_pattern = ['MocapAligner']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
-input_csv_file_path = '../output_data/logReplay.csv'
-output_csv_file_path = '../output_data/lightData.csv'
+input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
+output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
 
 # Filter columns based on the predefined patterns
 def filterColumns(dataframe, partial_pattern, exact_patterns):
@@ -17,7 +25,7 @@ def filterColumns(dataframe, partial_pattern, exact_patterns):
     return filtered_columns
 
 # Load the CSV files into pandas dataframes
-replayData = pd.read_csv('../output_data/logReplay.csv', delimiter=';')
+replayData = pd.read_csv(f'{path_to_project}/output_data/logReplay.csv', delimiter=';')
 light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
 replayData_light = replayData[light_columns].copy()
 
