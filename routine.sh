@@ -20,6 +20,20 @@ mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
 if [ ! -f "$replay_yaml" ]; then
     echo "The scripts excepts to find a configuration file named $replay_yaml."
     exit
+else
+    if ! grep -q "MocapVisualizer" $replay_yaml || ! grep -q "firstRun:" $replay_yaml; then
+        # Execute your action here if both patterns are found
+        echo "Please add the MocapVisualizer observer to the list of the observers in $replay_yaml."
+        exit
+    fi
+    if ! (grep -v '^#' $replay_yaml | grep -q "firstRun:"); then
+        echo "Please add the boolean firstRun to the configuration of the MocapVisualizer in $replay_yaml."
+        exit
+    fi
+    if ! (grep -v '^#' $replay_yaml | grep -q "projectName:"); then
+        echo "Please add the variable projectName to the configuration of the MocapVisualizer in $replay_yaml."
+        exit
+    fi
 fi
 
 createNewProject=false
@@ -75,6 +89,8 @@ if $createNewProject; then
     exit
 fi
 
+# Changing the name of the project in the replay's configuration
+sed -i "/^\([[:space:]]*projectName: \).*/s//\1"$projectName"/" $replay_yaml
 
 
 ############################ Variables initialization ############################
@@ -122,6 +138,14 @@ if grep -v '^#' $projectConfig | grep -q "EnabledRobot"; then
             esac
         done
         sed -i "s/EnabledRobot:/& $main_robot/" $projectConfig
+    else
+        main_robot=$(grep 'EnabledRobot:' $projectConfig | grep -v '^#' | sed 's/EnabledRobot://' | sed 's: ::g');
+        mc_rtc_robot=$(grep 'MainRobot:' $mc_rtc_yaml | grep -v '^#' | sed 's/MainRobot: //')
+        if [[ "$main_robot" != "$mc_rtc_robot" ]]; then
+            echo
+            echo "WARNING: The robot defined in the configuration of the project in $projectConfig ($main_robot) doesn't match the one in $mc_rtc_yaml that will be used for the replay ($mc_rtc_robot) !!!"
+            echo
+        fi
     fi
 else
     echo "No robot was given in the configuration file $projectConfig. Use the robot defined in $mc_rtc_yaml ?"
@@ -236,11 +260,7 @@ else
                 fi
                 awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $mc_rtc_yaml
             fi
-            if ! grep -q "MocapVisualizer" $replay_yaml || ! grep -q "firstRun:" $replay_yaml; then
-                # Execute your action here if both patterns are found
-                echo "Please add the MocapVisualizer observer to the list of the observers and check that the configuration firstRun exists"
-                exit
-            fi
+            
             
             sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"true"/" $replay_yaml
             mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
