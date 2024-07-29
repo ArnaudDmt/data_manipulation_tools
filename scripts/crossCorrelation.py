@@ -254,7 +254,10 @@ def add_rows(df, num_rows, atEnd=True):
     return df
 
 def realignData(data1, data2, data1_name, data2_name):
-    data2 = match_array_length(data2, len(data1))
+    if(len(data1) > len(data2)):
+        data2 = match_array_length(data2, len(data1))
+    else:
+        data1 = match_array_length(data1, len(data2))
 
     if(displayLogs):
         figInit = go.Figure()
@@ -317,7 +320,7 @@ world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_moc
 
 # Version which receives the shift to apply as an input
 def realignData(data_to_shift,  shift):
-    print(f"The observer_data will be shifted by {shift} indexes.")
+    print(f"The mocap data will be shifted by {shift} indexes.")
 
     data_shifted = data_to_shift
     data_shifted.index += shift
@@ -337,8 +340,8 @@ def realignData(data_to_shift,  shift):
         data_shifted = add_rows(data_shifted, abs(diffIndexFinal), True)
     if(diffIndexFinal > 0):
         # Removing last diffIndexFinal rows
-        data_shifted = data_shifted.iloc[:diffIndexFinal]
-
+        data_shifted = data_shifted.iloc[:len(data_shifted) - diffIndexFinal]
+        
     overlapIndex = []
     for i in range(len(data_shifted)):
         if(i > diffIndexInit and i < len(data_shifted) + diffIndexFinal):
