@@ -256,15 +256,85 @@ if(displayLogs):
     figTransfo.show()
 
 
-new_world_mocapLimb_Ori_quat = new_world_mocapLimb_Ori_R.as_quat()
+new_world_MocapLimb_Ori_quat = new_world_MocapLimb_Ori_R.as_quat()
 
-mocapData['worldMocapLimbPos_x'] = new_world_mocapLimb_Pos[:,0]
-mocapData['worldMocapLimbPos_y'] = new_world_mocapLimb_Pos[:,1]
-mocapData['worldMocapLimbPos_z'] = new_world_mocapLimb_Pos[:,2]
-mocapData['worldMocapLimbOri_qx'] = new_world_mocapLimb_Ori_quat[:,0]
-mocapData['worldMocapLimbOri_qy'] = new_world_mocapLimb_Ori_quat[:,1]
-mocapData['worldMocapLimbOri_qz'] = new_world_mocapLimb_Ori_quat[:,2]
-mocapData['worldMocapLimbOri_qw'] = new_world_mocapLimb_Ori_quat[:,3]
+mocapData['worldMocapLimbPos_x'] = new_world_MocapLimb_Pos[:,0]
+mocapData['worldMocapLimbPos_y'] = new_world_MocapLimb_Pos[:,1]
+mocapData['worldMocapLimbPos_z'] = new_world_MocapLimb_Pos[:,2]
+mocapData['worldMocapLimbOri_qx'] = new_world_MocapLimb_Ori_quat[:,0]
+mocapData['worldMocapLimbOri_qy'] = new_world_MocapLimb_Ori_quat[:,1]
+mocapData['worldMocapLimbOri_qz'] = new_world_MocapLimb_Ori_quat[:,2]
+mocapData['worldMocapLimbOri_qw'] = new_world_MocapLimb_Ori_quat[:,3]
+
+
+
+x_min = min((world_MocapLimb_Pos[:,0]).min(), (new_world_MocapLimb_Pos[:,0]).min(), (world_ObserverLimb_Pos[:,0]).min())
+y_min = min((world_MocapLimb_Pos[:,1]).min(), (new_world_MocapLimb_Pos[:,1]).min(), (world_ObserverLimb_Pos[:,1]).min())
+z_min = min((world_MocapLimb_Pos[:,2]).min(), (new_world_MocapLimb_Pos[:,2]).min(), (world_ObserverLimb_Pos[:,2]).min())
+x_min = x_min - np.abs(x_min*0.2)
+y_min = y_min - np.abs(y_min*0.2)
+z_min = z_min - np.abs(z_min*0.2)
+
+x_max = max((world_MocapLimb_Pos[:,0]).max(), (new_world_MocapLimb_Pos[:,0]).max(), (world_ObserverLimb_Pos[:,0]).max())
+y_max = max((world_MocapLimb_Pos[:,1]).max(), (new_world_MocapLimb_Pos[:,1]).max(), (world_ObserverLimb_Pos[:,1]).max())
+z_max = max((world_MocapLimb_Pos[:,2]).max(), (new_world_MocapLimb_Pos[:,2]).max(), (world_ObserverLimb_Pos[:,2]).max())
+x_max = x_max + np.abs(x_max*0.2)
+y_max = y_max + np.abs(y_max*0.2)
+z_max = z_max + np.abs(z_max*0.2)
+
+
+fig = go.Figure()
+
+# Add traces
+fig.add_trace(go.Scatter3d(
+    x=world_MocapLimb_Pos[:,0], 
+    y=world_MocapLimb_Pos[:,1], 
+    z=world_MocapLimb_Pos[:,2],
+    mode='lines',
+    line=dict(color='darkblue'),
+    name='world_MocapLimb_Pos'
+))
+
+fig.add_trace(go.Scatter3d(
+    x=new_world_MocapLimb_Pos[:,0], 
+    y=new_world_MocapLimb_Pos[:,1], 
+    z=new_world_MocapLimb_Pos[:,2],
+    mode='lines',
+    line=dict(color='darkred'),
+    name='new_world_MocapLimb_Pos'
+))
+
+fig.add_trace(go.Scatter3d(
+    x=world_ObserverLimb_Pos[:,0], 
+    y=world_ObserverLimb_Pos[:,1], 
+    z=world_ObserverLimb_Pos[:,2],
+    mode='lines',
+    line=dict(color='darkgreen'),
+    name='world_ObserverLimb_Pos'
+))
+
+# Update layout
+fig.update_layout(
+    scene=dict(
+        xaxis_title='X',
+        yaxis_title='Y',
+        zaxis_title='Z',
+        xaxis=dict(range=[x_min, x_max]),
+        yaxis=dict(range=[y_min, y_max]),
+        zaxis=dict(range=[z_min, z_max]),
+        aspectmode='data'
+    ),
+    legend=dict(
+        x=0,
+        y=1
+    )
+)
+
+# Show the plot
+fig.show()
+
+
+
 
 
 # Save the DataFrame to a new CSV file
