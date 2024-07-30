@@ -173,15 +173,20 @@ world_MocapLimb_Ori_R_average_atMatch = R.from_quat(normalize(world_MocapLimb_Or
 world_ObserverLimb_Ori_R_average_atMatch = R.from_quat(normalize(world_ObserverLimb_Ori_Quat_average_atMatch))
 
 
+
+###############################  Computation of the aligned mocap's pose  ###############################
+
 MocapLimb_world_Ori_R_average_atMatch = world_MocapLimb_Ori_R_average_atMatch.inv()
 
 mocapObserver_Ori_R = MocapLimb_world_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch
 new_world_MocapLimb_Ori_R = world_MocapLimb_Ori_R * mocapObserver_Ori_R
 
-
 # Allows the position of the mocap to match with the one of the Observer at the desired time, while preserving the transformation between the current frame and the inital one for each iteration
-new_world_MocapLimb_Pos = (world_MocapLimb_Ori_R[0] * world_MocapLimb_Ori_R[0].inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch) + world_ObserverLimb_Pos_average_atMatch
+new_world_MocapLimb_Pos = (world_ObserverLimb_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch.inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch) + world_ObserverLimb_Pos_average_atMatch
 
+
+
+###############################  Plot of the matched poses  ###############################
 
 if(displayLogs):
     new_world_MocapLimb_Ori_euler = new_world_MocapLimb_Ori_R.as_euler("xyz")
@@ -268,70 +273,73 @@ mocapData['worldMocapLimbOri_qw'] = new_world_MocapLimb_Ori_quat[:,3]
 
 
 
-x_min = min((world_MocapLimb_Pos[:,0]).min(), (new_world_MocapLimb_Pos[:,0]).min(), (world_ObserverLimb_Pos[:,0]).min())
-y_min = min((world_MocapLimb_Pos[:,1]).min(), (new_world_MocapLimb_Pos[:,1]).min(), (world_ObserverLimb_Pos[:,1]).min())
-z_min = min((world_MocapLimb_Pos[:,2]).min(), (new_world_MocapLimb_Pos[:,2]).min(), (world_ObserverLimb_Pos[:,2]).min())
-x_min = x_min - np.abs(x_min*0.2)
-y_min = y_min - np.abs(y_min*0.2)
-z_min = z_min - np.abs(z_min*0.2)
+#####################  3D plot of the pose  #####################
 
-x_max = max((world_MocapLimb_Pos[:,0]).max(), (new_world_MocapLimb_Pos[:,0]).max(), (world_ObserverLimb_Pos[:,0]).max())
-y_max = max((world_MocapLimb_Pos[:,1]).max(), (new_world_MocapLimb_Pos[:,1]).max(), (world_ObserverLimb_Pos[:,1]).max())
-z_max = max((world_MocapLimb_Pos[:,2]).max(), (new_world_MocapLimb_Pos[:,2]).max(), (world_ObserverLimb_Pos[:,2]).max())
-x_max = x_max + np.abs(x_max*0.2)
-y_max = y_max + np.abs(y_max*0.2)
-z_max = z_max + np.abs(z_max*0.2)
+if(displayLogs):
+    x_min = min((world_MocapLimb_Pos[:,0]).min(), (new_world_MocapLimb_Pos[:,0]).min(), (world_ObserverLimb_Pos[:,0]).min())
+    y_min = min((world_MocapLimb_Pos[:,1]).min(), (new_world_MocapLimb_Pos[:,1]).min(), (world_ObserverLimb_Pos[:,1]).min())
+    z_min = min((world_MocapLimb_Pos[:,2]).min(), (new_world_MocapLimb_Pos[:,2]).min(), (world_ObserverLimb_Pos[:,2]).min())
+    x_min = x_min - np.abs(x_min*0.2)
+    y_min = y_min - np.abs(y_min*0.2)
+    z_min = z_min - np.abs(z_min*0.2)
+
+    x_max = max((world_MocapLimb_Pos[:,0]).max(), (new_world_MocapLimb_Pos[:,0]).max(), (world_ObserverLimb_Pos[:,0]).max())
+    y_max = max((world_MocapLimb_Pos[:,1]).max(), (new_world_MocapLimb_Pos[:,1]).max(), (world_ObserverLimb_Pos[:,1]).max())
+    z_max = max((world_MocapLimb_Pos[:,2]).max(), (new_world_MocapLimb_Pos[:,2]).max(), (world_ObserverLimb_Pos[:,2]).max())
+    x_max = x_max + np.abs(x_max*0.2)
+    y_max = y_max + np.abs(y_max*0.2)
+    z_max = z_max + np.abs(z_max*0.2)
 
 
-fig = go.Figure()
+    fig = go.Figure()
 
-# Add traces
-fig.add_trace(go.Scatter3d(
-    x=world_MocapLimb_Pos[:,0], 
-    y=world_MocapLimb_Pos[:,1], 
-    z=world_MocapLimb_Pos[:,2],
-    mode='lines',
-    line=dict(color='darkblue'),
-    name='world_MocapLimb_Pos'
-))
+    # Add traces
+    fig.add_trace(go.Scatter3d(
+        x=world_MocapLimb_Pos[:,0], 
+        y=world_MocapLimb_Pos[:,1], 
+        z=world_MocapLimb_Pos[:,2],
+        mode='lines',
+        line=dict(color='darkblue'),
+        name='world_MocapLimb_Pos'
+    ))
 
-fig.add_trace(go.Scatter3d(
-    x=new_world_MocapLimb_Pos[:,0], 
-    y=new_world_MocapLimb_Pos[:,1], 
-    z=new_world_MocapLimb_Pos[:,2],
-    mode='lines',
-    line=dict(color='darkred'),
-    name='new_world_MocapLimb_Pos'
-))
+    fig.add_trace(go.Scatter3d(
+        x=new_world_MocapLimb_Pos[:,0], 
+        y=new_world_MocapLimb_Pos[:,1], 
+        z=new_world_MocapLimb_Pos[:,2],
+        mode='lines',
+        line=dict(color='darkred'),
+        name='new_world_MocapLimb_Pos'
+    ))
 
-fig.add_trace(go.Scatter3d(
-    x=world_ObserverLimb_Pos[:,0], 
-    y=world_ObserverLimb_Pos[:,1], 
-    z=world_ObserverLimb_Pos[:,2],
-    mode='lines',
-    line=dict(color='darkgreen'),
-    name='world_ObserverLimb_Pos'
-))
+    fig.add_trace(go.Scatter3d(
+        x=world_ObserverLimb_Pos[:,0], 
+        y=world_ObserverLimb_Pos[:,1], 
+        z=world_ObserverLimb_Pos[:,2],
+        mode='lines',
+        line=dict(color='darkgreen'),
+        name='world_ObserverLimb_Pos'
+    ))
 
-# Update layout
-fig.update_layout(
-    scene=dict(
-        xaxis_title='X',
-        yaxis_title='Y',
-        zaxis_title='Z',
-        xaxis=dict(range=[x_min, x_max]),
-        yaxis=dict(range=[y_min, y_max]),
-        zaxis=dict(range=[z_min, z_max]),
-        aspectmode='data'
-    ),
-    legend=dict(
-        x=0,
-        y=1
+    # Update layout
+    fig.update_layout(
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z',
+            xaxis=dict(range=[x_min, x_max]),
+            yaxis=dict(range=[y_min, y_max]),
+            zaxis=dict(range=[z_min, z_max]),
+            aspectmode='data'
+        ),
+        legend=dict(
+            x=0,
+            y=1
+        )
     )
-)
 
-# Show the plot
-fig.show()
+    # Show the plot
+    fig.show()
 
 
 
