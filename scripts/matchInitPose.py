@@ -122,7 +122,7 @@ if(displayLogs):
     figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,1], mode='lines', name='world_ObserverLimb_Pos_y'))
     figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,2], mode='lines', name='world_ObserverLimb_Pos_z'))
 
-    figInitPose.update_layout(title="Resulting pose")
+    figInitPose.update_layout(title="Initial poses")
 
     # Show the plotly figure
     figInitPose.show()
@@ -255,7 +255,7 @@ if(displayLogs):
     figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,1], mode='lines', name='world_ObserverLimb_pos_transfo_y'))
     figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,2], mode='lines', name='world_ObserverLimb_pos_transfo_z'))
 
-    figTransfo.update_layout(title="Transformations")
+    figTransfo.update_layout(title="Final Transformations")
 
     # Show the plotly figures
     figTransfo.show()
@@ -319,6 +319,44 @@ if(displayLogs):
         mode='lines',
         line=dict(color='darkgreen'),
         name='world_ObserverLimb_Pos'
+    ))
+
+    # Add big points at the initial positions
+    fig.add_trace(go.Scatter3d(
+        x=[world_MocapLimb_Pos[0,0]], 
+        y=[world_MocapLimb_Pos[0,1]], 
+        z=[world_MocapLimb_Pos[0,2]],
+        mode='markers',
+        marker=dict(size=5, color='darkblue'),
+        name='Start world_MocapLimb_Pos'
+    ))
+
+    fig.add_trace(go.Scatter3d(
+        x=[new_world_MocapLimb_Pos[0,0]], 
+        y=[new_world_MocapLimb_Pos[0,1]], 
+        z=[new_world_MocapLimb_Pos[0,2]],
+        mode='markers',
+        marker=dict(size=5, color='darkred'),
+        name='Start new_world_MocapLimb_Pos'
+    ))
+
+    fig.add_trace(go.Scatter3d(
+        x=[world_ObserverLimb_Pos[0,0]], 
+        y=[world_ObserverLimb_Pos[0,1]], 
+        z=[world_ObserverLimb_Pos[0,2]],
+        mode='markers',
+        marker=dict(size=5, color='darkgreen'),
+        name='Start world_ObserverLimb_Pos'
+    ))
+
+    # Add a big point at the matching time
+    fig.add_trace(go.Scatter3d(
+        x=[new_world_MocapLimb_Pos[matchIndex,0]], 
+        y=[new_world_MocapLimb_Pos[matchIndex,1]], 
+        z=[new_world_MocapLimb_Pos[matchIndex,2]],
+        mode='markers',
+        marker=dict(size=5, color='darkorange'),
+        name='Matching pose'
     ))
 
     # Update layout
