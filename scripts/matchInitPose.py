@@ -219,11 +219,11 @@ if(displayLogs):
 #####################  Orientation and position difference wrt the initial frame  #####################
 
 if(displayLogs):
-    new_world_mocapLimb_pos_transfo = new_world_mocapLimb_Ori_R[0].apply(new_world_mocapLimb_Pos - new_world_mocapLimb_Pos[0], inverse=True)
+    new_world_MocapLimb_pos_transfo = new_world_MocapLimb_Ori_R[0].apply(new_world_MocapLimb_Pos - new_world_MocapLimb_Pos[0], inverse=True)
     world_ObserverLimb_pos_transfo = world_ObserverLimb_Ori_R[0].apply(world_ObserverLimb_Pos - world_ObserverLimb_Pos[0], inverse=True)
 
-    new_world_mocapLimb_Ori_R_transfo = new_world_mocapLimb_Ori_R * new_world_mocapLimb_Ori_R[0].inv()
-    world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R * world_ObserverLimb_Ori_R[0].inv()
+    new_world_MocapLimb_Ori_R_transfo = new_world_MocapLimb_Ori_R[0].inv() * new_world_MocapLimb_Ori_R
+    world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R[0].inv() * world_ObserverLimb_Ori_R
 
     new_world_MocapLimb_Ori_transfo_euler = new_world_MocapLimb_Ori_R_transfo.as_euler("xyz")
     world_ObserverLimb_Ori_transfo_euler = world_ObserverLimb_Ori_R_transfo.as_euler("xyz")
