@@ -86,49 +86,33 @@
 
 \begin_body
 
-\begin_layout Standard
-Goal:
- We want to get the new position of the mocap in the world such that its position matches the one of the vanyte at a desired index m and such that the transformation with respect to the initial frame remains the same
+\begin_layout Section
+New attempt
+\end_layout
+
+\begin_layout Subsection
+Match at 0
 \end_layout
 
 \begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-^{0}\boldsymbol{p}_{c} & =^{0}\boldsymbol{p}_{W}+{}^{0}\boldsymbol{R}_{W}{}^{W}\boldsymbol{p}_{c}\\
- & =-^{W}\boldsymbol{R}_{0}^{T}{}^{W}\boldsymbol{p}_{0}+{}^{0}\boldsymbol{R}_{W}{}^{W}\boldsymbol{p}_{c}\\
- & =-^{W}\boldsymbol{R}_{0}^{T}{}^{W}\boldsymbol{p}_{0}+{}^{W}\boldsymbol{R}_{0}^{T}{}^{W}\boldsymbol{p}_{c}\\
- & =^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}\right)
-\end{align*}
-
+at 0,
+ 
+\begin_inset Formula $^{W'}R_{0'}={}^{W'}R_{0}$
 \end_inset
 
-
-\begin_inset Formula 
-\begin{align*}
-^{0'}\boldsymbol{p}_{c'} & =^{0}\boldsymbol{p}_{c}\\
-^{W}\boldsymbol{R}_{0'}^{T}\left(^{W}\boldsymbol{p}_{c'}-{}^{W}\boldsymbol{p}_{0'}\right) & =^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}\right)\\
-^{W}\boldsymbol{p}_{c'}-{}^{W}\boldsymbol{p}_{0'} & =\,^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}\right)
-\end{align*}
-
+ and 
+\begin_inset Formula $^{W'}p_{0'}={}^{W'}p_{0}$
 \end_inset
 
 
 \end_layout
 
 \begin_layout Standard
-At the point m where the signals of the mocap 
-\begin_inset Formula $m$
-\end_inset
-
- and the Vanyte 
-\begin_inset Formula $v$
-\end_inset
-
- should match:
 \begin_inset Formula 
 \begin{align*}
-^{W}\boldsymbol{p}_{c'}={}^{W}\boldsymbol{p}_{m'} & =^{W}\boldsymbol{p}_{v}\\
-^{W}\boldsymbol{R}_{c'}={}^{W}\boldsymbol{R}_{m'} & =^{W}\boldsymbol{R}_{v}
+^{W'}R_{C} & =^{W'}R_{0}{}^{0}R_{C}\\
+ & =^{W'}R_{0}{}^{0}R_{W}{}^{W}R_{C}\\
+ & =^{W'}R_{0'}{}^{W}R_{0}^{T}{}^{W}R_{C}
 \end{align*}
 
 \end_inset
@@ -137,14 +121,10 @@ At the point m where the signals of the mocap
 \end_layout
 
 \begin_layout Standard
-So we get
 \begin_inset Formula 
 \begin{align*}
-^{0'}\boldsymbol{p}_{m'} & =^{0}\boldsymbol{p}_{m}\\
-^{W}\boldsymbol{R}_{0'}^{T}\left(^{W}\boldsymbol{p}_{m'}-{}^{W}\boldsymbol{p}_{0'}\right) & =^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{m}-{}^{W}\boldsymbol{p}_{0}\right)\\
-^{W}\boldsymbol{p}_{v}-{}^{W}\boldsymbol{p}_{0'} & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{m}-{}^{W}\boldsymbol{p}_{0}\right)\\
--^{W}\boldsymbol{p}_{0'} & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{m}-{}^{W}\boldsymbol{p}_{0}\right)-{}^{W}\boldsymbol{p}_{v}\\
-^{W}\boldsymbol{p}_{0'} & =\,^{W}\boldsymbol{p}_{v}-{}^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{m}-{}^{W}\boldsymbol{p}_{0}\right)
+^{W'}p_{C} & =^{W'}p_{0}+{}^{W'}R_{0}{}^{0}p_{C}\\
+ & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{0}p_{C}
 \end{align*}
 
 \end_inset
@@ -153,13 +133,13 @@ So we get
 \end_layout
 
 \begin_layout Standard
-Finally
+With 
 \begin_inset Formula 
 \begin{align*}
-^{W}\boldsymbol{p}_{c'}-{}^{W}\boldsymbol{p}_{0'} & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}\right)\\
-^{W}\boldsymbol{p}_{c'} & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}\right)+\,^{W}\boldsymbol{p}_{v}-{}^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{m}-{}^{W}\boldsymbol{p}_{0}\right)\\
- & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{0}-{}^{W}\boldsymbol{p}_{m}+{}^{W}\boldsymbol{p}_{0}\right)+\,^{W}\boldsymbol{p}_{v}\\
- & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{m}\right)+\,^{W}\boldsymbol{p}_{v}
+^{0}p_{C} & =^{0}p_{W}+{}^{0}R_{W}{}^{W}p_{C}\\
+ & =-^{0}R_{W}{}^{W}p_{0}+{}^{0}R_{W}{}^{W}p_{C}\\
+ & =-^{W}R_{0}^{T}{}^{W}p_{0}+{}^{W}R_{0}^{T}{}^{W}p_{C}\\
+ & =^{W}R_{0}^{T}\left(^{W}p_{C}-{}^{W}p_{0}\right)
 \end{align*}
 
 \end_inset
@@ -168,10 +148,87 @@ Finally
 \end_layout
 
 \begin_layout Standard
-At point m
+Finally:
+\end_layout
+
+\begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-^{W}\boldsymbol{p}_{c'} & =^{W}\boldsymbol{R}_{0'}{}^{W}\boldsymbol{R}_{0}^{T}\left(^{W}\boldsymbol{p}_{c}-{}^{W}\boldsymbol{p}_{m}\right)+\,^{W}\boldsymbol{p}_{v}
+^{W'}p_{C} & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{0}p_{C}\\
+ & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{W}R_{0}^{T}\left(^{W}p_{C}-{}^{W}p_{0}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Match at m
+\end_layout
+
+\begin_layout Standard
+at m:
+ 
+\begin_inset Formula $^{W'}R_{m'}={}^{W'}R_{m}$
+\end_inset
+
+ and 
+\begin_inset Formula $^{W'}p_{m'}={}^{W'}p_{m}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+^{W'}R_{C} & =^{W'}R_{m}{}^{m}R_{C}\\
+ & =^{W'}R_{m}{}^{m}R_{W}{}^{W}R_{C}\\
+ & =^{W'}R_{m'}{}^{W}R_{m}^{T}{}^{W}R_{C}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+^{W'}p_{C} & =^{W'}p_{m}+{}^{W'}R_{m}{}^{m}p_{C}\\
+ & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{m}p_{C}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With 
+\begin_inset Formula 
+\begin{align*}
+^{m}p_{C} & =^{m}p_{W}+{}^{m}R_{W}{}^{W}p_{C}\\
+ & =-^{m}R_{W}{}^{W}p_{m}+{}^{m}R_{W}{}^{W}p_{C}\\
+ & =-^{W}R_{m}^{T}{}^{W}p_{m}+{}^{W}R_{m}^{T}{}^{W}p_{C}\\
+ & =^{W}R_{m}^{T}\left(^{W}p_{C}-{}^{W}p_{m}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Finally:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+^{W'}p_{C} & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{m}p_{C}\\
+ & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{W}R_{m}^{T}\left(^{W}p_{C}-{}^{W}p_{m}\right)
 \end{align*}
 
 \end_inset
