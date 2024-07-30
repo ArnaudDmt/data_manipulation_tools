@@ -182,7 +182,7 @@ mocapObserver_Ori_R = MocapLimb_world_Ori_R_average_atMatch * world_ObserverLimb
 new_world_MocapLimb_Ori_R = world_MocapLimb_Ori_R * mocapObserver_Ori_R
 
 # Allows the position of the mocap to match with the one of the Observer at the desired time, while preserving the transformation between the current frame and the inital one for each iteration
-new_world_MocapLimb_Pos = (world_ObserverLimb_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch.inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch) + world_ObserverLimb_Pos_average_atMatch
+new_world_MocapLimb_Pos = (world_ObserverLimb_Ori_R_average_atMatch * world_MocapLimb_Ori_R_average_atMatch.inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch) + world_ObserverLimb_Pos_average_atMatch
 
 
 
