@@ -341,7 +341,7 @@ def realignData(data_to_shift,  shift):
     if(diffIndexFinal > 0):
         # Removing last diffIndexFinal rows
         data_shifted = data_shifted.iloc[:len(data_shifted) - diffIndexFinal]
-        
+
     overlapIndex = []
     for i in range(len(data_shifted)):
         if(i > diffIndexInit and i < len(data_shifted) + diffIndexFinal):
@@ -441,11 +441,12 @@ if(displayLogs):
 
 if(displayLogs):
     world_mocapLimb_pos_transfo = world_mocapLimb_Ori_R[0].apply(world_mocapLimb_Pos - world_mocapLimb_Pos[0], inverse=True)
+    world_RigidBody_pos_transfo = world_RigidBody_Ori_R[0].apply(world_mocapRigidBody_Pos - world_mocapRigidBody_Pos[0], inverse=True)
     world_ObserverLimb_pos_transfo = world_ObserverLimb_Ori_R[0].apply(world_ObserverLimb_Pos - world_ObserverLimb_Pos[0], inverse=True)
 
-    world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R * world_mocapLimb_Ori_R[0].inv()
-    world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R * world_RigidBody_Ori_R[0].inv()
-    world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R * world_ObserverLimb_Ori_R[0].inv()
+    world_mocapLimb_Ori_R_transfo = world_mocapLimb_Ori_R[0].inv() * world_mocapLimb_Ori_R
+    world_RigidBody_Ori_R_transfo = world_RigidBody_Ori_R[0].inv() * world_RigidBody_Ori_R
+    world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R[0].inv() * world_ObserverLimb_Ori_R
 
     world_mocapLimb_Ori_transfo_euler = world_mocapLimb_Ori_R_transfo.as_euler("xyz")
     world_RigidBody_Ori_transfo_euler = world_RigidBody_Ori_R_transfo.as_euler("xyz")
@@ -469,6 +470,9 @@ if(displayLogs):
     figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_ObserverLimb_Ori_transfo_pitch'))
     figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_ObserverLimb_Ori_transfo_yaw'))
 
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_pos_transfo[:,0], mode='lines', name='world_RigidBody_pos_transfo_x'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_pos_transfo[:,1], mode='lines', name='world_RigidBody_pos_transfo_y'))
+    figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_RigidBody_pos_transfo[:,2], mode='lines', name='world_RigidBody_pos_transfo_z'))
 
     figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,0], mode='lines', name='world_mocapLimb_pos_transfo_x'))
     figTransfo.add_trace(go.Scatter(x=realignedMocapData["Time(Seconds)"], y=world_mocapLimb_pos_transfo[:,1], mode='lines', name='world_mocapLimb_pos_transfo_y'))
