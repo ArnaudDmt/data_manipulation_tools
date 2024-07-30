@@ -4,6 +4,7 @@ set -e
 
 
 
+
 ############################ Absolute paths initialization ############################
 
 # current working directory
@@ -13,6 +14,8 @@ mc_rtc_yaml="$HOME/.config/mc_rtc/mc_rtc.yaml"
 mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
 
 
+
+############################ Configuration files test ############################
 
 
 if [ ! -f "$replay_yaml" ]; then
@@ -91,11 +94,9 @@ fi
 sed -i "/^\([[:space:]]*projectName: \).*/s//\1"$projectName"/" $replay_yaml
 
 
-############################ Variables initialization ############################
 
+############################ Relative paths initialization ############################
 
-# indicates if the scripts must be ran
-runScript=false
 
 # main folders
 rawDataPath="$projectPath/raw_data"
@@ -117,12 +118,22 @@ projectConfig="$projectPath/projectConfig.yaml"
 #mocapMarkersConf="markersPlacements.yaml"
 
 
+
+############################ Variables initialization ############################
+
+# indicates if the scripts must be ran
+runScript=false
 if [[ $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF: //') == "true" ]]; then
     useHartley=true
 else
     useHartley=false
 fi
-
+displayLogs=false
+if [ ! $# -eq 0 ];then
+    if [[ "$1" == "displayLogs" ]]; then
+        displayLogs=true
+    fi
+fi
 
 
 
@@ -307,7 +318,7 @@ if [ -f "$resampledMocapData" ]; then
 else
     echo "Starting the resampling of the mocap's signal."
     cd $cwd/$scriptsPath
-    python resampleAndExtract_fromMocap.py "$timeStep" "False" "y" "../$projectPath"
+    python resampleAndExtract_fromMocap.py "$timeStep" "$displayLogs" "y" "../$projectPath"
     echo "Resampling of the mocap's signal completed."
     runScript=true
 fi
@@ -333,7 +344,7 @@ if [ -f "$realignedMocapLimbData" ] && ! $runScript; then
 else
     echo "Starting the cross correlation for temporal data alignement."
     cd $cwd/$scriptsPath
-    python crossCorrelation.py "$timeStep" "False" "y" "../$projectPath"
+    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "../$projectPath"
     echo "Temporal alignement of the mocap's data with the observer's data completed."
     runScript=true
 fi
@@ -348,7 +359,7 @@ if [ -f "$resultMocapLimbData" ] && ! $runScript; then
     select changeMatchTime in "No" "Yes"; do
         case $changeMatchTime in
             No ) break;;
-            Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "False" "y" "../$projectPath"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
+            Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
         esac
     done
 else
@@ -356,7 +367,7 @@ else
     echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
     read matchTime
     cd $cwd/$scriptsPath
-    python matchInitPose.py "$matchTime" "False" "y" "../$projectPath"
+    python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 
@@ -365,16 +376,38 @@ cd $cwd
 
 ############################ Replaying the final result ############################
 
-echo "Do you want to replay the log with the obtained mocap's data?"
-select replayWithMocap in "Yes" "No"; do
-    case $replayWithMocap in
-        Yes ) mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog; break;;
-        No ) exit;;
-    esac
-done
 
-# if $useHartley; then
-#     hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
-# fi
+
+if $useHartley; then
+    echo "Replaying the log required by the plugin of Hartley's observer"
+    mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
+
+    hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
+    hartleyDir=$(dirname "$hartleyRoutine")
+
+    cd "$hartleyDir"
+    if find data -mindepth 1 -maxdepth 1 | read; then
+        rm data/*
+    fi
+
+    cp "/tmp/HartleyInput.txt" "data/HartleyInput.txt"
+
+    cd /tmp/
+    LOGFinal=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
+    echo "Copying the final replay's bin file ($LOGFinal) to the Hartley's data/ folder"
+    cp $LOGFinal "$hartleyDir"/data
+    
+    cd "$hartleyDir"
+    ./runLogsRoutine.sh
+else
+    echo "Do you want to replay the log with the obtained mocap's data?"
+    select replayWithMocap in "Yes" "No"; do
+        case $replayWithMocap in
+            Yes ) mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog; break;;
+            No ) break;;
+        esac
+    done    
+fi
 
 echo "The pipeline finished without any issue. If you are not satisfied with the result, please re-run the scripts one by one and help yourself with the logs for the debug. Please also make sure that the time you set for the matching of the mocap and the observer is correct."
+exit
