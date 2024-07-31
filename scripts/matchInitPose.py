@@ -184,7 +184,7 @@ lowerIndex = matchIndex - averageInterval
 if(lowerIndex < 0):
     lowerIndex = 0
 
-overlapIndex[matchIndex:] = 0
+overlapIndex[:matchIndex] = 0
 
 world_MocapLimb_Pos_average_atMatch = np.mean(world_MocapLimb_Pos[lowerIndex:matchIndex + averageInterval], axis = 0)
 world_ObserverLimb_Pos_average_atMatch = np.mean(world_ObserverLimb_Pos[lowerIndex:matchIndex + averageInterval], axis = 0)
