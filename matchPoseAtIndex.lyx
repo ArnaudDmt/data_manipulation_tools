@@ -87,32 +87,73 @@
 \begin_body
 
 \begin_layout Section
-New attempt
-\end_layout
-
-\begin_layout Subsection
-Match at 0
+Match the pose of the mocap with the one of the observer at time m
 \end_layout
 
 \begin_layout Standard
-at 0,
+Let us write 
+\begin_inset Formula $m$
+\end_inset
+
+ (mocap) and 
+\begin_inset Formula $\hat{m}$
+\end_inset
+
+ (observer) the frame of the floating base,
+ respectively for the mocap and the observer,
+ at the time 
+\begin_inset Formula $m$
+\end_inset
+
+ we want the mocap to match the one of the observer.
  
-\begin_inset Formula $^{W'}R_{0'}={}^{W'}R_{0}$
+\begin_inset Formula $c$
 \end_inset
 
  and 
-\begin_inset Formula $^{W'}p_{0'}={}^{W'}p_{0}$
+\begin_inset Formula $c'$
 \end_inset
 
+ are the corresponding frames at any time 
+\begin_inset Formula $c$
+\end_inset
 
+.
+\end_layout
+
+\begin_layout Standard
+We also denote 
+\begin_inset Formula $m'$
+\end_inset
+
+ and 
+\begin_inset Formula $c'$
+\end_inset
+
+ the mocap's frames (at time 
+\begin_inset Formula $m$
+\end_inset
+
+ and any time 
+\begin_inset Formula $c$
+\end_inset
+
+) obtained after the matching.
+\end_layout
+
+\begin_layout Standard
+We want the position and orientation of the mocap's frame to match the one of the observer at the time 
+\begin_inset Formula $m$
+\end_inset
+
+:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-^{W'}R_{C} & =^{W'}R_{0}{}^{0}R_{C}\\
- & =^{W'}R_{0}{}^{0}R_{W}{}^{W}R_{C}\\
- & =^{W'}R_{0'}{}^{W}R_{0}^{T}{}^{W}R_{C}
+^{W}R_{m'} & =^{W}R_{\hat{m}}\\
+^{W}p_{m'} & =^{W}p_{\hat{m}}
 \end{align*}
 
 \end_inset
@@ -123,8 +164,8 @@ at 0,
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-^{W'}p_{C} & =^{W'}p_{0}+{}^{W'}R_{0}{}^{0}p_{C}\\
- & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{0}p_{C}
+^{W}R_{c'} & =^{W}R_{m'}{}^{m}R_{c}\\
+ & =^{W}R_{\hat{m}}{}^{m}R_{c}
 \end{align*}
 
 \end_inset
@@ -136,10 +177,8 @@ at 0,
 With 
 \begin_inset Formula 
 \begin{align*}
-^{0}p_{C} & =^{0}p_{W}+{}^{0}R_{W}{}^{W}p_{C}\\
- & =-^{0}R_{W}{}^{W}p_{0}+{}^{0}R_{W}{}^{W}p_{C}\\
- & =-^{W}R_{0}^{T}{}^{W}p_{0}+{}^{W}R_{0}^{T}{}^{W}p_{C}\\
- & =^{W}R_{0}^{T}\left(^{W}p_{C}-{}^{W}p_{0}\right)
+^{m}R_{C} & =^{m}R_{W}{}^{W}R_{C}\\
+ & =^{W}R_{m}^{T}{}^{W}R_{C}
 \end{align*}
 
 \end_inset
@@ -148,56 +187,25 @@ With
 \end_layout
 
 \begin_layout Standard
-Finally:
+In the code,
+ only the yaw part of the orientation is matched,
+ which means that we don't match the tilt of the mocap with the one of the observer as it is observable.
 \end_layout
 
 \begin_layout Standard
+We now want to match the positions at time 
+\begin_inset Formula $m$
+\end_inset
+
+ and get the new positions at any time while preserving the transformation we had between the frames of the mocap at each iteration
+\end_layout
+
+\begin_layout Standard
+With 
 \begin_inset Formula 
 \begin{align*}
-^{W'}p_{C} & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{0}p_{C}\\
- & =^{W'}p_{0'}+{}^{W'}R_{0'}{}^{W}R_{0}^{T}\left(^{W}p_{C}-{}^{W}p_{0}\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Subsection
-Match at m
-\end_layout
-
-\begin_layout Standard
-at m:
- 
-\begin_inset Formula $^{W'}R_{m'}={}^{W'}R_{m}$
-\end_inset
-
- and 
-\begin_inset Formula $^{W'}p_{m'}={}^{W'}p_{m}$
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-^{W'}R_{C} & =^{W'}R_{m}{}^{m}R_{C}\\
- & =^{W'}R_{m}{}^{m}R_{W}{}^{W}R_{C}\\
- & =^{W'}R_{m'}{}^{W}R_{m}^{T}{}^{W}R_{C}
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\begin{align*}
-^{W'}p_{C} & =^{W'}p_{m}+{}^{W'}R_{m}{}^{m}p_{C}\\
- & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{m}p_{C}
+^{W}p_{c'} & =^{W}p_{m'}+{}^{W}R_{m'}{}^{m}p_{c}\\
+ & =^{W}p_{\hat{m}}+{}^{W}R_{m'}{}^{m}p_{c}
 \end{align*}
 
 \end_inset
@@ -207,28 +215,14 @@ at m:
 
 \begin_layout Standard
 With 
-\begin_inset Formula 
-\begin{align*}
-^{m}p_{C} & =^{m}p_{W}+{}^{m}R_{W}{}^{W}p_{C}\\
- & =-^{m}R_{W}{}^{W}p_{m}+{}^{m}R_{W}{}^{W}p_{C}\\
- & =-^{W}R_{m}^{T}{}^{W}p_{m}+{}^{W}R_{m}^{T}{}^{W}p_{C}\\
- & =^{W}R_{m}^{T}\left(^{W}p_{C}-{}^{W}p_{m}\right)
-\end{align*}
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-Finally:
 \end_layout
 
 \begin_layout Standard
 \begin_inset Formula 
 \begin{align*}
-^{W'}p_{C} & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{m}p_{C}\\
- & =^{W'}p_{m'}+{}^{W'}R_{m'}{}^{W}R_{m}^{T}\left(^{W}p_{C}-{}^{W}p_{m}\right)
+^{m}p_{c} & =^{m}p_{W}+{}^{m}R_{W}{}^{W}p_{c}\\
+ & =-^{W}R_{m}^{T}{}^{W}p_{m}+{}^{W}R_{m}^{T}{}^{W}p_{c}\\
+ & =^{W}R_{m}^{T}\left(^{W}p_{c}-{}^{W}p_{m}\right)
 \end{align*}
 
 \end_inset

@@ -61,9 +61,28 @@ def continuous_euler(angles):
         continuous_angles[i] = continuous_angles[i-1] + diff
     return continuous_angles
 
+def get_invariant_orthogonal_vector(Rhat, Rtez):
+    epsilon = 2.2204460492503131e-16
+    Rhat_Rtez = np.dot(Rhat, Rtez)
+    if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
+        return np.array([1, 0, 0])
+    else:
+        return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
 
+def merge_tilt_with_yaw_axis_agnostic(Rtez, R2):
+    ez = np.array([0, 0, 1])
+    v1 = Rtez
 
+    m = get_invariant_orthogonal_vector(R2, Rtez)
+    m = m / np.linalg.norm(m)
 
+    ml = np.dot(R2.T, m)
+
+    R_temp1 = np.column_stack((np.cross(m, ez), m, ez))
+
+    R_temp2 = np.vstack((np.cross(ml, v1).T, ml.T, v1.T))
+
+    return np.dot(R_temp1, R_temp2)
 
 ###############################  Poses retrieval  ###############################
 
@@ -78,6 +97,8 @@ world_ObserverLimb_Ori_R = R.from_quat(observer_data[["MocapAligner_worldBodyKin
 # We get the inverse of the orientation as the inverse quaternion was stored
 world_ObserverLimb_Ori_R = world_ObserverLimb_Ori_R.inv()
 
+
+overlapIndex = mocapData['overlapTime']
 
 
 #####################  Orientation and position difference wrt the initial frame  #####################
@@ -159,14 +180,20 @@ if(displayLogs):
 # Find the index in the pandas dataframe that corresponds to the input time
 matchIndex = mocapData[mocapData['t'] == matchTime].index[0]
 
-world_MocapLimb_Pos_average_atMatch = np.mean(world_MocapLimb_Pos[matchIndex - averageInterval:matchIndex + averageInterval], axis = 0)
-world_ObserverLimb_Pos_average_atMatch = np.mean(world_ObserverLimb_Pos[matchIndex - averageInterval:matchIndex + averageInterval], axis = 0)
+lowerIndex = matchIndex - averageInterval
+if(lowerIndex < 0):
+    lowerIndex = 0
+
+overlapIndex[matchIndex:] = 0
+
+world_MocapLimb_Pos_average_atMatch = np.mean(world_MocapLimb_Pos[lowerIndex:matchIndex + averageInterval], axis = 0)
+world_ObserverLimb_Pos_average_atMatch = np.mean(world_ObserverLimb_Pos[lowerIndex:matchIndex + averageInterval], axis = 0)
 
 world_MocapLimb_Ori_Quat = world_MocapLimb_Ori_R.as_quat()
 world_ObserverLimb_Ori_quat = world_ObserverLimb_Ori_R.as_quat()
 
-world_MocapLimb_Ori_Quat_average_atMatch = np.mean(world_MocapLimb_Ori_Quat[matchIndex - averageInterval:matchIndex + averageInterval], axis = 0)
-world_ObserverLimb_Ori_Quat_average_atMatch = np.mean(world_ObserverLimb_Ori_quat[matchIndex - averageInterval:matchIndex + averageInterval], axis = 0)
+world_MocapLimb_Ori_Quat_average_atMatch = np.mean(world_MocapLimb_Ori_Quat[lowerIndex:matchIndex + averageInterval], axis = 0)
+world_ObserverLimb_Ori_Quat_average_atMatch = np.mean(world_ObserverLimb_Ori_quat[lowerIndex:matchIndex + averageInterval], axis = 0)
 
 
 world_MocapLimb_Ori_R_average_atMatch = R.from_quat(normalize(world_MocapLimb_Ori_Quat_average_atMatch))
@@ -178,12 +205,20 @@ world_ObserverLimb_Ori_R_average_atMatch = R.from_quat(normalize(world_ObserverL
 
 MocapLimb_world_Ori_R_average_atMatch = world_MocapLimb_Ori_R_average_atMatch.inv()
 
-mocapObserver_Ori_R = MocapLimb_world_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch
-new_world_MocapLimb_Ori_R = world_MocapLimb_Ori_R * mocapObserver_Ori_R
+# mocapObserver_Ori_R = MocapLimb_world_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch
+# new_world_MocapLimb_Ori_R = world_MocapLimb_Ori_R * mocapObserver_Ori_R
+new_world_MocapLimb_Ori_R = world_ObserverLimb_Ori_R_average_atMatch * MocapLimb_world_Ori_R_average_atMatch * world_MocapLimb_Ori_R
 
-# Allows the position of the mocap to match with the one of the Observer at the desired time
-new_world_MocapLimb_Pos = (world_ObserverLimb_Ori_R_average_atMatch * world_MocapLimb_Ori_R_average_atMatch.inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch) + world_ObserverLimb_Pos_average_atMatch
 
+
+# Allows the yaw of the mocap to match with the one of the Observer at the desired time
+world_ObserverLimb_Ori_R_transfoWithRespectToMatch = world_MocapLimb_Ori_R_average_atMatch.inv() * world_MocapLimb_Ori_R
+mergedOriAtMatch = merge_tilt_with_yaw_axis_agnostic(world_MocapLimb_Ori_R_average_atMatch.apply(np.array([0, 0, 1]), inverse=True), world_ObserverLimb_Ori_R_average_atMatch.as_dcm())
+mergedOriAtMatch_R = R.from_dcm(mergedOriAtMatch)
+new_world_MocapLimb_Ori_R = mergedOriAtMatch_R * world_ObserverLimb_Ori_R_transfoWithRespectToMatch
+
+# We do the same for the position
+new_world_MocapLimb_Pos = world_ObserverLimb_Pos_average_atMatch + (mergedOriAtMatch_R * world_MocapLimb_Ori_R_average_atMatch.inv()).apply(world_MocapLimb_Pos - world_MocapLimb_Pos_average_atMatch)
 
 
 ###############################  Plot of the matched poses  ###############################
@@ -270,6 +305,9 @@ mocapData['worldMocapLimbOri_qx'] = new_world_MocapLimb_Ori_quat[:,0]
 mocapData['worldMocapLimbOri_qy'] = new_world_MocapLimb_Ori_quat[:,1]
 mocapData['worldMocapLimbOri_qz'] = new_world_MocapLimb_Ori_quat[:,2]
 mocapData['worldMocapLimbOri_qw'] = new_world_MocapLimb_Ori_quat[:,3]
+
+mocapData['overlapTime'] = overlapIndex
+
 
 
 
