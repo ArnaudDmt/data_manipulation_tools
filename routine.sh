@@ -3,8 +3,6 @@
 set -e
 
 
-
-
 ############################ Absolute paths initialization ############################
 
 # current working directory
@@ -377,37 +375,62 @@ cd $cwd
 ############################ Replaying the final result ############################
 
 
-
-if $useHartley; then
-    echo "Replaying the log required by the plugin of Hartley's observer"
-    mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
-
-    hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
-    hartleyDir=$(dirname "$hartleyRoutine")
-
-    cd "$hartleyDir"
-    if find data -mindepth 1 -maxdepth 1 | read; then
-        rm data/*
-    fi
-
-    cp "/tmp/HartleyInput.txt" "data/HartleyInput.txt"
-
+observerResultsCSV="$outputDataPath/observerResultsCSV.csv"
+if [ -f "$observerResultsCSV" ]; then
+    echo "The final csv file containing the results of all the observers already exists. Working with this data."
+else
     cd /tmp/
     LOGFinal=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
-    echo "Copying the final replay's bin file ($LOGFinal) to the Hartley's data/ folder"
-    cp $LOGFinal "$hartleyDir"/data
-    
-    cd "$hartleyDir"
-    ./runLogsRoutine.sh
-else
-    echo "Do you want to replay the log with the obtained mocap's data?"
-    select replayWithMocap in "Yes" "No"; do
-        case $replayWithMocap in
-            Yes ) mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog; break;;
-            No ) break;;
-        esac
-    done    
+    mc_bin_to_log "$LOGFinal"
+    echo "Copying the final replay's csv file to the output_data folder"
+    cp $LOGFinal $observerResultsCSV
 fi
+
+
+HartleyOutputCSV="$outputDataPath/HartleyOutputCSV.csv" 
+
+if [ -f "$observerResultsCSV" ]; then
+    echo "The csv file containing the results of Hartley's observer already exists. Working with this data."
+else
+    if $useHartley; then
+        echo "Replaying the log required by the plugin of Hartley's observer"
+        mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
+
+        hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
+        hartleyDir=$(dirname "$hartleyRoutine")
+
+        cd "$hartleyDir"
+        if find data -mindepth 1 -maxdepth 1 | read; then
+            rm data/*
+        fi
+
+        cp "/tmp/HartleyInput.txt" "data/HartleyInput.txt"
+        
+        cd "$hartleyDir"
+        ./runLogsRoutine.sh $cwd/$observerResultsCSV
+
+        cp "$hartleyDir/data/HartleyOutput.csv" $HartleyOutputCSV
+    fi
+fi
+
+
+cd $cwd/$scriptsPath
+
+echo "Plotting the results."
+exit
+python plotEstimatorsResults.py "../$projectPath"
+
+cd $cwd
+
+
+echo "Do you want to replay the log with the obtained mocap's data?"
+select replayWithMocap in "Yes" "No"; do
+    case $replayWithMocap in
+        Yes ) mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog; break;;
+        No ) break;;
+    esac
+done    
+
 
 echo "The pipeline finished without any issue. If you are not satisfied with the result, please re-run the scripts one by one and help yourself with the logs for the debug. Please also make sure that the time you set for the matching of the mocap and the observer is correct."
 exit
