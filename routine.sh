@@ -416,9 +416,45 @@ fi
 
 cd $cwd/$scriptsPath
 
-echo "Plotting the results."
-exit
-python plotEstimatorsResults.py "../$projectPath"
+echo "Plotting and formatting the results to evaluate the performances of the observers."
+
+python plotAndFormatResults.py "$displayLogs" "../$projectPath"
+
+cd $cwd
+
+
+mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
+if [ -f "$mocapFormattedResults" ]; then
+    mkdir -p "$outputDataPath/evals"
+    if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
+        mkdir -p "$outputDataPath/evals/KineticsObserver"
+        cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
+        mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
+    fi
+    if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
+        mkdir -p "$outputDataPath/evals/Vanyte"
+        cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
+        mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
+    fi
+    if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
+        mkdir -p "$outputDataPath/evals/Tilt"
+        cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
+        mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
+    fi
+    if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
+        mkdir -p "$outputDataPath/evals/Controller"
+        cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
+        mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
+    fi
+    if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
+        mkdir -p "$outputDataPath/evals/Hartley"
+        cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
+        mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
+    fi
+    rm $mocapFormattedResults
+fi
+
+
 
 cd $cwd
 
