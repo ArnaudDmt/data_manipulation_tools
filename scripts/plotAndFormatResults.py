@@ -11,6 +11,7 @@ import os.path
 
 
 displayLogs = True
+writeFormattedData = False
 
 withKO = False
 withVanyte = False
@@ -21,24 +22,26 @@ withHartley = False
 
 path_to_project = ".."
 
+
 if(len(sys.argv) > 1):
-    displayLogs = sys.argv[2].lower() == 'true'
+    displayLogs = sys.argv[1].lower() == 'true'
     if(len(sys.argv) > 2):
         path_to_project = sys.argv[2]
+    if(len(sys.argv) > 3):
+        writeFormattedData = sys.argv[3].lower() == 'true'
 
 
 # Read the CSV file into a DataFrame
 
 dfObservers = pd.read_csv(f'{path_to_project}/output_data/observerResultsCSV.csv', delimiter=';')
 
-if os.path.isfile(f'{path_to_project}/output_data/HartleyOutput.csv') and 'HartleyIEKF_imuFbKine_position_x' in dfObservers.columns:
-    dfHartley = pd.read_csv(f'{path_to_project}/output_data/HartleyOutput.csv', delimiter=';')
+if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'HartleyIEKF_imuFbKine_position_x' in dfObservers:
+    dfHartley = pd.read_csv(f'{path_to_project}/output_data/HartleyOutputCSV.csv', delimiter=';')
     withHartley = True
-else:
-    sys.exit(0)
 
 
-
+dfObservers = dfObservers.truncate(after=500)
+dfHartley = dfHartley.truncate(after=500)
 
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW', 'KO'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('MCKineticsObserver_globalWorldCentroidState', 'KoState'), inplace=True)
@@ -83,7 +86,6 @@ def continuous_euler(angles):
 ###############################  Plots  ###############################
 
 
-
 if(withMocap):
     mocap = dfObservers[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
     df_mocap_toIgnore = dfObservers[dfObservers["Mocap_datasOverlapping"] != "Datas overlap"]
@@ -98,26 +100,27 @@ if(withMocap):
     euler_angles_Mocap_overlap = rMocap_overlap.as_euler('xyz')
     euler_angles_Mocap_overlap = continuous_euler(euler_angles_Mocap_overlap)
 
-    dfMocapPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfMocapPose['timestamp'] = dfObservers['t']
-    dfMocapPose['tx'] = posMocap_overlap[:,0]
-    dfMocapPose['ty'] = posMocap_overlap[:,1]
-    dfMocapPose['tz'] = posMocap_overlap[:,2]
-    dfMocapPose['qx'] = quaternionsMocap_overlap_conjugate[:,0]
-    dfMocapPose['qy'] = quaternionsMocap_overlap_conjugate[:,1]
-    dfMocapPose['qz'] = quaternionsMocap_overlap_conjugate[:,2]
-    dfMocapPose['qw'] = quaternionsMocap_overlap_conjugate[:,3]
+    if(writeFormattedData):
+        dfMocapPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfMocapPose['timestamp'] = dfObservers['t']
+        dfMocapPose['tx'] = posMocap_overlap[:,0]
+        dfMocapPose['ty'] = posMocap_overlap[:,1]
+        dfMocapPose['tz'] = posMocap_overlap[:,2]
+        dfMocapPose['qx'] = quaternionsMocap_overlap_conjugate[:,0]
+        dfMocapPose['qy'] = quaternionsMocap_overlap_conjugate[:,1]
+        dfMocapPose['qz'] = quaternionsMocap_overlap_conjugate[:,2]
+        dfMocapPose['qw'] = quaternionsMocap_overlap_conjugate[:,3]
 
-    dfMocapPose = dfMocapPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfMocapPose = dfMocapPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    txtOutput = f'{path_to_project}/output_data/formattedMocapTraj.txt'
-    dfMocapPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        txtOutput = f'{path_to_project}/output_data/formattedMocapTraj.txt'
+        dfMocapPose.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(txtOutput, 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(txtOutput, 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
     if(len(df_mocap_toIgnore) > 0):
         posMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
@@ -141,28 +144,29 @@ if(withKO):
     euler_angles_KO = rKO.as_euler('xyz')
     euler_angles_KO = continuous_euler(euler_angles_KO)
 
-    rKo_fb_quat = rKO.as_quat()
+    if(writeFormattedData):
+        rKo_fb_quat = rKO.as_quat()
 
-    dfKoPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfKoPose['timestamp'] = dfObservers['t']
-    dfKoPose['tx'] = posKO[:,0]
-    dfKoPose['ty'] = posKO[:,1]
-    dfKoPose['tz'] = posKO[:,2]
-    dfKoPose['qx'] = rKo_fb_quat[:,0]
-    dfKoPose['qy'] = rKo_fb_quat[:,1]
-    dfKoPose['qz'] = rKo_fb_quat[:,2]
-    dfKoPose['qw'] = rKo_fb_quat[:,3]
+        dfKoPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfKoPose['timestamp'] = dfObservers['t']
+        dfKoPose['tx'] = posKO[:,0]
+        dfKoPose['ty'] = posKO[:,1]
+        dfKoPose['tz'] = posKO[:,2]
+        dfKoPose['qx'] = rKo_fb_quat[:,0]
+        dfKoPose['qy'] = rKo_fb_quat[:,1]
+        dfKoPose['qz'] = rKo_fb_quat[:,2]
+        dfKoPose['qw'] = rKo_fb_quat[:,3]
 
-    dfKoPose = dfKoPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfKoPose = dfKoPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    txtOutput = f'{path_to_project}/output_data/formattedKoTraj.txt'
-    dfKoPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        txtOutput = f'{path_to_project}/output_data/formattedKoTraj.txt'
+        dfKoPose.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(txtOutput, 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(txtOutput, 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
 if(withVanyte):
     posVanyte = dfObservers[['Vanyte_tx', 'Vanyte_ty', 'Vanyte_tz']].to_numpy()
@@ -175,28 +179,29 @@ if(withVanyte):
     euler_angles_vanyte = rVanyte.as_euler('xyz')
     euler_angles_vanyte = continuous_euler(euler_angles_vanyte)
 
-    rVanyte_fb_quat = rVanyte.as_quat()
+    if(writeFormattedData):
+        rVanyte_fb_quat = rVanyte.as_quat()
 
-    dfVanytePose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfVanytePose['timestamp'] = dfObservers['t']
-    dfVanytePose['tx'] = posVanyte[:,0]
-    dfVanytePose['ty'] = posVanyte[:,1]
-    dfVanytePose['tz'] = posVanyte[:,2]
-    dfVanytePose['qx'] = rVanyte_fb_quat[:,0]
-    dfVanytePose['qy'] = rVanyte_fb_quat[:,1]
-    dfVanytePose['qz'] = rVanyte_fb_quat[:,2]
-    dfVanytePose['qw'] = rVanyte_fb_quat[:,3]
+        dfVanytePose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfVanytePose['timestamp'] = dfObservers['t']
+        dfVanytePose['tx'] = posVanyte[:,0]
+        dfVanytePose['ty'] = posVanyte[:,1]
+        dfVanytePose['tz'] = posVanyte[:,2]
+        dfVanytePose['qx'] = rVanyte_fb_quat[:,0]
+        dfVanytePose['qy'] = rVanyte_fb_quat[:,1]
+        dfVanytePose['qz'] = rVanyte_fb_quat[:,2]
+        dfVanytePose['qw'] = rVanyte_fb_quat[:,3]
 
-    dfVanytePose = dfVanytePose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfVanytePose = dfVanytePose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    txtOutput = f'{path_to_project}/output_data/formattedVanyteTraj.txt'
-    dfVanytePose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        txtOutput = f'{path_to_project}/output_data/formattedVanyteTraj.txt'
+        dfVanytePose.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(txtOutput, 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(txtOutput, 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
 if(withTilt):
     posTilt = dfObservers[['Tilt_tx', 'Tilt_ty', 'Tilt_tz']].to_numpy()
@@ -209,28 +214,29 @@ if(withTilt):
     euler_angles_Tilt = rTilt.as_euler('xyz')
     euler_angles_Tilt = continuous_euler(euler_angles_Tilt)
 
-    rTilt_fb_quat = rTilt.as_quat()
+    if(writeFormattedData):
+        rTilt_fb_quat = rTilt.as_quat()
 
-    dfTiltPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfTiltPose['timestamp'] = dfObservers['t']
-    dfTiltPose['tx'] = posTilt[:,0]
-    dfTiltPose['ty'] = posTilt[:,1]
-    dfTiltPose['tz'] = posTilt[:,2]
-    dfTiltPose['qx'] = rTilt_fb_quat[:,0]
-    dfTiltPose['qy'] = rTilt_fb_quat[:,1]
-    dfTiltPose['qz'] = rTilt_fb_quat[:,2]
-    dfTiltPose['qw'] = rTilt_fb_quat[:,3]
+        dfTiltPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfTiltPose['timestamp'] = dfObservers['t']
+        dfTiltPose['tx'] = posTilt[:,0]
+        dfTiltPose['ty'] = posTilt[:,1]
+        dfTiltPose['tz'] = posTilt[:,2]
+        dfTiltPose['qx'] = rTilt_fb_quat[:,0]
+        dfTiltPose['qy'] = rTilt_fb_quat[:,1]
+        dfTiltPose['qz'] = rTilt_fb_quat[:,2]
+        dfTiltPose['qw'] = rTilt_fb_quat[:,3]
 
-    dfTiltPose = dfTiltPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfTiltPose = dfTiltPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    txtOutput = f'{path_to_project}/output_data/formattedTiltTraj.txt'
-    dfTiltPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        txtOutput = f'{path_to_project}/output_data/formattedTiltTraj.txt'
+        dfTiltPose.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(txtOutput, 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(txtOutput, 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
 if(withController):
     posController = dfObservers[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
@@ -243,28 +249,29 @@ if(withController):
     euler_angles_Controller = rController.as_euler('xyz')
     euler_angles_Controller = continuous_euler(euler_angles_Controller)
 
-    rController_fb_quat = rController.as_quat()
+    if(writeFormattedData):
+        rController_fb_quat = rController.as_quat()
 
-    dfControllerPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfControllerPose['timestamp'] = dfObservers['t']
-    dfControllerPose['tx'] = posController[:,0]
-    dfControllerPose['ty'] = posController[:,1]
-    dfControllerPose['tz'] = posController[:,2]
-    dfControllerPose['qx'] = rController_fb_quat[:,0]
-    dfControllerPose['qy'] = rController_fb_quat[:,1]
-    dfControllerPose['qz'] = rController_fb_quat[:,2]
-    dfControllerPose['qw'] = rController_fb_quat[:,3]
+        dfControllerPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfControllerPose['timestamp'] = dfObservers['t']
+        dfControllerPose['tx'] = posController[:,0]
+        dfControllerPose['ty'] = posController[:,1]
+        dfControllerPose['tz'] = posController[:,2]
+        dfControllerPose['qx'] = rController_fb_quat[:,0]
+        dfControllerPose['qy'] = rController_fb_quat[:,1]
+        dfControllerPose['qz'] = rController_fb_quat[:,2]
+        dfControllerPose['qw'] = rController_fb_quat[:,3]
 
-    dfControllerPose = dfControllerPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfControllerPose = dfControllerPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    txtOutput = f'{path_to_project}/output_data/formattedControllerTraj.txt'
-    dfControllerPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        txtOutput = f'{path_to_project}/output_data/formattedControllerTraj.txt'
+        dfControllerPose.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(txtOutput, 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(txtOutput, 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
 
 if(withHartley):
@@ -283,29 +290,28 @@ if(withHartley):
     euler_angles_Hartley = rHartley_fb.as_euler('xyz')
     euler_angles_Hartley = continuous_euler(euler_angles_Hartley)
 
-    rHartley_fb_quat = rHartley_fb.as_quat()
+    if(writeFormattedData):
+        rHartley_fb_quat = rHartley_fb.as_quat()
 
-    dfHartley = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-    dfHartley['timestamp'] = dfObservers['t']
-    dfHartley['tx'] = posHartley_fb[:,0]
-    dfHartley['ty'] = posHartley_fb[:,1]
-    dfHartley['tz'] = posHartley_fb[:,2]
-    dfHartley['qx'] = rHartley_fb_quat[:,0]
-    dfHartley['qy'] = rHartley_fb_quat[:,1]
-    dfHartley['qz'] = rHartley_fb_quat[:,2]
-    dfHartley['qw'] = rHartley_fb_quat[:,3]
+        dfHartleyPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfHartleyPose['timestamp'] = dfObservers['t']
+        dfHartleyPose['tx'] = posHartley_fb[:,0]
+        dfHartleyPose['ty'] = posHartley_fb[:,1]
+        dfHartleyPose['tz'] = posHartley_fb[:,2]
+        dfHartleyPose['qx'] = rHartley_fb_quat[:,0]
+        dfHartleyPose['qy'] = rHartley_fb_quat[:,1]
+        dfHartleyPose['qz'] = rHartley_fb_quat[:,2]
+        dfHartleyPose['qw'] = rHartley_fb_quat[:,3]
 
-    dfHartley = dfHartley[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfHartleyPose = dfHartleyPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    dfHartley.to_csv(f'{path_to_project}/output_data/formattedHartleyTraj.txt', header=None, index=None, sep=' ')
+        dfHartleyPose.to_csv(f'{path_to_project}/output_data/formattedHartleyTraj.txt', header=None, index=None, sep=' ')
 
-    line = '# timestamp tx ty tz qx qy qz qw' 
-    with open(f'{path_to_project}/output_data/formattedHartleyTraj.txt', 'r+') as file: 
-        file_data = file.read() 
-        file.seek(0, 0) 
-        file.write(line + '\n' + file_data) 
-
-
+        line = '# timestamp tx ty tz qx qy qz qw' 
+        with open(f'{path_to_project}/output_data/formattedHartleyTraj.txt', 'r+') as file: 
+            file_data = file.read() 
+            file.seek(0, 0) 
+            file.write(line + '\n' + file_data) 
 
 
 if(displayLogs):
@@ -438,7 +444,7 @@ if(displayLogs):
     average_bias_y_tuple_360 = tuple(average_bias_y_360 for _ in range(len(dfObservers)))
     average_bias_z_360 = dfObservers.loc[index_360:index_450, 'Accelerometer_angularVelocity_z'].mean()
     average_bias_z_tuple_360 = tuple(average_bias_z_360 for _ in range(len(dfObservers)))
-
+    
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
