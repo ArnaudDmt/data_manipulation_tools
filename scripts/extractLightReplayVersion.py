@@ -10,7 +10,7 @@ if(len(sys.argv) > 1):
 
         
 # Define a list of patterns you want to match
-partial_pattern = ['MocapAligner']  # Add more patterns as needed
+partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
 input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
 output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
@@ -34,5 +34,5 @@ replayData_light = replayData[light_columns].copy()
 #extractedData = pd.concat([replayData_light, mocapData], axis=1)
 extractedData = replayData_light
 
-extractedData.to_csv(output_csv_file_path, index=False)
+extractedData.to_csv(output_csv_file_path, index=False,  sep=';')
 print("Output CSV file has been saved to", output_csv_file_path)

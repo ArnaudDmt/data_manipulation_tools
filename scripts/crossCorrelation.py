@@ -38,12 +38,13 @@ try:
     resample_str = f'{timeStep_ms}ms'
 except ValueError:
     print(f"The input timestep is not valid: {timeStepInput}")
+    sys.exit(1)
 
 
 output_csv_file_path = f'{path_to_project}/output_data/realignedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv')
-mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=',')
+observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv',  delimiter=';')
+mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=';')
 
 
 
@@ -502,7 +503,7 @@ else:
 
 
 if save_csv == 'y':
-    output_df.to_csv(output_csv_file_path, index=False)
+    output_df.to_csv(output_csv_file_path, index=False, sep=';')
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
     print("Data not saved.")

@@ -569,7 +569,7 @@ else:
     save_csv = save_csv.lower()
 
 if save_csv == 'y':
-    resampled_df.to_csv(output_csv_file_path, index=False)
+    resampled_df.to_csv(output_csv_file_path, index=False, sep=';')
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
     print("Data not saved.")

@@ -33,8 +33,8 @@ else:
 
 output_csv_file_path = f'{path_to_project}/output_data/resultMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv')
-mocapData = pd.read_csv(f'{path_to_project}/output_data/realignedMocapLimbData.csv', delimiter=',')
+observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv', delimiter=';')
+mocapData = pd.read_csv(f'{path_to_project}/output_data/realignedMocapLimbData.csv', delimiter=';')
 
 
 
@@ -309,6 +309,14 @@ mocapData['worldMocapLimbOri_qw'] = new_world_MocapLimb_Ori_quat[:,3]
 mocapData['overlapTime'] = overlapIndex
 
 
+observer_data['Mocap_pos_x'] = new_world_MocapLimb_Pos[:,0]
+observer_data['Mocap_pos_y'] = new_world_MocapLimb_Pos[:,1]
+observer_data['Mocap_pos_z'] = new_world_MocapLimb_Pos[:,2]
+observer_data['Mocap_ori_x'] = new_world_MocapLimb_Ori_quat[:,0]
+observer_data['Mocap_ori_y'] = new_world_MocapLimb_Ori_quat[:,1]
+observer_data['Mocap_ori_z'] = new_world_MocapLimb_Ori_quat[:,2]
+observer_data['Mocap_ori_w'] = new_world_MocapLimb_Ori_quat[:,3]
+observer_data['Mocap_datasOverlapping'] = mocapData['overlapTime'].apply(lambda x: 'Datas overlap' if x == 1 else 'Datas not overlapping')
 
 
 #####################  3D plot of the pose  #####################
@@ -430,7 +438,8 @@ else:
 
 
 if save_csv == 'y':
-    mocapData.to_csv(output_csv_file_path, index=False)
+    mocapData.to_csv(output_csv_file_path, index=False, sep=';')
+    observer_data.to_csv(f'{path_to_project}/output_data/observerResultsCSV.csv', index=False, sep=';')
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
     print("Data not saved.")
