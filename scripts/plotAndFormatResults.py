@@ -40,8 +40,6 @@ if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'Ha
     withHartley = True
 
 
-dfObservers = dfObservers.truncate(after=500)
-dfHartley = dfHartley.truncate(after=500)
 
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW', 'KO'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('MCKineticsObserver_globalWorldCentroidState', 'KoState'), inplace=True)
