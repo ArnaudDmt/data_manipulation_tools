@@ -84,7 +84,7 @@ if $createNewProject; then
     if locate HartleyIEKF.so | grep install;then
         echo "Use_HartleyIEKF: " >> "$projectPath/projectConfig.yaml"
     fi
-    echo "Project created. Please add the raw data of the mocap and mc_rtc's log into $projectPath/raw_data under the names mocapData.csv and logController.bin, and fill in the configuration file $projectPath/projectConfig.yaml."
+    echo "Project created. Please add the raw data of the mocap and mc_rtc's log into $projectPath/raw_data under the names mocapData.csv and controllerLog.bin, and fill in the configuration file $projectPath/projectConfig.yaml."
     exit
 fi
 
@@ -121,11 +121,7 @@ projectConfig="$projectPath/projectConfig.yaml"
 
 # indicates if the scripts must be ran
 runScript=false
-if [[ $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF: //') == "true" ]]; then
-    useHartley=true
-else
-    useHartley=false
-fi
+
 displayLogs=false
 if [ ! $# -eq 0 ];then
     if [[ "$1" == "displayLogs" ]]; then
@@ -136,6 +132,30 @@ fi
 
 
 ############################ Checking if a robot was given to select the mocap markers ############################
+
+
+if grep -v '^#' $projectConfig | grep -q "Use_HartleyIEKF"; then
+    if [[ ! $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF://' | sed 's: ::g') ]]; then
+        echo "Plugin for Hartley's IEKF detected, do you want to add it to the comparison ?"
+        select hartley in "Yes" "No"; do
+            case $hartley in
+                Yes ) 
+                    sed -i "s/Use_HartleyIEKF:/& true/" $projectConfig
+                    break;;
+                No ) 
+                    sed -i "s/Use_HartleyIEKF:/& false/" $projectConfig
+                    break;;
+            esac
+        done
+    fi
+fi
+
+if [[ $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF: //' | sed 's: ::g') == "true" ]]; then
+    useHartley=true
+else
+    useHartley=false
+fi
+
 
 
 if grep -v '^#' $projectConfig | grep -q "EnabledRobot"; then
@@ -287,7 +307,7 @@ else
             
             sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"true"/" $replay_yaml
             mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
-            cd /tmp/
+            cd /tmp
             LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
             echo "Copying the replay's bin file ($LOG) to the output_data folder as logReplay.bin"
             mv $LOG $cwd/$logReplayBin
@@ -376,26 +396,22 @@ cd $cwd
 
 
 observerResultsCSV="$outputDataPath/observerResultsCSV.csv"
-if [ -f "$observerResultsCSV" ]; then
-    echo "The final csv file containing the results of all the observers already exists. Working with this data."
-else
-    cd /tmp/
-    LOGFinal=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
-    mc_bin_to_log "$LOGFinal"
-    echo "Copying the final replay's csv file to the output_data folder"
-    cp $LOGFinal $observerResultsCSV
-fi
+# if [ -f "$observerResultsCSV" ]; then
+#     echo "The final csv file containing the results of all the observers already exists. Working with this data."
+# else
+#     cd /tmp
+#     LOGFinal=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
+#     mc_bin_to_log "$LOGFinal"
+#     echo "Copying the final replay's csv file to the output_data folder"
+#     cp $LOGFinal $observerResultsCSV
+# fi
 
 
 HartleyOutputCSV="$outputDataPath/HartleyOutputCSV.csv" 
-
-if [ -f "$observerResultsCSV" ]; then
+if [ -f "$HartleyOutputCSV" ]; then
     echo "The csv file containing the results of Hartley's observer already exists. Working with this data."
 else
     if $useHartley; then
-        echo "Replaying the log required by the plugin of Hartley's observer"
-        mcrtcLog="$rawDataPath/controllerLog.bin"; pwd; echo $mcrtcLog ; sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"false"/" $replay_yaml; sed -i "/^\([[:space:]]*mocapBodyName: \).*/s//\1"$bodyName"/" $replay_yaml; mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
-
         hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
         hartleyDir=$(dirname "$hartleyRoutine")
 
@@ -409,17 +425,37 @@ else
         cd "$hartleyDir"
         ./runLogsRoutine.sh $cwd/$observerResultsCSV
 
+        cd $cwd
+
         cp "$hartleyDir/data/HartleyOutput.csv" $HartleyOutputCSV
     fi
 fi
 
+echo "Do you want to plot the resulting estimations?"
+select plotResults in "Yes" "No"; do
+    case $plotResults in
+        Yes ) plotResults=true; break;;
+        No )  plotResults=false; break;;
+    esac
+done  
 
-cd $cwd/$scriptsPath
-
-echo "Plotting and formatting the results to evaluate the performances of the observers."
-
-python plotAndFormatResults.py "$displayLogs" "../$projectPath"
-
+if [ -d "$outputDataPath/evals/" ]; then
+    echo "It seems that the estimator evaluation metrics have already been computed, do you want to compute them again?"
+    select recomputeMetrics in "Yes" "No"; do
+        case $recomputeMetrics in
+            Yes )   cd $cwd/$scriptsPath
+                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
+                    break;;
+            No )    cd $cwd/$scriptsPath
+                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "False"; 
+                    break;;
+        esac
+    done   
+else
+    echo "Formatting the results to evaluate the performances of the observers."; 
+    cd $cwd/$scriptsPath
+    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
+fi
 cd $cwd
 
 
@@ -428,35 +464,64 @@ if [ -f "$mocapFormattedResults" ]; then
     mkdir -p "$outputDataPath/evals"
     if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
         mkdir -p "$outputDataPath/evals/KineticsObserver"
+        if ! [ -f "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml" ]; then
+            touch "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+            echo "align_type: posyaw" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+            echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+        fi
         cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
         mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
+        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer"
     fi
     if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
         mkdir -p "$outputDataPath/evals/Vanyte"
+        if ! [ -f "$outputDataPath/evals/Vanyte/eval_cfg.yaml" ]; then
+            touch "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+            echo "align_type: posyaw" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+            echo "align_num_frames: -1" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+        fi
         cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
         mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
+        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte"
     fi
     if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
         mkdir -p "$outputDataPath/evals/Tilt"
+        if ! [ -f "$outputDataPath/evals/Tilt/eval_cfg.yaml" ]; then
+            touch "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+            echo "align_type: posyaw" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+            echo "align_num_frames: -1" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+        fi
         cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
         mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
+        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt"
     fi
     if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
         mkdir -p "$outputDataPath/evals/Controller"
+        if ! [ -f "$outputDataPath/evals/Controller/eval_cfg.yaml" ]; then
+            touch "$outputDataPath/evals/Controller/eval_cfg.yaml"
+            echo "align_type: posyaw" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
+            echo "align_num_frames: -1" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
+        fi
         cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
         mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
+        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller"
     fi
     if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
         mkdir -p "$outputDataPath/evals/Hartley"
+        if ! [ -f "$outputDataPath/evals/Hartley/eval_cfg.yaml" ]; then
+            touch "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+            echo "align_type: posyaw" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+            echo "align_num_frames: -1" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+        fi
         cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
         mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
+        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
     fi
     rm $mocapFormattedResults
+else
+    echo "WTF"
+
 fi
-
-
-
-cd $cwd
 
 
 echo "Do you want to replay the log with the obtained mocap's data?"
