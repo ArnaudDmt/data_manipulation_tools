@@ -21,6 +21,7 @@ withController = False
 withHartley = False
 
 path_to_project = ".."
+scriptName = "finalResults"
 
 
 if(len(sys.argv) > 1):
@@ -40,8 +41,6 @@ if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'Ha
     withHartley = True
 
 
-dfObservers = dfObservers.truncate(after=500)
-dfHartley = dfHartley.truncate(after=500)
 
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW', 'KO'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('MCKineticsObserver_globalWorldCentroidState', 'KoState'), inplace=True)
@@ -378,7 +377,7 @@ if(displayLogs):
 
     # Update layout
     fig.update_layout(
-        title='Position and Euler Angles (Roll, Pitch, Yaw) over Time',
+        title= f'{scriptName}: Pose over time',
         xaxis_title='Time',
         yaxis_title='Value',
         hovermode='x'
@@ -406,10 +405,10 @@ if(displayLogs):
 
     # Update layout
     fig2.update_layout(
-        title='Position x vs y',
         xaxis_title='x',
         yaxis_title='y',
-        hovermode='x'
+        hovermode='x',
+        title=f"{scriptName}: 2D trajectories"
     )
     fig2.update_yaxes(
         scaleanchor="x",
@@ -628,6 +627,7 @@ if(displayLogs):
             x=0,
             y=1
         )
+        , title=f"{scriptName}: 3D trajectories"
     )
 
     # Show the plot
