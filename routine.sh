@@ -509,13 +509,13 @@ done
 
 if [ -d "$outputDataPath/evals/" ]; then
     echo "It seems that the estimator evaluation metrics have already been computed, do you want to compute them again?"
-    select recomputeMetrics in "Yes" "No"; do
+    select recomputeMetrics in "No" "Yes"; do
         case $recomputeMetrics in
-            Yes )   cd $cwd/$scriptsPath
-                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
-                    break;;
             No )    cd $cwd/$scriptsPath
                     python plotAndFormatResults.py "$plotResults" "../$projectPath" "False"; 
+                    break;;
+            Yes )   cd $cwd/$scriptsPath
+                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
                     break;;
         esac
     done   
@@ -586,9 +586,6 @@ if [ -f "$mocapFormattedResults" ]; then
         python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
     fi
     rm $mocapFormattedResults
-else
-    echo "WTF"
-
 fi
 
 
