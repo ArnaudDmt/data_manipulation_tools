@@ -14,7 +14,7 @@ path_to_project = ".."
 averageInterval = 10
 displayLogs = True
 matchTime = 0
-
+scriptName = "matchInitPose"
 
 
 ###############################  User inputs  ###############################
@@ -143,7 +143,8 @@ if(displayLogs):
     figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,1], mode='lines', name='world_ObserverLimb_Pos_y'))
     figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,2], mode='lines', name='world_ObserverLimb_Pos_z'))
 
-    figInitPose.update_layout(title="Initial poses")
+    figInitPose.update_layout(title=f"{scriptName}: Poses before matching")
+
 
     # Show the plotly figure
     figInitPose.show()
@@ -168,7 +169,8 @@ if(displayLogs):
     figTransfoInit.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,1], mode='lines', name='world_ObserverLimb_pos_transfo_y'))
     figTransfoInit.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,2], mode='lines', name='world_ObserverLimb_pos_transfo_z'))
 
-    figTransfoInit.update_layout(title="Initial transformations")
+    figTransfoInit.update_layout(title=f"{scriptName}: Transformations before matching")
+
 
     # Show the plotly figures
     figTransfoInit.show()
@@ -223,34 +225,37 @@ new_world_MocapLimb_Pos = world_ObserverLimb_Pos_average_atMatch + (mergedOriAtM
 
 ###############################  Plot of the matched poses  ###############################
 
+
+new_world_MocapLimb_Ori_euler = new_world_MocapLimb_Ori_R.as_euler("xyz")
+world_ObserverLimb_Ori_euler = world_ObserverLimb_Ori_R.as_euler("xyz")
+
+new_world_MocapLimb_Ori_euler_continuous = continuous_euler(new_world_MocapLimb_Ori_euler)
+world_ObserverLimb_Ori_euler_continuous = continuous_euler(world_ObserverLimb_Ori_euler)
+
+figNewPose = go.Figure()
+
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
+
+figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,0], mode='lines', name='world_ObserverLimb_Ori_roll'))
+figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,1], mode='lines', name='world_ObserverLimb_Ori_pitch'))
+figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,2], mode='lines', name='world_ObserverLimb_Ori_yaw'))
+
+
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,0], mode='lines', name='world_MocapLimb_Pos_x'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,1], mode='lines', name='world_MocapLimb_Pos_y'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,2], mode='lines', name='world_MocapLimb_Pos_z'))
+
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,0], mode='lines', name='world_ObserverLimb_Pos_x'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,1], mode='lines', name='world_ObserverLimb_Pos_y'))
+figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,2], mode='lines', name='world_ObserverLimb_Pos_z'))
+
+figNewPose.update_layout(title=f"{scriptName}: Pose after matching")
+
+figNewPose.write_image(f'{path_to_project}/output_data/scriptResults/matchInitPose/spatially_aligned_pos_transfo.png')
+
 if(displayLogs):
-    new_world_MocapLimb_Ori_euler = new_world_MocapLimb_Ori_R.as_euler("xyz")
-    world_ObserverLimb_Ori_euler = world_ObserverLimb_Ori_R.as_euler("xyz")
-
-    new_world_MocapLimb_Ori_euler_continuous = continuous_euler(new_world_MocapLimb_Ori_euler)
-    world_ObserverLimb_Ori_euler_continuous = continuous_euler(world_ObserverLimb_Ori_euler)
-
-    figNewPose = go.Figure()
-
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
-
-    figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,0], mode='lines', name='world_ObserverLimb_Ori_roll'))
-    figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,1], mode='lines', name='world_ObserverLimb_Ori_pitch'))
-    figNewPose.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_euler_continuous[:,2], mode='lines', name='world_ObserverLimb_Ori_yaw'))
-
-
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,0], mode='lines', name='world_MocapLimb_Pos_x'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,1], mode='lines', name='world_MocapLimb_Pos_y'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Pos[:,2], mode='lines', name='world_MocapLimb_Pos_z'))
-
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,0], mode='lines', name='world_ObserverLimb_Pos_x'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,1], mode='lines', name='world_ObserverLimb_Pos_y'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_ObserverLimb_Pos[:,2], mode='lines', name='world_ObserverLimb_Pos_z'))
-
-    figNewPose.update_layout(title="Resulting pose")
-
     # Show the plotly figure
     figNewPose.show()
 
@@ -258,40 +263,43 @@ if(displayLogs):
 
 #####################  Orientation and position difference wrt the initial frame  #####################
 
+
+new_world_MocapLimb_pos_transfo = new_world_MocapLimb_Ori_R[0].apply(new_world_MocapLimb_Pos - new_world_MocapLimb_Pos[0], inverse=True)
+world_ObserverLimb_pos_transfo = world_ObserverLimb_Ori_R[0].apply(world_ObserverLimb_Pos - world_ObserverLimb_Pos[0], inverse=True)
+
+new_world_MocapLimb_Ori_R_transfo = new_world_MocapLimb_Ori_R[0].inv() * new_world_MocapLimb_Ori_R
+world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R[0].inv() * world_ObserverLimb_Ori_R
+
+new_world_MocapLimb_Ori_transfo_euler = new_world_MocapLimb_Ori_R_transfo.as_euler("xyz")
+world_ObserverLimb_Ori_transfo_euler = world_ObserverLimb_Ori_R_transfo.as_euler("xyz")
+
+new_world_MocapLimb_Ori_transfo_euler_continuous = continuous_euler(new_world_MocapLimb_Ori_transfo_euler)
+world_ObserverLimb_Ori_transfo_euler_continuous = continuous_euler(world_ObserverLimb_Ori_transfo_euler)
+
+figTransfo = go.Figure()
+
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
+
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_ObserverLimb_Ori_transfo_roll'))
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_ObserverLimb_Ori_transfo_pitch'))
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_ObserverLimb_Ori_transfo_yaw'))
+
+
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
+figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
+
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,0], mode='lines', name='world_ObserverLimb_pos_transfo_x'))
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,1], mode='lines', name='world_ObserverLimb_pos_transfo_y'))
+figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,2], mode='lines', name='world_ObserverLimb_pos_transfo_z'))
+
+figTransfo.update_layout(title=f"{scriptName}: Transformations after matching")
+
+figTransfo.write_image(f'{path_to_project}/output_data/scriptResults/matchInitPose/spatially_aligned_ori_transfo.png')
+
 if(displayLogs):
-    new_world_MocapLimb_pos_transfo = new_world_MocapLimb_Ori_R[0].apply(new_world_MocapLimb_Pos - new_world_MocapLimb_Pos[0], inverse=True)
-    world_ObserverLimb_pos_transfo = world_ObserverLimb_Ori_R[0].apply(world_ObserverLimb_Pos - world_ObserverLimb_Pos[0], inverse=True)
-
-    new_world_MocapLimb_Ori_R_transfo = new_world_MocapLimb_Ori_R[0].inv() * new_world_MocapLimb_Ori_R
-    world_ObserverLimb_Ori_R_transfo = world_ObserverLimb_Ori_R[0].inv() * world_ObserverLimb_Ori_R
-
-    new_world_MocapLimb_Ori_transfo_euler = new_world_MocapLimb_Ori_R_transfo.as_euler("xyz")
-    world_ObserverLimb_Ori_transfo_euler = world_ObserverLimb_Ori_R_transfo.as_euler("xyz")
-
-    new_world_MocapLimb_Ori_transfo_euler_continuous = continuous_euler(new_world_MocapLimb_Ori_transfo_euler)
-    world_ObserverLimb_Ori_transfo_euler_continuous = continuous_euler(world_ObserverLimb_Ori_transfo_euler)
-
-    figTransfo = go.Figure()
-
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
-
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_ObserverLimb_Ori_transfo_roll'))
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_ObserverLimb_Ori_transfo_pitch'))
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_ObserverLimb_Ori_transfo_yaw'))
-
-
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
-
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,0], mode='lines', name='world_ObserverLimb_pos_transfo_x'))
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,1], mode='lines', name='world_ObserverLimb_pos_transfo_y'))
-    figTransfo.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_pos_transfo[:,2], mode='lines', name='world_ObserverLimb_pos_transfo_z'))
-
-    figTransfo.update_layout(title="Final Transformations")
-
     # Show the plotly figures
     figTransfo.show()
 
@@ -420,6 +428,7 @@ if(displayLogs):
             x=0,
             y=1
         )
+        , title=f"{scriptName}: 3D trajectory after matching"
     )
 
     # Show the plot

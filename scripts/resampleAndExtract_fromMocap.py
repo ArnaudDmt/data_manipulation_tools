@@ -24,7 +24,7 @@ displayLogs = True
 # Define a list of patterns you want to match
 pattern1 = ['Time(Seconds)','Marker1', 'Marker2', 'Marker3']  # Add more patterns as needed
 pattern2 = r'RigidBody(?!.*Marker)'
-
+scriptName = "Resample and Extract MoCap data"
 
 
 ###############################  User inputs  ###############################
@@ -206,33 +206,38 @@ plotOriginalVsResampled = 'n'
 if(displayLogs):
     plotOriginalVsResampled = input("Do you want to compare the resampled data to the original one? (y/n): ")
 
+
+# Plot the original and resampled data
+fig1 = go.Figure()
+
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tX"], mode='lines', name='Initial_Marker1_tX'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tX"], mode='lines', name='Initial_Marker2_tX'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tX"], mode='lines', name='Initial_Marker3_tX'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tX"], mode='lines', name='Resampled_Marker1_tX'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tX"], mode='lines', name='Resampled_Marker2_tX'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tX"], mode='lines', name='Resampled_Marker3_tX'))
+
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tY"], mode='lines', name='Initial_Marker1_tY'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tY"], mode='lines', name='Initial_Marker2_tY'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tY"], mode='lines', name='Initial_Marker3_tY'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tY"], mode='lines', name='Resampled_Marker1_tY'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tY"], mode='lines', name='Resampled_Marker2_tY'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tY"], mode='lines', name='Resampled_Marker3_tY'))
+
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tZ"], mode='lines', name='Initial_Marker1_tZ'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tZ"], mode='lines', name='Initial_Marker2_tZ'))
+fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tZ"], mode='lines', name='Initial_Marker3_tZ'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tZ"], mode='lines', name='Resampled_Marker1_tZ'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tZ"], mode='lines', name='Resampled_Marker2_tZ'))
+fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tZ"], mode='lines', name='Resampled_Marker3_tZ'))
+
+fig1.update_layout(title=f"{scriptName}: Resampled data vs original one")
+
+
+
+fig1.write_image(f'{path_to_project}/output_data/scriptResults/resampleAndExtractMocap/resampledMocapMarkers.png')
+
 if plotOriginalVsResampled.lower() == 'y':
-    # Plot the original and resampled data
-    fig1 = go.Figure()
-
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tX"], mode='lines', name='Initial_Marker1_tX'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tX"], mode='lines', name='Initial_Marker2_tX'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tX"], mode='lines', name='Initial_Marker3_tX'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tX"], mode='lines', name='Resampled_Marker1_tX'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tX"], mode='lines', name='Resampled_Marker2_tX'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tX"], mode='lines', name='Resampled_Marker3_tX'))
-
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tY"], mode='lines', name='Initial_Marker1_tY'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tY"], mode='lines', name='Initial_Marker2_tY'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tY"], mode='lines', name='Initial_Marker3_tY'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tY"], mode='lines', name='Resampled_Marker1_tY'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tY"], mode='lines', name='Resampled_Marker2_tY'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tY"], mode='lines', name='Resampled_Marker3_tY'))
-
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker1_tZ"], mode='lines', name='Initial_Marker1_tZ'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker2_tZ"], mode='lines', name='Initial_Marker2_tZ'))
-    fig1.add_trace(go.Scatter(x=df_filtered["Time(Seconds)"], y=df_filtered["Marker3_tZ"], mode='lines', name='Initial_Marker3_tZ'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker1_tZ"], mode='lines', name='Resampled_Marker1_tZ'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker2_tZ"], mode='lines', name='Resampled_Marker2_tZ'))
-    fig1.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["Marker3_tZ"], mode='lines', name='Resampled_Marker3_tZ'))
-
-    fig1.update_layout(title="Resampled data vs original one. Position in mm.")
-    
     # Show the plotly figures
     fig1.show()
 
@@ -340,31 +345,34 @@ resampled_df['world_ThreePointsFrame_qw'] = world_ThreePointsFrame_Ori_quat[:,3]
 ###############################  Plot of the resulting positions  ###############################
 
 
+
+# Plot of the resulting poses
+figPositions = go.Figure()
+
+rigidBody_ThreePointsFrame_Pos_plot = np.full((len(resampled_df), 3), rigidBody_ThreePointsFrame_Pos)
+
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tX"], mode='lines', name='world_RigidBody_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tY"], mode='lines', name='world_RigidBody_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tZ"], mode='lines', name='world_RigidBody_Pos_z'))
+
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Pos_z'))
+
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_x"], mode='lines', name='world_ThreePointsFrame_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_y"], mode='lines', name='world_ThreePointsFrame_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_z"], mode='lines', name='world_ThreePointsFrame_Pos_z'))
+
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_x"], mode='lines', name='world_MocapLimb_Pos_x'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_y"], mode='lines', name='world_MocapLimb_Pos_y'))
+figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_z"], mode='lines', name='world_MocapLimb_Pos_z'))
+
+
+figPositions.update_layout(title=f"{scriptName}: Resulting positions in the world")
+
+figPositions.write_image(f'{path_to_project}/output_data/scriptResults/resampleAndExtractMocap/resultingLimbPos.png')
+
 if(displayLogs):
-    # Plot of the resulting poses
-    figPositions = go.Figure()
-
-    rigidBody_ThreePointsFrame_Pos_plot = np.full((len(resampled_df), 3), rigidBody_ThreePointsFrame_Pos)
-
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tX"], mode='lines', name='world_RigidBody_Pos_x'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tY"], mode='lines', name='world_RigidBody_Pos_y'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["RigidBody001_tZ"], mode='lines', name='world_RigidBody_Pos_z'))
-
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Pos_x'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Pos_y'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Pos_plot[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Pos_z'))
-
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_x"], mode='lines', name='world_ThreePointsFrame_Pos_x'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_y"], mode='lines', name='world_ThreePointsFrame_Pos_y'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_ThreePointsFrame_z"], mode='lines', name='world_ThreePointsFrame_Pos_z'))
-
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_x"], mode='lines', name='world_MocapLimb_Pos_x'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_y"], mode='lines', name='world_MocapLimb_Pos_y'))
-    figPositions.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=resampled_df["world_MocapLimb_Pos_z"], mode='lines', name='world_MocapLimb_Pos_z'))
-
-
-    figPositions.update_layout(title="Resulting positions in the world")
-
     # Show the plotly figures
     figPositions.show()
 
@@ -376,52 +384,55 @@ if(displayLogs):
 ###############################  Plot of the resulting orientations  ###############################
 
 
+# Plot of the resulting poses
+figOrientations = go.Figure()
+
+world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
+rigidBody_ThreePointsFrame_Ori_euler = rigidBody_ThreePointsFrame_Ori_R.as_euler("xyz")
+threePointsFrame_MocapLimb_Ori_euler = threePointsFrame_MocapLimb_Ori_R.as_euler("xyz")
+world_ThreePointsFrame_Ori_euler = world_ThreePointsFrame_Ori_R.as_euler("xyz")
+world_MocapLimb_Ori_euler = world_MocapLimb_Ori_R.as_euler("xyz")
+
+rigidBody_MocapLimb_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_MocapLimb_Ori_R
+rigidBody_MocapLimb_Ori_euler = rigidBody_MocapLimb_Ori_R.as_euler("xyz")
+rigidBody_MocapLimb_Ori_euler_plot = np.full((len(world_RigidBody_Ori_euler), 3), rigidBody_MocapLimb_Ori_euler)
+threePointsFrame_MocapLimb_Ori_euler = np.full((len(world_RigidBody_Ori_euler), 3), threePointsFrame_MocapLimb_Ori_euler)
+
+world_RigidBody_Ori_euler_continuous = world_RigidBody_Ori_euler
+rigidBody_ThreePointsFrame_Ori_euler = np.full((len(world_RigidBody_Ori_euler_continuous), 3), rigidBody_ThreePointsFrame_Ori_euler)
+world_ThreePointsFrame_Ori_euler_continuous = world_ThreePointsFrame_Ori_euler
+world_MocapLimb_Ori_euler_continuous = world_MocapLimb_Ori_euler
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,0], mode='lines', name='threePointsFrame_MocapLimb_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,1], mode='lines', name='threePointsFrame_MocapLimb_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,2], mode='lines', name='threePointsFrame_MocapLimb_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,0], mode='lines', name='rigidBody_MocapLimb_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,1], mode='lines', name='rigidBody_MocapLimb_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,2], mode='lines', name='rigidBody_MocapLimb_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,0], mode='lines', name='world_ThreePointsFrame_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,1], mode='lines', name='world_ThreePointsFrame_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,2], mode='lines', name='world_ThreePointsFrame_Ori_yaw'))
+
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
+figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
+
+figOrientations.update_layout(title=f"{scriptName}: Resulting orientations in the world")
+
+
+figOrientations.write_image(f'{path_to_project}/output_data/scriptResults/resampleAndExtractMocap/resultingLimbOri.png')
+
 if(displayLogs):
-    # Plot of the resulting poses
-    figOrientations = go.Figure()
-
-    world_RigidBody_Ori_euler = world_RigidBody_Ori_R.as_euler("xyz")
-    rigidBody_ThreePointsFrame_Ori_euler = rigidBody_ThreePointsFrame_Ori_R.as_euler("xyz")
-    threePointsFrame_MocapLimb_Ori_euler = threePointsFrame_MocapLimb_Ori_R.as_euler("xyz")
-    world_ThreePointsFrame_Ori_euler = world_ThreePointsFrame_Ori_R.as_euler("xyz")
-    world_MocapLimb_Ori_euler = world_MocapLimb_Ori_R.as_euler("xyz")
-
-    rigidBody_MocapLimb_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_MocapLimb_Ori_R
-    rigidBody_MocapLimb_Ori_euler = rigidBody_MocapLimb_Ori_R.as_euler("xyz")
-    rigidBody_MocapLimb_Ori_euler_plot = np.full((len(world_RigidBody_Ori_euler), 3), rigidBody_MocapLimb_Ori_euler)
-    threePointsFrame_MocapLimb_Ori_euler = np.full((len(world_RigidBody_Ori_euler), 3), threePointsFrame_MocapLimb_Ori_euler)
-
-    world_RigidBody_Ori_euler_continuous = world_RigidBody_Ori_euler
-    rigidBody_ThreePointsFrame_Ori_euler = np.full((len(world_RigidBody_Ori_euler_continuous), 3), rigidBody_ThreePointsFrame_Ori_euler)
-    world_ThreePointsFrame_Ori_euler_continuous = world_ThreePointsFrame_Ori_euler
-    world_MocapLimb_Ori_euler_continuous = world_MocapLimb_Ori_euler
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,0], mode='lines', name='world_RigidBody_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,1], mode='lines', name='world_RigidBody_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_Ori_yaw'))
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,0], mode='lines', name='rigidBody_ThreePointsFrame_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,1], mode='lines', name='rigidBody_ThreePointsFrame_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_ThreePointsFrame_Ori_euler[:,2], mode='lines', name='rigidBody_ThreePointsFrame_Ori_yaw'))
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,0], mode='lines', name='threePointsFrame_MocapLimb_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,1], mode='lines', name='threePointsFrame_MocapLimb_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=threePointsFrame_MocapLimb_Ori_euler[:,2], mode='lines', name='threePointsFrame_MocapLimb_Ori_yaw'))
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,0], mode='lines', name='rigidBody_MocapLimb_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,1], mode='lines', name='rigidBody_MocapLimb_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=rigidBody_MocapLimb_Ori_euler_plot[:,2], mode='lines', name='rigidBody_MocapLimb_Ori_yaw'))
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,0], mode='lines', name='world_ThreePointsFrame_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,1], mode='lines', name='world_ThreePointsFrame_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_ThreePointsFrame_Ori_euler_continuous[:,2], mode='lines', name='world_ThreePointsFrame_Ori_yaw'))
-
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
-    figOrientations.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
-
-    figOrientations.update_layout(title="Resulting orientations in the world")
-
     # Show the plotly figures
     figOrientations.show()
 
@@ -460,7 +471,8 @@ if(displayLogs):
     fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_LocVel[:,1], mode='lines', name='world_RigidBody_LocalLinVel_y'))
     fig3.add_trace(go.Scatter(x=resampled_df["Time(Seconds)"], y=world_RigidBody_LocVel[:,2], mode='lines', name='world_RigidBody_LocalLinVel_z'))
 
-    fig3.update_layout(title="Local linear velocity of the mocapLimb in the world / vs the one of the rigid body")
+    fig3.update_layout(title=f"{scriptName}: Local linear velocity")
+
     # Show the plotly figures
     fig3.show()
 

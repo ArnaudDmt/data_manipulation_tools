@@ -19,8 +19,8 @@ To generate the necessary data, the mc_rtc's log will be replayed, please make s
 
 
 # Troubleshoot
-If you encounter issues either with the final result or during the run, please check these possible reasons:
+If you encounter issues either with the final result or during the run, please check these possible reasons. To help you debugging, the resulting plot of each script is stored in the folder output_data/scriptResults/<scriptName>. You can also run the script with the argument "debug" to display dynamic plots and visualize each step better.
+In addition:
 - Please make sure that the timestep you give at the beginning matches the one used during the run and with the one defined in ".config/mc_rtc/controllers/Passthrough.yaml".
 - Please check that the body's name given in "~/.config/mc_rtc/plugins/MocapAligner.yaml" is correct.
 - Please read the part about pose matching in the case the obtained displacement seems to be correct but the initial pose is not.
-- If a specific script seems to be the issue, please copy and paste the folder "scripts" and the file "markersPlacements.yaml" in the root of the project and run the script using the command "python <script.py>". Some debugging logs will help identifying the issue.

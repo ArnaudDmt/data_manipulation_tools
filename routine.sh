@@ -23,6 +23,13 @@ then
 fi
 
 
+if [[ "$1" == "-h" ]]; then
+  echo "If the results of a script seem incorrect, please run this script with the argument "--debug""
+  exit 0
+fi
+
+
+
 
 ############################ Absolute paths initialization ############################
 
@@ -97,7 +104,10 @@ if $createNewProject; then
     projectPath="Projects/$projectName"
     mkdir $projectPath
     mkdir "$projectPath/raw_data"
-    mkdir "$projectPath/output_data"
+    mkdir -p "$projectPath/output_data/scriptResults"
+    mkdir "$projectPath/output_data/scriptResults/resampleAndExtractMocap"
+    mkdir "$projectPath/output_data/scriptResults/crossCorrelation"
+    mkdir "$projectPath/output_data/scriptResults/matchInitPose"
     
     touch "$projectPath/projectConfig.yaml"
     echo "EnabledBody: " >> "$projectPath/projectConfig.yaml"
@@ -142,12 +152,13 @@ projectConfig="$projectPath/projectConfig.yaml"
 # indicates if the scripts must be ran
 runScript=false
 
-displayLogs=false
+debug=false
 if [ ! $# -eq 0 ];then
-    if [[ "$1" == "displayLogs" ]]; then
-        displayLogs=true
+    if [[ "$1" == "--debug" ]]; then
+        debug=true
     fi
 fi
+displayLogs=$debug
 
 
 
@@ -254,7 +265,7 @@ bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBod
 
 ############################ Needs the timestep to replay the log or resample the mocap's data ############################
 
-if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ]; then
+if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ] || $debug; then
     echo "Use the timestep defined in $mc_rtc_yaml ?"
     select useMainConfRobot in "Yes" "No"; do
         case $useMainConfRobot in
@@ -356,7 +367,17 @@ fi
 cd $cwd
 
 if [ -f "$resampledMocapData" ]; then
-    echo "The mocap's data has already been resampled. Using the existing data."
+    if $debug; then
+        echo "Do you want to run again the mocap data's resampling with the dynamic plots?"
+        select rerunResample in "No" "Yes"; do
+        case $rerunResample in
+            Yes ) cd $cwd/$scriptsPath; python resampleAndExtract_fromMocap.py "$timeStep" "$displayLogs" "y" "../$projectPath"; break;;
+            No ) break;;
+        esac
+        done
+    else
+        echo "The mocap's data has already been resampled. Using the existing data."
+    fi
 else
     echo "Starting the resampling of the mocap's signal."
     cd $cwd/$scriptsPath
@@ -382,7 +403,18 @@ cd $cwd
 
 
 if [ -f "$realignedMocapLimbData" ] && ! $runScript; then
-    echo "The temporally aligned version of the mocap's data already exists. Using the existing data."
+    if $debug; then
+        echo "Do you want to run again the temporal data alignement with the dynamic plots?"
+        select rerunResample in "No" "Yes"; do
+        case $rerunResample in
+            Yes )   cd $cwd/$scriptsPath;
+                    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "../$projectPath"; break;;
+            No ) break;;
+        esac
+        done
+    else
+        echo "The temporally aligned version of the mocap's data already exists. Using the existing data."
+    fi
 else
     echo "Starting the cross correlation for temporal data alignement."
     cd $cwd/$scriptsPath
@@ -396,14 +428,26 @@ cd $cwd
 
 
 if [ -f "$resultMocapLimbData" ] && ! $runScript; then
-    echo "The mocap's data has already been completely treated."
-    echo "Do you want to match the pose of the mocap and of the observer at a different timing?"
-    select changeMatchTime in "No" "Yes"; do
-        case $changeMatchTime in
+    if $debug; then
+        echo "Do you want to run again the spatial data alignement with the dynamic plots?"
+        select rerunResample in "No" "Yes"; do
+        case $rerunResample in
+            Yes )   echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
+                    read matchTime
+                    cd $cwd/$scriptsPath
+                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"; break;;
             No ) break;;
-            Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
         esac
-    done
+        done
+    else
+        echo "The mocap's data has already been completely treated. Do you want to match the pose of the mocap and of the observer at a different timing?"
+        select changeMatchTime in "No" "Yes"; do
+            case $changeMatchTime in
+                No ) break;;
+                Yes ) echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: " ; read matchTime; cd $cwd/$scriptsPath; python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"; echo "Matching of the pose of the mocap with the pose of the observer completed."; break;;
+            esac
+        done
+    fi
 else
     # Prompt the user for input
     echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
