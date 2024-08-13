@@ -3,6 +3,15 @@
 set -e
 
 
+if ! [ -d "env" ]; then
+    sudo apt install python3.8-venv
+    python3.8 -m venv env
+    source env/bin/activate
+    pip install -r requirements.txt
+    deactivate
+fi
+
+source env/bin/activate
 
 # Check if yq is installed
 if ! command -v yq &> /dev/null

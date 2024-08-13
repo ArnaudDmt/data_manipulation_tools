@@ -213,8 +213,8 @@ new_world_MocapLimb_Ori_R = world_ObserverLimb_Ori_R_average_atMatch * MocapLimb
 
 # Allows the yaw of the mocap to match with the one of the Observer at the desired time
 world_ObserverLimb_Ori_R_transfoWithRespectToMatch = world_MocapLimb_Ori_R_average_atMatch.inv() * world_MocapLimb_Ori_R
-mergedOriAtMatch = merge_tilt_with_yaw_axis_agnostic(world_MocapLimb_Ori_R_average_atMatch.apply(np.array([0, 0, 1]), inverse=True), world_ObserverLimb_Ori_R_average_atMatch.as_dcm())
-mergedOriAtMatch_R = R.from_dcm(mergedOriAtMatch)
+mergedOriAtMatch = merge_tilt_with_yaw_axis_agnostic(world_MocapLimb_Ori_R_average_atMatch.apply(np.array([0, 0, 1]), inverse=True), world_ObserverLimb_Ori_R_average_atMatch.as_matrix())
+mergedOriAtMatch_R = R.from_matrix(mergedOriAtMatch)
 new_world_MocapLimb_Ori_R = mergedOriAtMatch_R * world_ObserverLimb_Ori_R_transfoWithRespectToMatch
 
 # We do the same for the position

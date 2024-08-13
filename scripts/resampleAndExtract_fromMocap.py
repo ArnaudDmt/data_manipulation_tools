@@ -246,7 +246,7 @@ if plotOriginalVsResampled.lower() == 'y':
 world_RigidBody_Pos = np.array([resampled_df['RigidBody001_tX'], resampled_df['RigidBody001_tY'], resampled_df['RigidBody001_tZ']]).T
 
 world_RigidBody_Ori_R = R.from_quat(resampled_df[["RigidBody001_qX", "RigidBody001_qY", "RigidBody001_qZ", "RigidBody001_qW"]].values)
-world_RigidBody_Ori_mat = world_RigidBody_Ori_R.as_dcm()
+world_RigidBody_Ori_mat = world_RigidBody_Ori_R.as_matrix()
 
 
 # Pose of the frame defined by the three points in the mocapLimb frame.
@@ -260,7 +260,7 @@ mocapLimb_ThreePointsFrame_z = mocapLimb_ThreePointsFrame_z / np.linalg.norm(moc
 mocapLimb_ThreePointsFrame_Ori = np.column_stack((mocapLimb_ThreePointsFrame_x, mocapLimb_ThreePointsFrame_y, mocapLimb_ThreePointsFrame_z))
 threePointsFrame_MocapLimb_Ori = mocapLimb_ThreePointsFrame_Ori.T
 threePointsFrame_MocapLimb_Pos = -np.matmul(threePointsFrame_MocapLimb_Ori, mocapLimb_ThreePointsFrame_Pos)
-threePointsFrame_MocapLimb_Ori_R = R.from_dcm(threePointsFrame_MocapLimb_Ori)
+threePointsFrame_MocapLimb_Ori_R = R.from_matrix(threePointsFrame_MocapLimb_Ori)
 
 
 # We get the position of the markers in the world
@@ -284,7 +284,7 @@ rigidBody_ThreePointsFrame_y = rigidBody_ThreePointsFrame_y / np.linalg.norm(rig
 rigidBody_ThreePointsFrame_z = np.cross(rigidBody_ThreePointsFrame_x, rigidBody_ThreePointsFrame_y)
 rigidBody_ThreePointsFrame_z = rigidBody_ThreePointsFrame_z / np.linalg.norm(rigidBody_ThreePointsFrame_z)
 rigidBody_ThreePointsFrame_Ori_mat = np.column_stack((rigidBody_ThreePointsFrame_x, rigidBody_ThreePointsFrame_y, rigidBody_ThreePointsFrame_z))
-rigidBody_ThreePointsFrame_Ori_R = R.from_dcm(rigidBody_ThreePointsFrame_Ori_mat)
+rigidBody_ThreePointsFrame_Ori_R = R.from_matrix(rigidBody_ThreePointsFrame_Ori_mat)
 
 rigidBody_MocapLimb_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_MocapLimb_Ori_R
 rigidBody_MocapLimb_Pos = rigidBody_ThreePointsFrame_Pos + rigidBody_ThreePointsFrame_Ori_R.apply(threePointsFrame_MocapLimb_Pos)
@@ -482,8 +482,8 @@ if plot3dTrajectory.lower() == 'y':
     fig, ax = plt.subplots(1, 1)
     ax = fig.add_subplot(111, projection='3d')
 
-    world_MocapLimb_Ori_mat = world_MocapLimb_Ori_R.as_dcm()
-    world_ThreePointsFrame_Ori_mat = world_ThreePointsFrame_Ori_R.as_dcm()
+    world_MocapLimb_Ori_mat = world_MocapLimb_Ori_R.as_matrix()
+    world_ThreePointsFrame_Ori_mat = world_ThreePointsFrame_Ori_R.as_matrix()
 
     x_min = min(resampled_df["world_MocapLimb_Pos_x"].min(), resampled_df["RigidBody001_tX"].min())
     y_min = min(resampled_df["world_MocapLimb_Pos_y"].min(), resampled_df["RigidBody001_tY"].min())
