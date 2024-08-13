@@ -558,4 +558,8 @@ done
 
 
 echo "The pipeline finished without any issue. If you are not satisfied with the result, please re-run the scripts one by one and help yourself with the logs for the debug. Please also make sure that the time you set for the matching of the mocap and the observer is correct."
+
+# deactivate the virtual environment
+deactivate
+
 exit
