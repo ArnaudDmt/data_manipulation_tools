@@ -3,6 +3,18 @@
 set -e
 
 
+
+# Check if yq is installed
+if ! command -v yq &> /dev/null
+then
+    echo "yq could not be found. Please install yq to use this script."
+    sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
+    sudo chmod +x /usr/bin/yq
+    exit
+fi
+
+
+
 ############################ Absolute paths initialization ############################
 
 # current working directory
@@ -10,7 +22,7 @@ cwd=$(pwd)
 replay_yaml="$HOME/.config/mc_rtc/controllers/Passthrough.yaml"
 mc_rtc_yaml="$HOME/.config/mc_rtc/mc_rtc.yaml"
 mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
-
+mocapMarkers_yaml="markersPlacements.yaml"
 
 
 ############################ Configuration files test ############################
@@ -113,7 +125,6 @@ logReplayBin="$outputDataPath/logReplay.bin"
 
 # configuration files
 projectConfig="$projectPath/projectConfig.yaml"
-#mocapMarkersConf="markersPlacements.yaml"
 
 
 
@@ -209,12 +220,16 @@ fi
 if grep -v '^#' $projectConfig | grep -q "EnabledBody"; then
     if [[ ! $(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBody://' | sed 's: ::g') ]]; then
         echo "No mocap body was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+        echo "Available bodies for robot $main_robot:"
+        yq -r ".robots[] | select(.name == \"$main_robot\") | .bodies[].name" $mocapMarkers_yaml
         read body;
 
         sed -i "s/EnabledBody:/& $body/" $projectConfig
     fi
 else
-    eecho "No mocap body was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+    echo "No mocap body was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+    echo "Available bodies for robot $main_robot:"
+    yq -r ".robots[] | select(.name == \"$main_robot\") | .bodies[].name" $mocapMarkers_yaml
     read body;
     if [ -s $projectConfig ]; then
         awk -i inplace -v body="$body" 'FNR==1 {print "EnabledBody:", body}1' $projectConfig;
