@@ -1,8 +1,13 @@
+import math
 import sys
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from scipy.spatial.transform import Rotation as R
+
+
+from scipy.signal import butter,filtfilt
+
 
 import os.path
 
@@ -25,12 +30,28 @@ scriptName = "finalResults"
 
 
 if(len(sys.argv) > 1):
-    displayLogs = sys.argv[1].lower() == 'true'
+    timeStepInput = sys.argv[1]
     if(len(sys.argv) > 2):
-        path_to_project = sys.argv[2]
+        displayLogs = sys.argv[2].lower() == 'true'
     if(len(sys.argv) > 3):
-        writeFormattedData = sys.argv[3].lower() == 'true'
+        path_to_project = sys.argv[3]
+    if(len(sys.argv) > 4):
+        writeFormattedData = sys.argv[4].lower() == 'true'
+else:
+    timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
 
+try:
+    # Check if the timestep was given in milliseconds
+    if(timeStepInput.isdigit()):
+        timeStep_ms = int(timeStepInput)
+        timeStep_s = float(timeStep_ms)/1000.0
+    else:
+        timeStep_s = float(timeStepInput)
+        timeStep_ms = int(timeStep_s*1000.0)
+    resample_str = f'{timeStep_ms}ms'
+except ValueError:
+    print(f"The input timestep is not valid: {timeStepInput}")
+    sys.exit(1)
 
 # Read the CSV file into a DataFrame
 
@@ -86,16 +107,14 @@ def continuous_euler(angles):
 
 
 if(withMocap):
-    mocap = dfObservers[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+    dfObservers_overlap = dfObservers[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+    dfHartley_overlap = dfHartley[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
     df_mocap_toIgnore = dfObservers[dfObservers["Mocap_datasOverlapping"] != "Datas overlap"]
 
-    posMocap_overlap = mocap[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
-    quaternionsMocap_overlap = mocap[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
-    # Compute the conjugate of the quaternions
-    quaternionsMocap_overlap_conjugate = quaternionsMocap_overlap.copy()
-    quaternionsMocap_overlap_conjugate[:, :3] *= -1
+    posMocap_overlap = dfObservers_overlap[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
+    quaternionsMocap_overlap = dfObservers_overlap[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
     # Convert the conjugate quaternions to Euler angles
-    rMocap_overlap = R.from_quat(quaternionsMocap_overlap_conjugate)
+    rMocap_overlap = R.from_quat(quaternionsMocap_overlap)
     euler_angles_Mocap_overlap = rMocap_overlap.as_euler('xyz')
     euler_angles_Mocap_overlap = continuous_euler(euler_angles_Mocap_overlap)
 
@@ -105,10 +124,10 @@ if(withMocap):
         dfMocapPose['tx'] = posMocap_overlap[:,0]
         dfMocapPose['ty'] = posMocap_overlap[:,1]
         dfMocapPose['tz'] = posMocap_overlap[:,2]
-        dfMocapPose['qx'] = quaternionsMocap_overlap_conjugate[:,0]
-        dfMocapPose['qy'] = quaternionsMocap_overlap_conjugate[:,1]
-        dfMocapPose['qz'] = quaternionsMocap_overlap_conjugate[:,2]
-        dfMocapPose['qw'] = quaternionsMocap_overlap_conjugate[:,3]
+        dfMocapPose['qx'] = quaternionsMocap_overlap[:,0]
+        dfMocapPose['qy'] = quaternionsMocap_overlap[:,1]
+        dfMocapPose['qz'] = quaternionsMocap_overlap[:,2]
+        dfMocapPose['qw'] = quaternionsMocap_overlap[:,3]
 
         dfMocapPose = dfMocapPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
@@ -124,18 +143,15 @@ if(withMocap):
     if(len(df_mocap_toIgnore) > 0):
         posMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
         quaternionsMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
-        # Compute the conjugate of the quaternions
-        quaternionsMocap_mocap_toIgnore_conjugate = quaternionsMocap_mocap_toIgnore.copy()
-        quaternionsMocap_mocap_toIgnore_conjugate[:, :3] *= -1
         # Convert the conjugate quaternions to Euler angles
-        rMocap_mocap_toIgnore = R.from_quat(quaternionsMocap_mocap_toIgnore_conjugate)
+        rMocap_mocap_toIgnore = R.from_quat(quaternionsMocap_mocap_toIgnore)
         euler_angles_Mocap_mocap_toIgnore = rMocap_mocap_toIgnore.as_euler('xyz')
         euler_angles_Mocap_mocap_toIgnore = continuous_euler(euler_angles_Mocap_mocap_toIgnore)
         
 if(withKO):
     posKO = dfObservers[['KO_tx', 'KO_ty', 'KO_tz']].to_numpy()
     quaternionsKO = dfObservers[['KO_qx', 'KO_qy', 'KO_qz', 'KO_qw']].to_numpy()
-    # Compute the conjugate of the quaternions
+    # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsKO_conjugate = quaternionsKO.copy()
     quaternionsKO_conjugate[:, :3] *= -1
     # Convert the conjugate quaternions to Euler angles
@@ -143,23 +159,28 @@ if(withKO):
     euler_angles_KO = rKO.as_euler('xyz')
     euler_angles_KO = continuous_euler(euler_angles_KO)
 
+    if(withMocap):
+        posKO_overlap = dfObservers_overlap[['KO_tx', 'KO_ty', 'KO_tz']].to_numpy()
+        quaternionsKO_overlap = dfObservers_overlap[['KO_qx', 'KO_qy', 'KO_qz', 'KO_qw']].to_numpy()
+        # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
+        quaternionsKO_conjugate_overlap = quaternionsKO_overlap.copy()
+        quaternionsKO_conjugate_overlap[:, :3] *= -1
+        # Convert the conjugate quaternions to Euler angles
+        rKO_overlap = R.from_quat(quaternionsKO_conjugate_overlap)
+
     if(writeFormattedData):
-        rKo_fb_quat = rKO.as_quat()
-
-        dfKoPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfKoPose['timestamp'] = dfObservers['t']
-        dfKoPose['tx'] = posKO[:,0]
-        dfKoPose['ty'] = posKO[:,1]
-        dfKoPose['tz'] = posKO[:,2]
-        dfKoPose['qx'] = rKo_fb_quat[:,0]
-        dfKoPose['qy'] = rKo_fb_quat[:,1]
-        dfKoPose['qz'] = rKo_fb_quat[:,2]
-        dfKoPose['qw'] = rKo_fb_quat[:,3]
-
-        dfKoPose = dfKoPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfKoPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfKoPose_overlap['timestamp'] = dfObservers_overlap['t']
+        dfKoPose_overlap['tx'] = posKO_overlap[:,0]
+        dfKoPose_overlap['ty'] = posKO_overlap[:,1]
+        dfKoPose_overlap['tz'] = posKO_overlap[:,2]
+        dfKoPose_overlap['qx'] = quaternionsKO_conjugate_overlap[:,0]
+        dfKoPose_overlap['qy'] = quaternionsKO_conjugate_overlap[:,1]
+        dfKoPose_overlap['qz'] = quaternionsKO_conjugate_overlap[:,2]
+        dfKoPose_overlap['qw'] = quaternionsKO_conjugate_overlap[:,3]
 
         txtOutput = f'{path_to_project}/output_data/formattedKoTraj.txt'
-        dfKoPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        dfKoPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
         with open(txtOutput, 'r+') as file: 
@@ -170,7 +191,7 @@ if(withKO):
 if(withVanyte):
     posVanyte = dfObservers[['Vanyte_tx', 'Vanyte_ty', 'Vanyte_tz']].to_numpy()
     quaternionsVanyte = dfObservers[['Vanyte_qx', 'Vanyte_qy', 'Vanyte_qz', 'Vanyte_qw']].to_numpy()
-    # Compute the conjugate of the quaternions
+    # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsVanyte_conjugate = quaternionsVanyte.copy()
     quaternionsVanyte_conjugate[:, :3] *= -1
     # Convert the conjugate quaternions to Euler angles
@@ -178,23 +199,28 @@ if(withVanyte):
     euler_angles_vanyte = rVanyte.as_euler('xyz')
     euler_angles_vanyte = continuous_euler(euler_angles_vanyte)
 
+    if(withMocap):
+        posVanyte_overlap = dfObservers_overlap[['Vanyte_tx', 'Vanyte_ty', 'Vanyte_tz']].to_numpy()
+        quaternionsVanyte_overlap = dfObservers_overlap[['Vanyte_qx', 'Vanyte_qy', 'Vanyte_qz', 'Vanyte_qw']].to_numpy()
+        # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
+        quaternionsVanyte_conjugate_overlap = quaternionsVanyte_overlap.copy()
+        quaternionsVanyte_conjugate_overlap[:, :3] *= -1
+        # Convert the conjugate quaternions to Euler angles
+        rVanyte_overlap = R.from_quat(quaternionsVanyte_conjugate_overlap)
+
     if(writeFormattedData):
-        rVanyte_fb_quat = rVanyte.as_quat()
-
-        dfVanytePose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfVanytePose['timestamp'] = dfObservers['t']
-        dfVanytePose['tx'] = posVanyte[:,0]
-        dfVanytePose['ty'] = posVanyte[:,1]
-        dfVanytePose['tz'] = posVanyte[:,2]
-        dfVanytePose['qx'] = rVanyte_fb_quat[:,0]
-        dfVanytePose['qy'] = rVanyte_fb_quat[:,1]
-        dfVanytePose['qz'] = rVanyte_fb_quat[:,2]
-        dfVanytePose['qw'] = rVanyte_fb_quat[:,3]
-
-        dfVanytePose = dfVanytePose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfVanytePose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfVanytePose_overlap['timestamp'] = dfObservers_overlap['t']
+        dfVanytePose_overlap['tx'] = posVanyte_overlap[:,0]
+        dfVanytePose_overlap['ty'] = posVanyte_overlap[:,1]
+        dfVanytePose_overlap['tz'] = posVanyte_overlap[:,2]
+        dfVanytePose_overlap['qx'] = quaternionsVanyte_conjugate_overlap[:,0]
+        dfVanytePose_overlap['qy'] = quaternionsVanyte_conjugate_overlap[:,1]
+        dfVanytePose_overlap['qz'] = quaternionsVanyte_conjugate_overlap[:,2]
+        dfVanytePose_overlap['qw'] = quaternionsVanyte_conjugate_overlap[:,3]
 
         txtOutput = f'{path_to_project}/output_data/formattedVanyteTraj.txt'
-        dfVanytePose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        dfVanytePose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
         with open(txtOutput, 'r+') as file: 
@@ -205,7 +231,7 @@ if(withVanyte):
 if(withTilt):
     posTilt = dfObservers[['Tilt_tx', 'Tilt_ty', 'Tilt_tz']].to_numpy()
     quaternionsTilt = dfObservers[['Tilt_qx', 'Tilt_qy', 'Tilt_qz', 'Tilt_qw']].to_numpy()
-    # Compute the conjugate of the quaternions
+    # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsTilt_conjugate = quaternionsTilt.copy()
     quaternionsTilt_conjugate[:, :3] *= -1
     # Convert the conjugate quaternions to Euler angles
@@ -213,23 +239,28 @@ if(withTilt):
     euler_angles_Tilt = rTilt.as_euler('xyz')
     euler_angles_Tilt = continuous_euler(euler_angles_Tilt)
 
+    if(withMocap):
+        posTilt_overlap = dfObservers_overlap[['Tilt_tx', 'Tilt_ty', 'Tilt_tz']].to_numpy()
+        quaternionsTilt_overlap = dfObservers_overlap[['Tilt_qx', 'Tilt_qy', 'Tilt_qz', 'Tilt_qw']].to_numpy()
+        # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
+        quaternionsTilt_conjugate_overlap = quaternionsTilt_overlap.copy()
+        quaternionsTilt_conjugate_overlap[:, :3] *= -1
+        # Convert the conjugate quaternions to Euler angles
+        rTilt_overlap = R.from_quat(quaternionsTilt_conjugate_overlap)
+
     if(writeFormattedData):
-        rTilt_fb_quat = rTilt.as_quat()
-
-        dfTiltPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfTiltPose['timestamp'] = dfObservers['t']
-        dfTiltPose['tx'] = posTilt[:,0]
-        dfTiltPose['ty'] = posTilt[:,1]
-        dfTiltPose['tz'] = posTilt[:,2]
-        dfTiltPose['qx'] = rTilt_fb_quat[:,0]
-        dfTiltPose['qy'] = rTilt_fb_quat[:,1]
-        dfTiltPose['qz'] = rTilt_fb_quat[:,2]
-        dfTiltPose['qw'] = rTilt_fb_quat[:,3]
-
-        dfTiltPose = dfTiltPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfTiltPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfTiltPose_overlap['timestamp'] = dfObservers_overlap['t']
+        dfTiltPose_overlap['tx'] = posTilt[:,0]
+        dfTiltPose_overlap['ty'] = posTilt[:,1]
+        dfTiltPose_overlap['tz'] = posTilt[:,2]
+        dfTiltPose_overlap['qx'] = quaternionsTilt_conjugate_overlap[:,0]
+        dfTiltPose_overlap['qy'] = quaternionsTilt_conjugate_overlap[:,1]
+        dfTiltPose_overlap['qz'] = quaternionsTilt_conjugate_overlap[:,2]
+        dfTiltPose_overlap['qw'] = quaternionsTilt_conjugate_overlap[:,3]
 
         txtOutput = f'{path_to_project}/output_data/formattedTiltTraj.txt'
-        dfTiltPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        dfTiltPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
         with open(txtOutput, 'r+') as file: 
@@ -240,7 +271,7 @@ if(withTilt):
 if(withController):
     posController = dfObservers[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
     quaternionsController = dfObservers[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
-    # Compute the conjugate of the quaternions
+    # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsController_conjugate = quaternionsController.copy()
     quaternionsController_conjugate[:, :3] *= -1
     # Convert the conjugate quaternions to Euler angles
@@ -248,23 +279,28 @@ if(withController):
     euler_angles_Controller = rController.as_euler('xyz')
     euler_angles_Controller = continuous_euler(euler_angles_Controller)
 
+    if(withMocap):
+        posController_overlap = dfObservers_overlap[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
+        quaternionsController_overlap = dfObservers_overlap[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
+        # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
+        quaternionsController_conjugate_overlap = quaternionsController_overlap.copy()
+        quaternionsController_conjugate_overlap[:, :3] *= -1
+        # Convert the conjugate quaternions to Euler angles
+        rController_overlap = R.from_quat(quaternionsController_conjugate_overlap)
+
     if(writeFormattedData):
-        rController_fb_quat = rController.as_quat()
-
-        dfControllerPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfControllerPose['timestamp'] = dfObservers['t']
-        dfControllerPose['tx'] = posController[:,0]
-        dfControllerPose['ty'] = posController[:,1]
-        dfControllerPose['tz'] = posController[:,2]
-        dfControllerPose['qx'] = rController_fb_quat[:,0]
-        dfControllerPose['qy'] = rController_fb_quat[:,1]
-        dfControllerPose['qz'] = rController_fb_quat[:,2]
-        dfControllerPose['qw'] = rController_fb_quat[:,3]
-
-        dfControllerPose = dfControllerPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
+        dfControllerPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfControllerPose_overlap['timestamp'] = dfObservers_overlap['t']
+        dfControllerPose_overlap['tx'] = posController_overlap[:,0]
+        dfControllerPose_overlap['ty'] = posController_overlap[:,1]
+        dfControllerPose_overlap['tz'] = posController_overlap[:,2]
+        dfControllerPose_overlap['qx'] = quaternionsController_conjugate_overlap[:,0]
+        dfControllerPose_overlap['qy'] = quaternionsController_conjugate_overlap[:,1]
+        dfControllerPose_overlap['qz'] = quaternionsController_conjugate_overlap[:,2]
+        dfControllerPose_overlap['qw'] = quaternionsController_conjugate_overlap[:,3]
 
         txtOutput = f'{path_to_project}/output_data/formattedControllerTraj.txt'
-        dfControllerPose.to_csv(txtOutput, header=None, index=None, sep=' ')
+        dfControllerPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
         with open(txtOutput, 'r+') as file: 
@@ -289,22 +325,32 @@ if(withHartley):
     euler_angles_Hartley = rHartley_fb.as_euler('xyz')
     euler_angles_Hartley = continuous_euler(euler_angles_Hartley)
 
+    if(withMocap):
+        posHartley_imu_overlap = dfHartley_overlap[['Position_x', 'Position_y', 'Position_z']].to_numpy()
+        quaternionsHartley_imu_overlap = dfHartley_overlap[['Orientation_x', 'Orientation_y', 'Orientation_z', 'Orientation_w']].to_numpy()
+        rHartley_imu_overlap = R.from_quat(quaternionsHartley_imu_overlap)
+
+        posImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
+        quaternions_rImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
+        rImuFb_overlap = R.from_quat(quaternions_rImuFb_overlap)
+
+        rHartley_fb_overlap = rHartley_imu_overlap * rImuFb_overlap
+        posHartley_fb_overlap = posHartley_imu_overlap + rHartley_imu_overlap.apply(posImuFb_overlap)
+
     if(writeFormattedData):
-        rHartley_fb_quat = rHartley_fb.as_quat()
+        rHartley_fb_quat_overlap = rHartley_fb_overlap.as_quat()
 
-        dfHartleyPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfHartleyPose['timestamp'] = dfObservers['t']
-        dfHartleyPose['tx'] = posHartley_fb[:,0]
-        dfHartleyPose['ty'] = posHartley_fb[:,1]
-        dfHartleyPose['tz'] = posHartley_fb[:,2]
-        dfHartleyPose['qx'] = rHartley_fb_quat[:,0]
-        dfHartleyPose['qy'] = rHartley_fb_quat[:,1]
-        dfHartleyPose['qz'] = rHartley_fb_quat[:,2]
-        dfHartleyPose['qw'] = rHartley_fb_quat[:,3]
+        dfHartleyPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+        dfHartleyPose_overlap['timestamp'] = dfObservers_overlap['t']
+        dfHartleyPose_overlap['tx'] = posHartley_fb_overlap[:,0]
+        dfHartleyPose_overlap['ty'] = posHartley_fb_overlap[:,1]
+        dfHartleyPose_overlap['tz'] = posHartley_fb_overlap[:,2]
+        dfHartleyPose_overlap['qx'] = rHartley_fb_quat_overlap[:,0]
+        dfHartleyPose_overlap['qy'] = rHartley_fb_quat_overlap[:,1]
+        dfHartleyPose_overlap['qz'] = rHartley_fb_quat_overlap[:,2]
+        dfHartleyPose_overlap['qw'] = rHartley_fb_quat_overlap[:,3]
 
-        dfHartleyPose = dfHartleyPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
-
-        dfHartleyPose.to_csv(f'{path_to_project}/output_data/formattedHartleyTraj.txt', header=None, index=None, sep=' ')
+        dfHartleyPose_overlap.to_csv(f'{path_to_project}/output_data/formattedHartleyTraj.txt', header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
         with open(f'{path_to_project}/output_data/formattedHartleyTraj.txt', 'r+') as file: 
@@ -351,20 +397,20 @@ if(displayLogs):
         fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Tilt[:, 2], mode='lines', name='Tilt_Yaw'))
 
     if(withMocap):
-        fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_overlap[:, 0], mode='lines', name='Mocap_Position_x'))
-        fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_overlap[:, 1], mode='lines', name='Mocap_Position_y'))
-        fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_overlap[:, 2], mode='lines', name='Mocap_Position_z'))
-        fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_overlap[:, 0], mode='lines', name='Mocap_Roll'))
-        fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_overlap[:, 1], mode='lines', name='Mocap_Pitch'))
-        fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_overlap[:, 2], mode='lines', name='Mocap_Yaw'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 0], mode='lines', name='Mocap_Position_x'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 1], mode='lines', name='Mocap_Position_y'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 2], mode='lines', name='Mocap_Position_z'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 0], mode='lines', name='Mocap_Roll'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 1], mode='lines', name='Mocap_Pitch'))
+        fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 2], mode='lines', name='Mocap_Yaw'))
 
         if(len(df_mocap_toIgnore) > 0):
-            fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Position_x'))
-            fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Position_y'))
-            fig.add_trace(go.Scatter(x=mocap['t'], y=posMocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Position_z'))
-            fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Roll'))
-            fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Pitch'))
-            fig.add_trace(go.Scatter(x=mocap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Yaw'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Position_x'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Position_y'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Position_z'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Roll'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Pitch'))
+            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Yaw'))
 
     if(withController):
         fig.add_trace(go.Scatter(x=dfObservers['t'], y=posController[:, 0], mode='lines', name='Controller_Position_x'))
@@ -634,3 +680,129 @@ if(displayLogs):
     fig3d.show()
 
 
+
+
+###############################  Criterias based on the local linear velocity  ###############################
+
+def computeRMSE(ground_truth_data, observer_data, observer_name):
+    RMSE = np.sqrt(((observer_data - ground_truth_data) ** 2).mean(axis=0))
+    return RMSE
+
+# Function to compute relative error with sign and convert to percentage
+def compute_relative_error(data, reference_data):
+    relative_error = (np.abs(data) - np.abs(reference_data)) / np.abs(reference_data) * 100
+    return relative_error
+
+
+zeros_row = np.zeros((1, 3))
+
+if(withMocap):
+    rmse_values = {}
+    relative_errors = {}
+    data = []
+    index_labels = []
+
+    velMocap_overlap = np.diff(posMocap_overlap, axis=0)/timeStep_s
+    velMocap_overlap = np.vstack((zeros_row,velMocap_overlap))
+    locVelMocap_overlap = rMocap_overlap.apply(velMocap_overlap, inverse=True)
+
+    if(displayLogs):
+        figLocLinVels = go.Figure()
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,0], mode='lines', name='locVelMocap_x'))
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,1], mode='lines', name='locVelMocap_y'))
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,2], mode='lines', name='locVelMocap_z'))
+        figLocLinVels.update_layout(title=f"{scriptName}: Local linear velocities")
+
+    if(withHartley):
+        velHartley_overlap = np.diff(posHartley_fb_overlap, axis=0)/timeStep_s
+        velHartley_overlap = np.vstack((zeros_row,velHartley_overlap))
+        locVelHartley_overlap = rHartley_fb_overlap.apply(velHartley_overlap, inverse=True)
+        if(displayLogs):
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,0], mode='lines', name='locVelHartley_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,1], mode='lines', name='locVelHartley_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,2], mode='lines', name='locVelHartley_z'))
+        rmse_values['Hartley'] = computeRMSE(locVelMocap_overlap, locVelHartley_overlap, "Hartley")
+        arrays = [
+            ['RMSE', 'RMSE', 'RMSE', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)'],
+            ['X', 'Y', 'Z', 'X', 'Y', 'Z']
+        ]
+        index_labels.append('Hartley')
+        data.append(np.concatenate([rmse_values['Hartley'], np.zeros_like(rmse_values['Hartley'])]))
+    else:
+        arrays = [
+            ['RMSE', 'RMSE', 'RMSE'],
+            ['X', 'Y', 'Z']
+        ]
+
+    tuples = list(zip(*arrays))
+    index = pd.MultiIndex.from_tuples(tuples, names=['Metric', 'Axis'])
+
+    if(withKO):
+        velKO_overlap = np.diff(posKO_overlap, axis=0)/timeStep_s
+        velKO_overlap = np.vstack((zeros_row,velKO_overlap))
+        locVelKO_overlap = rKO_overlap.apply(velKO_overlap, inverse=True)
+        if(displayLogs):
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,0], mode='lines', name='locVelKO_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,1], mode='lines', name='locVelKO_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,2], mode='lines', name='locVelKO_z'))
+        rmse_values['KO'] = computeRMSE(locVelMocap_overlap, locVelKO_overlap, "KO")
+        index_labels.append('KO')
+        if(withHartley):
+            relative_errors['KO'] = compute_relative_error(rmse_values['KO'], rmse_values['Hartley'])
+            data.append(np.concatenate([rmse_values['KO'], relative_errors['KO']]))
+        else:
+            data.append(rmse_values['KO'])
+
+    if(withVanyte):
+        velVanyte_overlap = np.diff(posVanyte_overlap, axis=0)/timeStep_s
+        velVanyte_overlap = np.vstack((zeros_row,velVanyte_overlap))
+        locVelVanyte_overlap = rVanyte.apply(velVanyte_overlap, inverse=True)
+        if(displayLogs):
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,0], mode='lines', name='locVelVanyte_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,1], mode='lines', name='locVelVanyte_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,2], mode='lines', name='locVelVanyte_z'))
+        rmse_values['Vanyte'] = computeRMSE(locVelMocap_overlap, locVelVanyte_overlap, "Vanyte")
+        index_labels.append('Vanyte')
+        if(withHartley):
+            relative_errors['Vanyte'] = compute_relative_error(rmse_values['Vanyte'], rmse_values['Hartley'])
+            data.append(np.concatenate([rmse_values['Vanyte'], relative_errors['Vanyte']]))
+        else:
+            data.append(rmse_values['Vanyte'])
+    if(withTilt):
+        velTilt_overlap = np.diff(posTilt_overlap, axis=0)/timeStep_s
+        velTilt_overlap = np.vstack((zeros_row,velTilt_overlap))
+        locVelTilt_overlap = rTilt_overlap.apply(velTilt_overlap, inverse=True)
+        if(displayLogs):
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,0], mode='lines', name='locVelTilt_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,1], mode='lines', name='locVelTilt_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,2], mode='lines', name='locVelTilt_z'))
+        rmse_values['Tilt'] = computeRMSE(locVelMocap_overlap, locVelTilt_overlap, "Tilt")
+        index_labels.append('Tilt')
+        if(withHartley):
+            relative_errors['Tilt'] = compute_relative_error(rmse_values['Tilt'], rmse_values['Hartley'])
+            data.append(np.concatenate([rmse_values['Tilt'], relative_errors['Tilt']]))
+        else:
+            data.append(rmse_values['Tilt'])
+    if(withController):
+        velController_overlap = np.diff(posController_overlap, axis=0)/timeStep_s
+        velController_overlap = np.vstack((zeros_row,velController_overlap))
+        locVelController_overlap = rController_overlap.apply(velController_overlap, inverse=True)
+        if(displayLogs):
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,0], mode='lines', name='locVelController_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,1], mode='lines', name='locVelController_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,2], mode='lines', name='locVelController_z'))
+        rmse_values['Controller'] = computeRMSE(locVelController_overlap, locVelVanyte_overlap, "Controller")
+        index_labels.append('Controller')
+        if(withHartley):
+            relative_errors['Controller'] = compute_relative_error(rmse_values['Controller'], rmse_values['Hartley'])
+            data.append(np.concatenate([rmse_values['Controller'], relative_errors['Controller']]))
+        else:
+            data.append(rmse_values['Controller'])
+    
+
+    if(displayLogs):
+        figLocLinVels.show()
+
+
+    df = pd.DataFrame(data, index=index_labels, columns=index)
+    print(df)

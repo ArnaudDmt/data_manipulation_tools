@@ -265,8 +265,20 @@ bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBod
 
 ############################ Needs the timestep to replay the log or resample the mocap's data ############################
 
-if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ] || $debug; then
-    echo "Use the timestep defined in $mc_rtc_yaml ?"
+# if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ] || $debug; then
+#     echo "Use the timestep defined in $mc_rtc_yaml ?"
+#     select useMainConfRobot in "Yes" "No"; do
+#         case $useMainConfRobot in
+#             Yes ) 
+#                 timeStep=$( grep 'Timestep:' $mc_rtc_yaml | grep -v '^#' | sed 's/Timestep: //'); break;;
+#             No ) 
+#                 echo "Please enter the timestep of the controller in milliseconds: "
+#                 read timeStep ; break;;
+#         esac
+#     done
+# fi
+
+echo "Use the timestep defined in $mc_rtc_yaml ?"
     select useMainConfRobot in "Yes" "No"; do
         case $useMainConfRobot in
             Yes ) 
@@ -276,7 +288,6 @@ if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ] || $debu
                 read timeStep ; break;;
         esac
     done
-fi
 
 mocapLog="$rawDataPath/mocapData.csv"
 if [ -f "$mocapLog" ]; then
@@ -512,17 +523,18 @@ if [ -d "$outputDataPath/evals/" ]; then
     select recomputeMetrics in "No" "Yes"; do
         case $recomputeMetrics in
             No )    cd $cwd/$scriptsPath
-                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "False"; 
+                    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
                     break;;
             Yes )   cd $cwd/$scriptsPath
-                    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
+                    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
                     break;;
         esac
     done   
 else
     echo "Formatting the results to evaluate the performances of the observers."; 
     cd $cwd/$scriptsPath
-    python plotAndFormatResults.py "$plotResults" "../$projectPath" "True"; 
+    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
+    echo "Formatting finished."; 
 fi
 cd $cwd
 

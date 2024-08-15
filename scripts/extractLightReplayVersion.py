@@ -10,7 +10,7 @@ if(len(sys.argv) > 1):
 
         
 # Define a list of patterns you want to match
-partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer']  # Add more patterns as needed
+partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
 input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
 output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
@@ -19,7 +19,7 @@ output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
 def filterColumns(dataframe, partial_pattern, exact_patterns):
     filtered_columns = []
     for col in dataframe.columns:
-        if any(pattern in col for pattern in partial_pattern) or col in exact_patterns:
+        if col in exact_patterns or any(pattern in col for pattern in partial_pattern):
             filtered_columns.append(col)
 
     return filtered_columns

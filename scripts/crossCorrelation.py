@@ -294,9 +294,9 @@ def realignData(data1, data2, data1_name, data2_name):
     shift = max_index - (data1.shape[0] - 1)
 
     if(shift > 0):
-        print(f"The mocap data is {shift} iterations ahead of the controller.")
+        print(f"The mocap data is {shift} iterations ahead of the observer.")
     if(shift < 0):
-        print(f"The mocap data is {shift} iterations behind the controller.")
+        print(f"The mocap data is {shift} iterations behind the observer.")
 
     data2_shifted = np.roll(data2, shift, axis=0)
 

@@ -209,7 +209,7 @@ MocapLimb_world_Ori_R_average_atMatch = world_MocapLimb_Ori_R_average_atMatch.in
 
 # mocapObserver_Ori_R = MocapLimb_world_Ori_R_average_atMatch * world_ObserverLimb_Ori_R_average_atMatch
 # new_world_MocapLimb_Ori_R = world_MocapLimb_Ori_R * mocapObserver_Ori_R
-new_world_MocapLimb_Ori_R = world_ObserverLimb_Ori_R_average_atMatch * MocapLimb_world_Ori_R_average_atMatch * world_MocapLimb_Ori_R
+# new_world_MocapLimb_Ori_R = world_ObserverLimb_Ori_R_average_atMatch * MocapLimb_world_Ori_R_average_atMatch * world_MocapLimb_Ori_R
 
 
 
