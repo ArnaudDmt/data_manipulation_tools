@@ -265,18 +265,7 @@ bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBod
 
 ############################ Needs the timestep to replay the log or resample the mocap's data ############################
 
-# if [ ! -f "$resampledMocapData" ] || [ ! -f "$realignedMocapLimbData" ] || $debug; then
-#     echo "Use the timestep defined in $mc_rtc_yaml ?"
-#     select useMainConfRobot in "Yes" "No"; do
-#         case $useMainConfRobot in
-#             Yes ) 
-#                 timeStep=$( grep 'Timestep:' $mc_rtc_yaml | grep -v '^#' | sed 's/Timestep: //'); break;;
-#             No ) 
-#                 echo "Please enter the timestep of the controller in milliseconds: "
-#                 read timeStep ; break;;
-#         esac
-#     done
-# fi
+
 
 echo "Use the timestep defined in $mc_rtc_yaml ?"
     select useMainConfRobot in "Yes" "No"; do
@@ -312,6 +301,10 @@ else
         mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found. Replaying the log with the observer."
+            if ! grep -q -E "^\s*update: true\s*$" "$replay_yaml"; then
+                echo "The pipeline needs at least one estimator to be used with update: true, please modify the "Passthrough.yaml" file accordingly."
+                exit
+            fi
             if grep -v '^#' $mc_rtc_yaml | grep "Plugins" | grep -v "MocapAligner"; then
                     echo "The plugin MocapAligner conflicts with another plugin in $mc_rtc_yaml. Please remove the conflicting plugin or add manually MocapAligner to the existing list."
                     exit
