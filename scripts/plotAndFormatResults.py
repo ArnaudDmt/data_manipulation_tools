@@ -63,22 +63,21 @@ if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'Ha
 
 
 
-dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW', 'KO'), inplace=True)
+dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'KO'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('MCKineticsObserver_globalWorldCentroidState', 'KoState'), inplace=True)
-dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose', 'Vanyte'), inplace=True)    
-dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose', 'Vanyte'), inplace=True)
-dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_Tilt_FloatingBase_world_pose', 'Tilt'), inplace=True)
+dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)    
+dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)
+dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'Tilt'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MocapVisualizer_mocap', 'Mocap'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MocapVisualizer_worldFb', 'Mocap'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('ff', 'Controller'), inplace=True)
 
 
-
-if 'KO_tx' in dfObservers.columns:
+if 'KO_posW_tx' in dfObservers.columns:
     withKO = True
-if 'Vanyte_tx' in dfObservers.columns:
+if 'Vanyte_pose_tx' in dfObservers.columns:
     withVanyte = True
-if 'Tilt_tx' in dfObservers.columns:
+if 'Tilt_pose_tx' in dfObservers.columns:
     withTilt = True
 if 'Mocap_pos_x' in dfObservers.columns:
     withMocap = True
@@ -149,8 +148,8 @@ if(withMocap):
         euler_angles_Mocap_mocap_toIgnore = continuous_euler(euler_angles_Mocap_mocap_toIgnore)
         
 if(withKO):
-    posKO = dfObservers[['KO_tx', 'KO_ty', 'KO_tz']].to_numpy()
-    quaternionsKO = dfObservers[['KO_qx', 'KO_qy', 'KO_qz', 'KO_qw']].to_numpy()
+    posKO = dfObservers[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
+    quaternionsKO = dfObservers[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
     # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsKO_conjugate = quaternionsKO.copy()
     quaternionsKO_conjugate[:, :3] *= -1
@@ -160,8 +159,8 @@ if(withKO):
     euler_angles_KO = continuous_euler(euler_angles_KO)
 
     if(withMocap):
-        posKO_overlap = dfObservers_overlap[['KO_tx', 'KO_ty', 'KO_tz']].to_numpy()
-        quaternionsKO_overlap = dfObservers_overlap[['KO_qx', 'KO_qy', 'KO_qz', 'KO_qw']].to_numpy()
+        posKO_overlap = dfObservers_overlap[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
+        quaternionsKO_overlap = dfObservers_overlap[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
         # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
         quaternionsKO_conjugate_overlap = quaternionsKO_overlap.copy()
         quaternionsKO_conjugate_overlap[:, :3] *= -1
@@ -189,8 +188,8 @@ if(withKO):
             file.write(line + '\n' + file_data) 
 
 if(withVanyte):
-    posVanyte = dfObservers[['Vanyte_tx', 'Vanyte_ty', 'Vanyte_tz']].to_numpy()
-    quaternionsVanyte = dfObservers[['Vanyte_qx', 'Vanyte_qy', 'Vanyte_qz', 'Vanyte_qw']].to_numpy()
+    posVanyte = dfObservers[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
+    quaternionsVanyte = dfObservers[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
     # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsVanyte_conjugate = quaternionsVanyte.copy()
     quaternionsVanyte_conjugate[:, :3] *= -1
@@ -200,8 +199,8 @@ if(withVanyte):
     euler_angles_vanyte = continuous_euler(euler_angles_vanyte)
 
     if(withMocap):
-        posVanyte_overlap = dfObservers_overlap[['Vanyte_tx', 'Vanyte_ty', 'Vanyte_tz']].to_numpy()
-        quaternionsVanyte_overlap = dfObservers_overlap[['Vanyte_qx', 'Vanyte_qy', 'Vanyte_qz', 'Vanyte_qw']].to_numpy()
+        posVanyte_overlap = dfObservers_overlap[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
+        quaternionsVanyte_overlap = dfObservers_overlap[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
         # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
         quaternionsVanyte_conjugate_overlap = quaternionsVanyte_overlap.copy()
         quaternionsVanyte_conjugate_overlap[:, :3] *= -1
@@ -229,8 +228,8 @@ if(withVanyte):
             file.write(line + '\n' + file_data) 
 
 if(withTilt):
-    posTilt = dfObservers[['Tilt_tx', 'Tilt_ty', 'Tilt_tz']].to_numpy()
-    quaternionsTilt = dfObservers[['Tilt_qx', 'Tilt_qy', 'Tilt_qz', 'Tilt_qw']].to_numpy()
+    posTilt = dfObservers[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
+    quaternionsTilt = dfObservers[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
     # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
     quaternionsTilt_conjugate = quaternionsTilt.copy()
     quaternionsTilt_conjugate[:, :3] *= -1
@@ -240,8 +239,8 @@ if(withTilt):
     euler_angles_Tilt = continuous_euler(euler_angles_Tilt)
 
     if(withMocap):
-        posTilt_overlap = dfObservers_overlap[['Tilt_tx', 'Tilt_ty', 'Tilt_tz']].to_numpy()
-        quaternionsTilt_overlap = dfObservers_overlap[['Tilt_qx', 'Tilt_qy', 'Tilt_qz', 'Tilt_qw']].to_numpy()
+        posTilt_overlap = dfObservers_overlap[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
+        quaternionsTilt_overlap = dfObservers_overlap[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
         # Compute the conjugate of the quaternions as the inverse rotation is stored in mc_rtc's log
         quaternionsTilt_conjugate_overlap = quaternionsTilt_overlap.copy()
         quaternionsTilt_conjugate_overlap[:, :3] *= -1
@@ -317,7 +316,7 @@ if(withHartley):
 
     posImuFb = dfObservers[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
     quaternions_rImuFb = dfObservers[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
-    rImuFb = R.from_quat(quaternions_rImuFb)
+    rImuFb = R.from_quat(quaternions_rImuFb)    
 
     rHartley_fb = rHartley_imu * rImuFb
     posHartley_fb = posHartley_imu + rHartley_imu.apply(posImuFb)
@@ -333,6 +332,11 @@ if(withHartley):
         posImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
         quaternions_rImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
         rImuFb_overlap = R.from_quat(quaternions_rImuFb_overlap)
+
+        linVelImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_linVel_x', 'HartleyIEKF_imuFbKine_linVel_y', 'HartleyIEKF_imuFbKine_linVel_z']].to_numpy()
+        angVelImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_angVel_x', 'HartleyIEKF_imuFbKine_angVel_y', 'HartleyIEKF_imuFbKine_angVel_z']].to_numpy()
+        posFbImu_overlap = - rImuFb_overlap.apply(posImuFb_overlap, inverse=True)
+        linVelFbImu_overlap = rImuFb_overlap.apply(np.cross(angVelImuFb_overlap, posImuFb_overlap), inverse=True) - rImuFb_overlap.apply(linVelImuFb_overlap, inverse=True)
 
         rHartley_fb_overlap = rHartley_imu_overlap * rImuFb_overlap
         posHartley_fb_overlap = posHartley_imu_overlap + rHartley_imu_overlap.apply(posImuFb_overlap)
@@ -702,25 +706,42 @@ if(withMocap):
     data = []
     index_labels = []
 
+    posMocap_imu_overlap = posMocap_overlap + rMocap_overlap.apply(posFbImu_overlap)
+
     velMocap_overlap = np.diff(posMocap_overlap, axis=0)/timeStep_s
     velMocap_overlap = np.vstack((zeros_row,velMocap_overlap))
     locVelMocap_overlap = rMocap_overlap.apply(velMocap_overlap, inverse=True)
+
+    velMocap_imu_overlap = np.diff(posMocap_imu_overlap, axis=0)/timeStep_s
+    velMocap_imu_overlap = np.vstack((zeros_row,velMocap_imu_overlap))
 
     if(displayLogs):
         figLocLinVels = go.Figure()
         figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,0], mode='lines', name='locVelMocap_x'))
         figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,1], mode='lines', name='locVelMocap_y'))
         figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,2], mode='lines', name='locVelMocap_z'))
-        figLocLinVels.update_layout(title=f"{scriptName}: Local linear velocities")
+
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=velMocap_imu_overlap[:,0], mode='lines', name='vel_IMUMocap_x'))
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=velMocap_imu_overlap[:,1], mode='lines', name='vel_IMUMocap_y'))
+        figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=velMocap_imu_overlap[:,2], mode='lines', name='vel_IMUMocap_z'))
+        figLocLinVels.update_layout(title=f"{scriptName}: Linear velocities")
 
     if(withHartley):
         velHartley_overlap = np.diff(posHartley_fb_overlap, axis=0)/timeStep_s
-        velHartley_overlap = np.vstack((zeros_row,velHartley_overlap))
+        velHartley_overlap = np.vstack((zeros_row,velHartley_overlap)) # Velocity obtained by finite differences
         locVelHartley_overlap = rHartley_fb_overlap.apply(velHartley_overlap, inverse=True)
+        
+        # estimated velocity
+        linVelImu_Hartley_overlap = dfHartley[['Velocity_x', 'Velocity_y', 'Velocity_z']].to_numpy()
+        
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,0], mode='lines', name='locVelHartley_x'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,1], mode='lines', name='locVelHartley_y'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,2], mode='lines', name='locVelHartley_z'))
+
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,0], mode='lines', name='linVel_IMU_Hartley_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,1], mode='lines', name='linVel_IMU_Hartley_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,2], mode='lines', name='linVel_IMU_Hartley_z'))
         rmse_values['Hartley'] = computeRMSE(locVelMocap_overlap, locVelHartley_overlap, "Hartley")
         arrays = [
             ['RMSE', 'RMSE', 'RMSE', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)'],
@@ -739,12 +760,22 @@ if(withMocap):
 
     if(withKO):
         velKO_overlap = np.diff(posKO_overlap, axis=0)/timeStep_s
-        velKO_overlap = np.vstack((zeros_row,velKO_overlap))
+        velKO_overlap = np.vstack((zeros_row,velKO_overlap)) # Velocity obtained by finite differences
         locVelKO_overlap = rKO_overlap.apply(velKO_overlap, inverse=True)
+
+        linVelKO_fb_overlap = dfObservers[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy() # estimated linear velocity
+        angVelKO_fb_overlap = dfObservers[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy() # estimated angular velocity
+        linVelKO_imu_overlap = linVelKO_fb_overlap + np.cross(angVelKO_fb_overlap, rKO_overlap.apply(posFbImu_overlap)) + rKO_overlap.apply(linVelFbImu_overlap)
+
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,0], mode='lines', name='locVelKO_x'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,1], mode='lines', name='locVelKO_y'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKO_overlap[:,2], mode='lines', name='locVelKO_z'))
+
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKO_imu_overlap[:,0], mode='lines', name='linVel_IMU__KO_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKO_imu_overlap[:,1], mode='lines', name='linVel_IMU_KO_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKO_imu_overlap[:,2], mode='lines', name='linVel_IMU_KO_z'))
+
         rmse_values['KO'] = computeRMSE(locVelMocap_overlap, locVelKO_overlap, "KO")
         index_labels.append('KO')
         if(withHartley):
@@ -757,10 +788,18 @@ if(withMocap):
         velVanyte_overlap = np.diff(posVanyte_overlap, axis=0)/timeStep_s
         velVanyte_overlap = np.vstack((zeros_row,velVanyte_overlap))
         locVelVanyte_overlap = rVanyte.apply(velVanyte_overlap, inverse=True)
+
+        linVelVanyte_fb_overlap = dfObservers[['Vanyte_vel_vx', 'Vanyte_vel_vx', 'Vanyte_vel_vz']].to_numpy() # estimated linear velocity
+        angVelVanyte_fb_overlap = dfObservers[['Vanyte_vel_wx', 'Vanyte_vel_wy', 'Vanyte_vel_wz']].to_numpy() # estimated angular velocity
+        linVelVanyte_imu_overlap = linVelVanyte_fb_overlap + np.cross(angVelVanyte_fb_overlap, rVanyte_overlap.apply(posFbImu_overlap)) + rVanyte_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,0], mode='lines', name='locVelVanyte_x'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,1], mode='lines', name='locVelVanyte_y'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,2], mode='lines', name='locVelVanyte_z'))
+
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelVanyte_imu_overlap[:,0], mode='lines', name='linVel_IMU__Vanyte_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelVanyte_imu_overlap[:,1], mode='lines', name='linVel_IMU_Vanyte_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelVanyte_imu_overlap[:,2], mode='lines', name='linVel_IMU_Vanyte_z'))
         rmse_values['Vanyte'] = computeRMSE(locVelMocap_overlap, locVelVanyte_overlap, "Vanyte")
         index_labels.append('Vanyte')
         if(withHartley):
@@ -771,11 +810,19 @@ if(withMocap):
     if(withTilt):
         velTilt_overlap = np.diff(posTilt_overlap, axis=0)/timeStep_s
         velTilt_overlap = np.vstack((zeros_row,velTilt_overlap))
-        locVelTilt_overlap = rTilt_overlap.apply(velTilt_overlap, inverse=True)
+        locVelTilt_overlap = rTilt_overlap.apply(velTilt_overlap, inverse=True) 
+
+        linVelTilt_fb_overlap = dfObservers[['Tilt_vel_vx', 'Tilt_vel_vx', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
+        angVelTilt_fb_overlap = dfObservers[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy() # estimated angular velocity
+        linVelTilt_imu_overlap = linVelTilt_fb_overlap + np.cross(angVelTilt_fb_overlap, rTilt_overlap.apply(posFbImu_overlap)) + rTilt_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,0], mode='lines', name='locVelTilt_x'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,1], mode='lines', name='locVelTilt_y'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,2], mode='lines', name='locVelTilt_z'))
+
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,0], mode='lines', name='linVel_IMU__Tilt_x'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,1], mode='lines', name='linVel_IMU_Tilt_y'))
+            figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,2], mode='lines', name='linVel_IMU_Tilt_z'))
         rmse_values['Tilt'] = computeRMSE(locVelMocap_overlap, locVelTilt_overlap, "Tilt")
         index_labels.append('Tilt')
         if(withHartley):
@@ -791,7 +838,7 @@ if(withMocap):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,0], mode='lines', name='locVelController_x'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,1], mode='lines', name='locVelController_y'))
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelController_overlap[:,2], mode='lines', name='locVelController_z'))
-        rmse_values['Controller'] = computeRMSE(locVelController_overlap, locVelVanyte_overlap, "Controller")
+        rmse_values['Controller'] = computeRMSE(locVelMocap_overlap, locVelController_overlap, "Controller")
         index_labels.append('Controller')
         if(withHartley):
             relative_errors['Controller'] = compute_relative_error(rmse_values['Controller'], rmse_values['Hartley'])
