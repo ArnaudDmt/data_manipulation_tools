@@ -61,8 +61,6 @@ if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'Ha
     dfHartley = pd.read_csv(f'{path_to_project}/output_data/HartleyOutputCSV.csv', delimiter=';')
     withHartley = True
 
-
-
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'KO'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('MCKineticsObserver_globalWorldCentroidState', 'KoState'), inplace=True)
 dfObservers.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)    
@@ -119,7 +117,7 @@ if(withMocap):
 
     if(writeFormattedData):
         dfMocapPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-        dfMocapPose['timestamp'] = dfObservers['t']
+        dfMocapPose['timestamp'] = dfObservers_overlap['t']
         dfMocapPose['tx'] = posMocap_overlap[:,0]
         dfMocapPose['ty'] = posMocap_overlap[:,1]
         dfMocapPose['tz'] = posMocap_overlap[:,2]
@@ -250,9 +248,9 @@ if(withTilt):
     if(writeFormattedData):
         dfTiltPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
         dfTiltPose_overlap['timestamp'] = dfObservers_overlap['t']
-        dfTiltPose_overlap['tx'] = posTilt[:,0]
-        dfTiltPose_overlap['ty'] = posTilt[:,1]
-        dfTiltPose_overlap['tz'] = posTilt[:,2]
+        dfTiltPose_overlap['tx'] = posTilt_overlap[:,0]
+        dfTiltPose_overlap['ty'] = posTilt_overlap[:,1]
+        dfTiltPose_overlap['tz'] = posTilt_overlap[:,2]
         dfTiltPose_overlap['qx'] = quaternionsTilt_conjugate_overlap[:,0]
         dfTiltPose_overlap['qy'] = quaternionsTilt_conjugate_overlap[:,1]
         dfTiltPose_overlap['qz'] = quaternionsTilt_conjugate_overlap[:,2]
@@ -763,8 +761,8 @@ if(withMocap):
         velKO_overlap = np.vstack((zeros_row,velKO_overlap)) # Velocity obtained by finite differences
         locVelKO_overlap = rKO_overlap.apply(velKO_overlap, inverse=True)
 
-        linVelKO_fb_overlap = dfObservers[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy() # estimated linear velocity
-        angVelKO_fb_overlap = dfObservers[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy() # estimated angular velocity
+        linVelKO_fb_overlap = dfObservers_overlap[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy() # estimated linear velocity
+        angVelKO_fb_overlap = dfObservers_overlap[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy() # estimated angular velocity
         linVelKO_imu_overlap = linVelKO_fb_overlap + np.cross(angVelKO_fb_overlap, rKO_overlap.apply(posFbImu_overlap)) + rKO_overlap.apply(linVelFbImu_overlap)
 
         if(displayLogs):
@@ -787,10 +785,10 @@ if(withMocap):
     if(withVanyte):
         velVanyte_overlap = np.diff(posVanyte_overlap, axis=0)/timeStep_s
         velVanyte_overlap = np.vstack((zeros_row,velVanyte_overlap))
-        locVelVanyte_overlap = rVanyte.apply(velVanyte_overlap, inverse=True)
+        locVelVanyte_overlap = rVanyte_overlap.apply(velVanyte_overlap, inverse=True)
 
-        linVelVanyte_fb_overlap = dfObservers[['Vanyte_vel_vx', 'Vanyte_vel_vx', 'Vanyte_vel_vz']].to_numpy() # estimated linear velocity
-        angVelVanyte_fb_overlap = dfObservers[['Vanyte_vel_wx', 'Vanyte_vel_wy', 'Vanyte_vel_wz']].to_numpy() # estimated angular velocity
+        linVelVanyte_fb_overlap = dfObservers_overlap[['Vanyte_vel_vx', 'Vanyte_vel_vx', 'Vanyte_vel_vz']].to_numpy() # estimated linear velocity
+        angVelVanyte_fb_overlap = dfObservers_overlap[['Vanyte_vel_wx', 'Vanyte_vel_wy', 'Vanyte_vel_wz']].to_numpy() # estimated angular velocity
         linVelVanyte_imu_overlap = linVelVanyte_fb_overlap + np.cross(angVelVanyte_fb_overlap, rVanyte_overlap.apply(posFbImu_overlap)) + rVanyte_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelVanyte_overlap[:,0], mode='lines', name='locVelVanyte_x'))
@@ -812,8 +810,8 @@ if(withMocap):
         velTilt_overlap = np.vstack((zeros_row,velTilt_overlap))
         locVelTilt_overlap = rTilt_overlap.apply(velTilt_overlap, inverse=True) 
 
-        linVelTilt_fb_overlap = dfObservers[['Tilt_vel_vx', 'Tilt_vel_vx', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
-        angVelTilt_fb_overlap = dfObservers[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy() # estimated angular velocity
+        linVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_vx', 'Tilt_vel_vx', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
+        angVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy() # estimated angular velocity
         linVelTilt_imu_overlap = linVelTilt_fb_overlap + np.cross(angVelTilt_fb_overlap, rTilt_overlap.apply(posFbImu_overlap)) + rTilt_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
             figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,0], mode='lines', name='locVelTilt_x'))

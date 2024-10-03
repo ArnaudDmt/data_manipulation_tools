@@ -142,7 +142,7 @@ if(displayLogs):
     figOrientations.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Ori_euler_continuous[:,2], mode='lines', name='world_RigidBody_ori_yaw'))
 
 
-    figOrientations.update_layout(title=f"{scriptName}: Positions before alignment")
+    figOrientations.update_layout(title=f"{scriptName}: Orientations before alignment")
 
     # Show the plotly figures
     figOrientations.show()

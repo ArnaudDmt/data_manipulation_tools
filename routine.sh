@@ -511,88 +511,105 @@ select plotResults in "Yes" "No"; do
     esac
 done  
 
-if [ -d "$outputDataPath/evals/" ]; then
-    echo "It seems that the estimator evaluation metrics have already been computed, do you want to compute them again?"
-    select recomputeMetrics in "No" "Yes"; do
-        case $recomputeMetrics in
-            No )    cd $cwd/$scriptsPath
-                    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
-                    break;;
-            Yes )   cd $cwd/$scriptsPath
-                    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
-                    break;;
-        esac
-    done   
-else
-    echo "Formatting the results to evaluate the performances of the observers."; 
-    cd $cwd/$scriptsPath
-    python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
-    echo "Formatting finished."; 
+echo "Do you want to compute the evalutation metrics for all the estimators?"
+select computeMetrics in "No" "Yes"; do
+    case $computeMetrics in
+        No )  computeMetrics=false; break;;
+        Yes ) computeMetrics=true; break;;
+    esac
+done  
+
+if $computeMetrics; then
+    if [ -d "$outputDataPath/evals/" ]; then
+        echo "It seems that the estimator evaluation metrics have already been computed, do you want to compute them again?"
+        select recomputeMetrics in "No" "Yes"; do
+            case $recomputeMetrics in
+                No )    cd $cwd/$scriptsPath
+                        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
+                        break;;
+                Yes )   cd $cwd/$scriptsPath
+                        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
+                        break;;
+            esac
+        done   
+    else
+        echo "Formatting the results to evaluate the performances of the observers."; 
+        cd $cwd/$scriptsPath
+        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
+        echo "Formatting finished."; 
+    fi
+elif $plotResults; then
+    echo "Plotting the observer results."; 
+        cd $cwd/$scriptsPath
+        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
 fi
+
+
+
 cd $cwd
 
-
-mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
-if [ -f "$mocapFormattedResults" ]; then
-    mkdir -p "$outputDataPath/evals"
-    if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
-        mkdir -p "$outputDataPath/evals/KineticsObserver"
-        if ! [ -f "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml" ]; then
-            touch "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-            echo "align_type: posyaw" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-            echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+if $computeMetrics; then
+    mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
+    if [ -f "$mocapFormattedResults" ]; then
+        mkdir -p "$outputDataPath/evals"
+        if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
+            mkdir -p "$outputDataPath/evals/KineticsObserver"
+            if ! [ -f "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml" ]; then
+                touch "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+                echo "align_type: posyaw" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+                echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
+            fi
+            cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
+            mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer"
         fi
-        cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
-        mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
-        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer"
-    fi
-    if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
-        mkdir -p "$outputDataPath/evals/Vanyte"
-        if ! [ -f "$outputDataPath/evals/Vanyte/eval_cfg.yaml" ]; then
-            touch "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-            echo "align_type: posyaw" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-            echo "align_num_frames: -1" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+        if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
+            mkdir -p "$outputDataPath/evals/Vanyte"
+            if ! [ -f "$outputDataPath/evals/Vanyte/eval_cfg.yaml" ]; then
+                touch "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+                echo "align_type: posyaw" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+                echo "align_num_frames: -1" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+            fi
+            cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
+            mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte"
         fi
-        cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
-        mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
-        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte"
-    fi
-    if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
-        mkdir -p "$outputDataPath/evals/Tilt"
-        if ! [ -f "$outputDataPath/evals/Tilt/eval_cfg.yaml" ]; then
-            touch "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-            echo "align_type: posyaw" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-            echo "align_num_frames: -1" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+        if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
+            mkdir -p "$outputDataPath/evals/Tilt"
+            if ! [ -f "$outputDataPath/evals/Tilt/eval_cfg.yaml" ]; then
+                touch "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+                echo "align_type: posyaw" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+                echo "align_num_frames: -1" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
+            fi
+            cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
+            mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt"
         fi
-        cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
-        mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
-        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt"
-    fi
-    if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
-        mkdir -p "$outputDataPath/evals/Controller"
-        if ! [ -f "$outputDataPath/evals/Controller/eval_cfg.yaml" ]; then
-            touch "$outputDataPath/evals/Controller/eval_cfg.yaml"
-            echo "align_type: posyaw" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
-            echo "align_num_frames: -1" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
+        if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
+            mkdir -p "$outputDataPath/evals/Controller"
+            if ! [ -f "$outputDataPath/evals/Controller/eval_cfg.yaml" ]; then
+                touch "$outputDataPath/evals/Controller/eval_cfg.yaml"
+                echo "align_type: posyaw" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
+                echo "align_num_frames: -1" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
+            fi
+            cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
+            mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller"
         fi
-        cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
-        mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
-        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller"
-    fi
-    if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
-        mkdir -p "$outputDataPath/evals/Hartley"
-        if ! [ -f "$outputDataPath/evals/Hartley/eval_cfg.yaml" ]; then
-            touch "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-            echo "align_type: posyaw" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-            echo "align_num_frames: -1" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+        if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
+            mkdir -p "$outputDataPath/evals/Hartley"
+            if ! [ -f "$outputDataPath/evals/Hartley/eval_cfg.yaml" ]; then
+                touch "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+                echo "align_type: posyaw" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+                echo "align_num_frames: -1" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
+            fi
+            cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
+            mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
         fi
-        cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
-        mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
-        python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
+        rm $mocapFormattedResults
     fi
-    rm $mocapFormattedResults
 fi
-
 
 echo "Do you want to replay the log with the obtained mocap's data?"
 select replayWithMocap in "Yes" "No"; do
