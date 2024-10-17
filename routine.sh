@@ -30,6 +30,25 @@ fi
 
 
 
+############################ Variables initialization ############################
+
+# indicates if the scripts must be run
+runScript=false
+debug=false
+
+for arg in "$@"; do
+    if [[ "$arg" == "--debug" ]]; then
+        debug=true
+        break
+    fi
+    if [[ "$arg" == "--metrics" ]]; then
+        source scripts/routine_scripts/computeOnlyMetrics.sh
+        break
+    fi
+done
+displayLogs=$debug
+echo $runScript
+exit
 
 ############################ Absolute paths initialization ############################
 
@@ -144,22 +163,6 @@ logReplayBin="$outputDataPath/logReplay.bin"
 
 # configuration files
 projectConfig="$projectPath/projectConfig.yaml"
-
-
-
-############################ Variables initialization ############################
-
-# indicates if the scripts must be ran
-runScript=false
-
-debug=false
-if [ ! $# -eq 0 ];then
-    if [[ "$1" == "--debug" ]]; then
-        debug=true
-    fi
-fi
-displayLogs=$debug
-
 
 
 ############################ Checking if a robot was given to select the mocap markers ############################
