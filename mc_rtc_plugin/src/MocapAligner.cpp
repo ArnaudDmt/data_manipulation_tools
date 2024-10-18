@@ -13,6 +13,18 @@ void MocapAligner::init(mc_control::MCGlobalController & controller, const mc_rt
   robot_ = config("robot", controller.controller().robot().name());
   mocapBodyName_ = static_cast<std::string>(config("bodyName"));
 
+  if(!controller.controller().realRobot(robot_).hasBody(mocapBodyName_))
+  {
+    mc_rtc::log::error("The body given in the configuration of the MocapAligner plugin does not exist in {}. Here is "
+                       "the list of all the bodies.",
+                       robot_);
+    for(auto & test : controller.controller().realRobot(robot_).mb().bodies())
+    {
+      std::cout << std::endl << test.name() << std::endl;
+    }
+    mc_rtc::log::error_and_throw("Please give an available body.");
+  }
+
   auto & logger = (const_cast<mc_control::MCController &>(controller.controller())).logger();
   mc_state_observation::conversions::kinematics::addToLogger(logger, worldMocapBodyKine_, "MocapAligner_worldBodyKine");
 }
