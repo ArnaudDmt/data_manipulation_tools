@@ -1,5 +1,10 @@
 #!/bin/zsh
 
+
+# current working directory
+cwd=$(pwd)
+
+
 set -e
 
 
@@ -29,35 +34,40 @@ if [[ "$1" == "-h" ]]; then
 fi
 
 
+############################ Absolute paths initialization ############################
+
+replay_yaml="$HOME/.config/mc_rtc/controllers/Passthrough.yaml"
+mc_rtc_yaml="$HOME/.config/mc_rtc/mc_rtc.yaml"
+mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
+mocapMarkers_yaml="markersPlacements.yaml"
+
+
 
 ############################ Variables initialization ############################
 
 # indicates if the scripts must be run
 runScript=false
+# indicates if we must run in debug mode
 debug=false
+# indicates if we want to compute only metrics
+compute_metrics_only=false
+
+############################ Reading of parameters ############################
 
 for arg in "$@"; do
     if [[ "$arg" == "--debug" ]]; then
         debug=true
         break
-    fi
-    if [[ "$arg" == "--metrics" ]]; then
-        source scripts/routine_scripts/computeOnlyMetrics.sh
-        break
+    elif [[ "$arg" == "--metrics" ]]; then
+        compute_metrics_only=true
     fi
 done
 displayLogs=$debug
-echo $runScript
-exit
 
-############################ Absolute paths initialization ############################
 
-# current working directory
-cwd=$(pwd)
-replay_yaml="$HOME/.config/mc_rtc/controllers/Passthrough.yaml"
-mc_rtc_yaml="$HOME/.config/mc_rtc/mc_rtc.yaml"
-mocapPlugin_yaml="$HOME/.config/mc_rtc/plugins/MocapAligner.yaml"
-mocapMarkers_yaml="markersPlacements.yaml"
+############################ Computing only the metrics if required ############################
+
+source scripts/routine_scripts/computeOnlyMetrics.sh
 
 
 ############################ Configuration files test ############################
@@ -269,17 +279,19 @@ bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBod
 ############################ Needs the timestep to replay the log or resample the mocap's data ############################
 
 
-
 echo "Use the timestep defined in $mc_rtc_yaml ?"
-    select useMainConfRobot in "Yes" "No"; do
-        case $useMainConfRobot in
-            Yes ) 
-                timeStep=$( grep 'Timestep:' $mc_rtc_yaml | grep -v '^#' | sed 's/Timestep: //'); break;;
-            No ) 
-                echo "Please enter the timestep of the controller in milliseconds: "
-                read timeStep ; break;;
-        esac
-    done
+select useMainConfRobot in "Yes" "No"; do
+    case $useMainConfRobot in
+        Yes ) 
+            timeStep=$( grep 'Timestep:' $mc_rtc_yaml | grep -v '^#' | sed 's/Timestep: //'); break;;
+        No ) 
+            echo "Please enter the timestep of the controller in milliseconds: "
+            read timeStep ; break;;
+    esac
+done
+
+
+############################ Fetching the mocap's log ############################
 
 mocapLog="$rawDataPath/mocapData.csv"
 if [ -f "$mocapLog" ]; then
@@ -548,71 +560,10 @@ elif $plotResults; then
 fi
 
 
-
-cd $cwd
-
 if $computeMetrics; then
-    mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
-    if [ -f "$mocapFormattedResults" ]; then
-        mkdir -p "$outputDataPath/evals"
-        if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/KineticsObserver"
-            if ! [ -f "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-                echo "align_type: posyaw" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer"
-        fi
-        if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Vanyte"
-            if ! [ -f "$outputDataPath/evals/Vanyte/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-                echo "align_type: posyaw" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte"
-        fi
-        if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Tilt"
-            if ! [ -f "$outputDataPath/evals/Tilt/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-                echo "align_type: posyaw" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt"
-        fi
-        if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Controller"
-            if ! [ -f "$outputDataPath/evals/Controller/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Controller/eval_cfg.yaml"
-                echo "align_type: posyaw" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller"
-        fi
-        if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Hartley"
-            if ! [ -f "$outputDataPath/evals/Hartley/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-                echo "align_type: posyaw" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
-        fi
-        rm $mocapFormattedResults
-    fi
+    compute_metrics
 fi
+
 
 echo "Do you want to replay the log with the obtained mocap's data?"
 select replayWithMocap in "Yes" "No"; do

@@ -407,12 +407,12 @@ if(displayLogs):
         fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 2], mode='lines', name='Mocap_Yaw'))
 
         if(len(df_mocap_toIgnore) > 0):
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Yaw'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Position_x'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Position_y'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Position_z'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 0], mode='lines', name='Mocap_mocap_toIgnore_Roll'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 1], mode='lines', name='Mocap_mocap_toIgnore_Pitch'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 2], mode='lines', name='Mocap_mocap_toIgnore_Yaw'))
 
     if(withController):
         fig.add_trace(go.Scatter(x=dfObservers['t'], y=posController[:, 0], mode='lines', name='Controller_Position_x'))
@@ -468,39 +468,42 @@ if(displayLogs):
 
     fig3 = go.Figure()
 
-    # Find the index where 't' is closest to 0
-    index_0 = (dfObservers['t'] - 0).abs().idxmin()
-    # Find the index where 't' is closest to 80
-    index_80 = (dfObservers['t'] - 80).abs().idxmin()
-    # Compute the average bias between these indexes
-    average_bias_x_80 = dfObservers.loc[index_0:index_80, 'Accelerometer_angularVelocity_x'].mean()
-    average_bias_x_tuple_80 = tuple(average_bias_x_80 for _ in range(len(dfObservers)))
-    average_bias_y_80 = dfObservers.loc[index_0:index_80, 'Accelerometer_angularVelocity_y'].mean()
-    average_bias_y_tuple_80 = tuple(average_bias_y_80 for _ in range(len(dfObservers)))
-    average_bias_z_80 = dfObservers.loc[index_0:index_80, 'Accelerometer_angularVelocity_z'].mean()
-    average_bias_z_tuple_80 = tuple(average_bias_z_80 for _ in range(len(dfObservers)))
+    # Get the last time in dfObservers['t']
+    last_time = dfObservers['t'].max()
 
-    # Find the index where 't' is closest to 360
-    index_360 = (dfObservers['t'] - 360).abs().idxmin()
-    # Find the index where 't' is closest to 450
-    index_450 = (dfObservers['t'] - 450).abs().idxmin()
-    # Compute the average bias between these indexes
-    average_bias_x_360 = dfObservers.loc[index_360:index_450, 'Accelerometer_angularVelocity_x'].mean()
-    average_bias_x_tuple_360 = tuple(average_bias_x_360 for _ in range(len(dfObservers)))
-    average_bias_y_360 = dfObservers.loc[index_360:index_450, 'Accelerometer_angularVelocity_y'].mean()
-    average_bias_y_tuple_360 = tuple(average_bias_y_360 for _ in range(len(dfObservers)))
-    average_bias_z_360 = dfObservers.loc[index_360:index_450, 'Accelerometer_angularVelocity_z'].mean()
-    average_bias_z_tuple_360 = tuple(average_bias_z_360 for _ in range(len(dfObservers)))
-    
+    # Filter the data for the first 3 seconds
+    df_first_3s = dfObservers[(dfObservers['t'] >= 0) & (dfObservers['t'] <= 3)]
+
+    # Compute the average bias over the first 3 seconds
+    average_bias_x_3 = df_first_3s['Accelerometer_angularVelocity_x'].mean()
+    average_bias_x_tuple_3 = tuple(average_bias_x_3 for _ in range(len(dfObservers)))
+    average_bias_y_3 = df_first_3s['Accelerometer_angularVelocity_y'].mean()
+    average_bias_y_tuple_3 = tuple(average_bias_y_3 for _ in range(len(dfObservers)))
+    average_bias_z_3 = df_first_3s['Accelerometer_angularVelocity_z'].mean()
+    average_bias_z_tuple_3 = tuple(average_bias_z_3 for _ in range(len(dfObservers)))
+
+    # Filter the data for the last 3 seconds
+    df_last_3s = dfObservers[(dfObservers['t'] >= last_time - 3) & (dfObservers['t'] <= last_time)]
+
+    # Compute the average bias over the last 3 seconds
+    average_bias_x_last = df_last_3s['Accelerometer_angularVelocity_x'].mean()
+    average_bias_x_tuple_last = tuple(average_bias_x_last for _ in range(len(dfObservers)))
+    average_bias_y_last = df_last_3s['Accelerometer_angularVelocity_y'].mean()
+    average_bias_y_tuple_last = tuple(average_bias_y_last for _ in range(len(dfObservers)))
+    average_bias_z_last = df_last_3s['Accelerometer_angularVelocity_z'].mean()
+    average_bias_z_tuple_last = tuple(average_bias_z_last for _ in range(len(dfObservers)))
+
+    # Plotting the original data and the computed biases
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
     fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_80, mode='lines', name='measured_GyroBias_beginning_x'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_80, mode='lines', name='measured_GyroBias_beginning_y'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_80, mode='lines', name='measured_GyroBias_beginning_z'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_360, mode='lines', name='measured_GyroBias_secondStop_x'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_360, mode='lines', name='measured_GyroBias_secondStop_y'))
-    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_360, mode='lines', name='measured_GyroBias_secondStop_z'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
+    fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_last, mode='lines', name='measured_GyroBias_end_z'))
+
     fig3.add_trace(go.Scatter(x=dfHartley['t'], y=dfHartley['GyroBias_x'], mode='lines', name='Hartley_GyroBias_x'))
     fig3.add_trace(go.Scatter(x=dfHartley['t'], y=dfHartley['GyroBias_y'], mode='lines', name='Hartley_GyroBias_y'))
     fig3.add_trace(go.Scatter(x=dfHartley['t'], y=dfHartley['GyroBias_z'], mode='lines', name='Hartley_GyroBias_z'))
