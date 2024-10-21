@@ -16,7 +16,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer" &
         fi
         if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Vanyte"
@@ -27,7 +27,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte" &
         fi
         if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Tilt"
@@ -38,7 +38,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt" &
         fi
         if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Controller"
@@ -49,7 +49,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller" &
         fi
         if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Hartley"
@@ -60,10 +60,13 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley"
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley" &
         fi
         rm $mocapFormattedResults
     fi
+
+    # Wait for all background processes to finish
+    wait
 }
 
 
@@ -181,6 +184,7 @@ if $compute_metrics_only; then
         python plotAndFormatResults.py "$timeStep" "False" "$projectPath" "True"; 
         echo "Formatting for $project finished."; 
         compute_metrics
+        echo "Computation of the metrics for $project finished."; 
     done
     exit
 fi
