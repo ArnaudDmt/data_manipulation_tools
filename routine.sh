@@ -58,8 +58,11 @@ for arg in "$@"; do
     if [[ "$arg" == "--debug" ]]; then
         debug=true
         break
-    elif [[ "$arg" == "--metrics" ]]; then
+    elif [[ "$arg" == "--compute-metrics" ]]; then
         compute_metrics_only=true
+    elif [[ "$arg" == "--plot-metrics" ]]; then
+        source scripts/routine_scripts/plotMetrics.sh
+        exit
     fi
 done
 displayLogs=$debug
@@ -143,6 +146,8 @@ if $createNewProject; then
     echo "EnabledRobot: " >> "$projectPath/projectConfig.yaml"
     if locate HartleyIEKF.so | grep install;then
         echo "Use_HartleyIEKF: " >> "$projectPath/projectConfig.yaml"
+        echo -e "\n# relative_errors_sublengths: [1, 2, 3, 4, 5]" >> $projectConfig
+
     fi
     echo "Project created. Please add the raw data of the mocap and mc_rtc's log into $projectPath/raw_data under the names mocapData.csv and controllerLog.bin, and fill in the configuration file $projectPath/projectConfig.yaml."
     exit
@@ -176,7 +181,6 @@ projectConfig="$projectPath/projectConfig.yaml"
 
 
 ############################ Checking if a robot was given to select the mocap markers ############################
-
 
 if grep -v '^#' $projectConfig | grep -q "Use_HartleyIEKF"; then
     if [[ ! $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_HartleyIEKF://' | sed 's: ::g') ]]; then
@@ -242,11 +246,10 @@ else
     if [ -s $projectConfig ]; then
         awk -i inplace -v robot="$main_robot" 'FNR==1 {print "EnabledRobot:", robot}1' $projectConfig
     else
-        echo "EnabledRobot: $main_robot" > $projectConfig
+        #echo "EnabledRobot: $main_robot" > $projectConfig
+        echo -e "\nEnabledRobot: $main_robot" >> $projectConfig
     fi
-    
 fi
-
 
 ############################ Checking if a mocap body was given to select the mocap markers ############################
 
@@ -267,7 +270,8 @@ else
     if [ -s $projectConfig ]; then
         awk -i inplace -v body="$body" 'FNR==1 {print "EnabledBody:", body}1' $projectConfig;
     else
-        echo "EnabledBody: $body" > $projectConfig
+        #echo "EnabledBody: $body" > $projectConfig
+        echo -e "\nEnabledBody: $body" >> $projectConfig
     fi
     
 fi

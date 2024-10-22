@@ -1,11 +1,15 @@
 #!/bin/zsh
 
-
 compute_metrics() {
     cd $cwd
-
+    
     mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
     if [ -f "$mocapFormattedResults" ]; then
+        relative_errors_sublengths=($(yq eval '.relative_errors_sublengths[]' $projectConfig))
+        if [ ${#relative_errors_sublengths[@]} -eq 0 ]; then
+            echo "Please give the list of lengths of the sub-trajectories for the relative error in the file $projectConfig"
+            exit
+        fi
         mkdir -p "$outputDataPath/evals"
         if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/KineticsObserver"
@@ -14,9 +18,10 @@ compute_metrics() {
                 echo "align_type: none" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
                 echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
             fi
+
             cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --recalculate_errors --estimator_name "Kinetics Observer" &
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Kinetics Observer" &
         fi
         if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Vanyte"
@@ -27,7 +32,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --recalculate_errors --estimator_name "Vanyte" &
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Vanyte" &
         fi
         if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Tilt"
@@ -38,7 +43,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --recalculate_errors --estimator_name "Tilt" &
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Tilt" &
         fi
         if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Controller"
@@ -49,7 +54,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --recalculate_errors --estimator_name "Controller" &
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Controller" &
         fi
         if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
             mkdir -p "$outputDataPath/evals/Hartley"
@@ -60,7 +65,7 @@ compute_metrics() {
             fi
             cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
             mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --recalculate_errors --estimator_name "Hartley" &
+            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Hartley" &
         fi
         rm $mocapFormattedResults
     fi
@@ -81,8 +86,7 @@ if $compute_metrics_only; then
 
     # Check if no folders found
     if [[ ${#folders[@]} -eq 0 ]]; then
-    echo "No folders contain the specified file."
-    exit 1
+        exit 1
     fi
 
     selected_folders=()
@@ -171,6 +175,9 @@ if $compute_metrics_only; then
         rawDataPath="$projectPath/raw_data"
         outputDataPath="$projectPath/output_data"
         scriptsPath="/scripts"
+
+        #main files
+        projectConfig="$projectPath/projectConfig.yaml"
 
         # files of the resulting data after each step
         resampledMocapData="$outputDataPath/resampledMocapData.csv"
