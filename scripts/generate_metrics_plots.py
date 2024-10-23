@@ -251,15 +251,44 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
 
     fig.show()
 
-def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
-
+def plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors):
     fig = go.Figure()
-    for estimator in estimatorsList:
-        data = open_pickle(f'Projects/{exps_to_merge[0]}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle')
-        fig.add_trace(go.Scatter(x=data['accum_distances'], y=data['abs_e_trans'], fill='tozeroy', name=estimator, line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', fillcolor=lighten_color(colors[estimator], 0.3)))
+    dropdown_buttons = []
+    for expe in exps_to_merge:
+        for estimator in estimatorsList:
+            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle')
+            for category in data.keys():
+                fig.add_trace(go.Scatter(x=data['accum_distances'], y=data['abs_e_trans'], fill='tozeroy', name=f'{expe}_{estimator}({category})', line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
 
-    fig.update_layout(xaxis_title="Distance travelled (m)", yaxis_title="Error")
-    #fig.show()
+    for category in data.keys():
+        visibility = [False] * len(fig.data)  # Start with all traces hidden
+        for i, trace in enumerate(fig.data):
+            if trace.name.endswith(f"({category})"):
+                visibility[i] = True  # Show traces of the selected category
+
+        button = dict(
+            label=category,
+            method='update',
+            args=[{'visible': visibility}, {'title': abs_category_titles.get(category, 'Default Label'), 'yaxis.title': abs_category_ylabels.get(category, 'Default Label')}]
+        )
+        dropdown_buttons.append(button)
+
+    fig.update_layout(
+        title='Select a Category to Display Boxplots',
+        xaxis_title="Distance travelled (m)", yaxis_title="Error",
+        updatemenus=[
+            {
+                'buttons': dropdown_buttons,
+                'direction': 'down',
+                'showactive': True,
+            }
+        ],
+        boxmode='group'  # Group boxes together
+        )
+    fig.show()
+
+def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
+    plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
 
     regroupedErrors = dict.fromkeys(exps_to_merge)
     for expe in exps_to_merge:
