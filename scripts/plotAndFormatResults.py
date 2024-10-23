@@ -1,4 +1,5 @@
 import math
+import pickle
 import sys
 import numpy as np
 import pandas as pd
@@ -137,6 +138,10 @@ if(withMocap):
             file.seek(0, 0) 
             file.write(line + '\n' + file_data) 
 
+        d = {'x': posMocap_overlap[:, 0], 'y': posMocap_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/mocap_x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
+
     if(len(df_mocap_toIgnore) > 0):
         posMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
         quaternionsMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
@@ -176,7 +181,7 @@ if(withKO):
         dfKoPose_overlap['qz'] = quaternionsKO_conjugate_overlap[:,2]
         dfKoPose_overlap['qw'] = quaternionsKO_conjugate_overlap[:,3]
 
-        txtOutput = f'{path_to_project}/output_data/formattedKoTraj.txt'
+        txtOutput = f'{path_to_project}/output_data/formattedKineticsObserverTraj.txt'
         dfKoPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
         line = '# timestamp tx ty tz qx qy qz qw' 
@@ -184,6 +189,10 @@ if(withKO):
             file_data = file.read() 
             file.seek(0, 0) 
             file.write(line + '\n' + file_data) 
+
+        d = {'x': posKO_overlap[:, 0], 'y': posKO_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/KineticsObserver/x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
 if(withVanyte):
     posVanyte = dfObservers[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
@@ -223,7 +232,11 @@ if(withVanyte):
         with open(txtOutput, 'r+') as file: 
             file_data = file.read() 
             file.seek(0, 0) 
-            file.write(line + '\n' + file_data) 
+            file.write(line + '\n' + file_data)
+
+        d = {'x': posVanyte_overlap[:, 0], 'y': posVanyte_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/Vanyte/x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
 if(withTilt):
     posTilt = dfObservers[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
@@ -264,6 +277,10 @@ if(withTilt):
             file_data = file.read() 
             file.seek(0, 0) 
             file.write(line + '\n' + file_data) 
+        
+        d = {'x': posTilt_overlap[:, 0], 'y': posTilt_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/Tilt/x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
 if(withController):
     posController = dfObservers[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
@@ -304,6 +321,10 @@ if(withController):
             file_data = file.read() 
             file.seek(0, 0) 
             file.write(line + '\n' + file_data) 
+
+        d = {'x': posController_overlap[:, 0], 'y': posController_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/Controller/x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
 
 if(withHartley):
@@ -359,6 +380,10 @@ if(withHartley):
             file_data = file.read() 
             file.seek(0, 0) 
             file.write(line + '\n' + file_data) 
+        
+        d = {'x': posHartley_fb_overlap[:, 0], 'y': posHartley_fb_overlap[:, 1]}
+        with open(f'{path_to_project}/output_data/evals/Hartley/x_y_traj.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
 
 if(displayLogs):
@@ -435,7 +460,6 @@ if(displayLogs):
 
 
     fig2 = go.Figure()
-
 
     if(withVanyte):
         fig2.add_trace(go.Scatter(x=posVanyte[:, 0], y=posVanyte[:, 1], mode='lines', name='Vanyte_2dMotion_xy'))

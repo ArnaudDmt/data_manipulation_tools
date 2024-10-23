@@ -1,72 +1,75 @@
 #!/bin/zsh
 
+run_analysis() {
+    local observerName=$1
+    local num_samples_rel_error=$2
+    shift 2  # Remove the first two arguments
+
+    local relative_errors_sublengths=("$@")  # Remaining arguments are the array
+
+    cmd="python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py \"$outputDataPath/evals/$observerName\" --recalculate_errors --no_plot --estimator_name \"$observerName\""
+    
+    if [ ${#relative_errors_sublengths[@]} -gt 0 ]; then
+        cmd="$cmd --relative_errors_sublengths ${relative_errors_sublengths[@]}"
+    fi
+    
+    if [[ -n "$num_samples_rel_error" && "$num_samples_rel_error" =~ ^[0-9]+$ ]]; then
+        cmd="$cmd --num_samples_rel_error $num_samples_rel_error"
+    fi
+
+    eval "$cmd &"
+}
+
 compute_metrics() {
     cd $cwd
     
     mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
     if [ -f "$mocapFormattedResults" ]; then
         relative_errors_sublengths=($(yq eval '.relative_errors_sublengths[]' $projectConfig))
+        
+        num_samples_rel_error=($(yq eval '.num_samples_rel_error' $projectConfig))
+        
         if [ ${#relative_errors_sublengths[@]} -eq 0 ]; then
             echo "Please give the list of lengths of the sub-trajectories for the relative error in the file $projectConfig"
             exit
         fi
         mkdir -p "$outputDataPath/evals"
-        if [ -f "$outputDataPath/formattedKoTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/KineticsObserver"
-            if ! [ -f "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-                echo "align_type: none" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/KineticsObserver/eval_cfg.yaml"
-            fi
 
-            cp $mocapFormattedResults "$outputDataPath/evals/KineticsObserver/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedKoTraj.txt" "$outputDataPath/evals/KineticsObserver/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/KineticsObserver" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Kinetics Observer" &
-        fi
-        if [ -f "$outputDataPath/formattedVanyteTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Vanyte"
-            if ! [ -f "$outputDataPath/evals/Vanyte/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-                echo "align_type: none" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Vanyte/eval_cfg.yaml"
+        # Function to clean up background jobs on exit
+        cleanup() {
+            echo "Stopping background processes..."
+            # Stops all the background processes
+            kill %${(k)^jobstates}
+            wait
+            exit
+        }
+
+        # Set the trap for SIGINT (Ctrl+C)
+        trap cleanup SIGINT
+        
+        # Define an array of observer names
+        observers=("KineticsObserver" "Vanyte" "Tilt" "Controller" "Hartley")
+        
+        for observer in "${observers[@]}"; do
+            formattedTrajVar="formatted${observer}Traj.txt"
+            if [ -f "$outputDataPath/$formattedTrajVar" ]; then
+                echo "$outputDataPath/$formattedTrajVar"
+                mkdir -p "$outputDataPath/evals/$observer"
+                if ! [ -f "$outputDataPath/evals/$observer/eval_cfg.yaml" ]; then
+                    touch "$outputDataPath/evals/$observer/eval_cfg.yaml"
+                    echo "align_type: none" >> "$outputDataPath/evals/$observer/eval_cfg.yaml"
+                    echo "align_num_frames: -1" >> "$outputDataPath/evals/$observer/eval_cfg.yaml"
+                fi
+
+                cp $mocapFormattedResults "$outputDataPath/evals/$observer/stamped_groundtruth.txt"
+                mv "$outputDataPath/$formattedTrajVar" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
+
+                # Call the run_analysis function for each observer
+                run_analysis "$observer" "$num_samples_rel_error" "${relative_errors_sublengths[@]}"
+                mv "$outputDataPath/evals/$observer/x_y_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_traj.pickle"
             fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Vanyte/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedVanyteTraj.txt" "$outputDataPath/evals/Vanyte/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Vanyte" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Vanyte" &
-        fi
-        if [ -f "$outputDataPath/formattedTiltTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Tilt"
-            if ! [ -f "$outputDataPath/evals/Tilt/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-                echo "align_type: none" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Tilt/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Tilt/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedTiltTraj.txt" "$outputDataPath/evals/Tilt/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Tilt" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Tilt" &
-        fi
-        if [ -f "$outputDataPath/formattedControllerTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Controller"
-            if ! [ -f "$outputDataPath/evals/Controller/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Controller/eval_cfg.yaml"
-                echo "align_type: none" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Controller/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Controller/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedControllerTraj.txt" "$outputDataPath/evals/Controller/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Controller" --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Controller" &
-        fi
-        if [ -f "$outputDataPath/formattedHartleyTraj.txt" ]; then
-            mkdir -p "$outputDataPath/evals/Hartley"
-            if ! [ -f "$outputDataPath/evals/Hartley/eval_cfg.yaml" ]; then
-                touch "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-                echo "align_type: none" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-                echo "align_num_frames: -1" >> "$outputDataPath/evals/Hartley/eval_cfg.yaml"
-            fi
-            cp $mocapFormattedResults "$outputDataPath/evals/Hartley/stamped_groundtruth.txt"
-            mv "$outputDataPath/formattedHartleyTraj.txt" "$outputDataPath/evals/Hartley/stamped_traj_estimate.txt"
-            python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py "$outputDataPath/evals/Hartley"  --relative_errors_sublengths "${relative_errors_sublengths[@]}" --recalculate_errors --no_plot --estimator_name "Hartley" &
-        fi
+        done
+
         rm $mocapFormattedResults
     fi
 
