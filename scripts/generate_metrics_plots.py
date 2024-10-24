@@ -346,6 +346,96 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
     
     fig.show()
 
+
+def plot_llve_statistics_as_boxplot(errorStats, colors):    
+    fig = go.Figure()
+    
+    # Collect the data across all sub-trajectory lengths for each estimator-category pair
+    for estimator in errorStats.keys():
+        x_vals = []  
+        lower_fence = []
+        q1 = []
+        mean = []
+        median = []
+        q3 = []
+        upper_fence = []
+        for axis in errorStats[estimator].keys():
+            stats = errorStats[estimator][axis]
+            x_vals.append(axis)
+            lower_fence.append(stats['min'])
+            q1.append(stats['q1'])
+            mean.append(stats['mean'])
+            median.append(stats['median'])
+            q3.append(stats['q3'])
+            upper_fence.append(stats['max'])
+
+        trace = go.Box(
+            x=x_vals,  # X-axis corresponds to sub-trajectory lengths
+            lowerfence=lower_fence,
+            q1=q1,
+            mean=mean,
+            median=median,
+            q3=q3,
+            upperfence=upper_fence,
+            name=f"{estimator}",  # Single legend entry per estimator-category pair
+            boxpoints=False,
+            marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)',  # Outline color
+            fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
+            line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),  # Well-visible outline
+            opacity=0.8 # Initially hidden
+        )
+        fig.add_trace(trace)
+
+
+    fig.update_layout(
+        title='LLVE metrics',
+        xaxis_title='Axis (x,y,z)',
+        yaxis_title='LLVE [m.s-1]',
+        boxmode='group'  # Group boxes together
+    )
+
+    fig.show()
+    exit(1)
+
+
+
+def plot_llve(exps_to_merge, estimatorsList, colors):    
+    regroupedErrors = dict.fromkeys(estimatorsList)
+    for estimator in estimatorsList:
+        data = open_pickle(f'Projects/{exps_to_merge[0]}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+        regroupedErrors[estimator] = dict.fromkeys(data['llve'].keys())
+
+    for expe in exps_to_merge:
+        for estimator in estimatorsList:
+            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+            for cat in data['llve'].keys():
+                if regroupedErrors[estimator][cat] is None:
+                    regroupedErrors[estimator][cat] = data['llve'][cat]
+                else:
+                    regroupedErrors[estimator][cat] = np.concatenate((regroupedErrors[estimator][cat], data['llve'][cat]))
+
+    errorStats = dict.fromkeys(regroupedErrors.keys())
+    for estimator in estimatorsList:
+        errorStats[estimator] = dict.fromkeys(regroupedErrors[estimator].keys())
+        for cat in regroupedErrors[estimator].keys():
+            errorStats[estimator][cat]  = {
+                                    'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                    'std': 0.0, 'min': 0.0, 'max': 0.0  }
+            data_vec = regroupedErrors[estimator][cat]
+            errorStats[estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
+            errorStats[estimator][cat]['mean'] = float(np.mean(data_vec))
+            errorStats[estimator][cat]['median'] = float(np.median(data_vec))
+            errorStats[estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
+            errorStats[estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
+            errorStats[estimator][cat]['std'] = float(np.std(data_vec))
+            errorStats[estimator][cat]['min'] = float(np.min(data_vec))
+            errorStats[estimator][cat]['max'] = float(np.max(data_vec))
+
+
+    plot_llve_statistics_as_boxplot(errorStats, colors)
+
+
+
 def main():
     parser = argparse.ArgumentParser()
     

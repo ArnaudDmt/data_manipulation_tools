@@ -740,6 +740,15 @@ if(withMocap):
     velMocap_imu_overlap = np.diff(posMocap_imu_overlap, axis=0)/timeStep_s
     velMocap_imu_overlap = np.vstack((zeros_row,velMocap_imu_overlap))
 
+    rWorldImuMocap_overlap = rMocap_overlap * rImuFb_overlap.inv()
+    locVelMocap_imu_estim = rWorldImuMocap_overlap.apply(velMocap_imu_overlap, inverse=True)
+    d = {'llve': {}, 'estimate': {}}
+    d['llve'] = {'x': locVelMocap_overlap[:, 0], 'y': locVelMocap_overlap[:, 1], 'z': locVelMocap_overlap[:, 2]}
+    d['estimate'] = {'x': locVelMocap_imu_estim[:, 0], 'y': locVelMocap_imu_estim[:, 1], 'z': locVelMocap_imu_estim[:, 2]}
+    with open(f'{path_to_project}/output_data/evals/mocap_loc_vel.pickle', 'wb') as f:
+        pickle.dump(d, f)
+
+
     if(displayLogs):
         figLocLinVels = go.Figure()
         figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelMocap_overlap[:,0], mode='lines', name='locVelMocap_x'))
@@ -755,7 +764,7 @@ if(withMocap):
         velHartley_overlap = np.diff(posHartley_fb_overlap, axis=0)/timeStep_s
         velHartley_overlap = np.vstack((zeros_row,velHartley_overlap)) # Velocity obtained by finite differences
         locVelHartley_overlap = rHartley_fb_overlap.apply(velHartley_overlap, inverse=True)
-        
+
         # estimated velocity
         linVelImu_Hartley_overlap = dfHartley[['Velocity_x', 'Velocity_y', 'Velocity_z']].to_numpy()
         
@@ -774,6 +783,14 @@ if(withMocap):
         ]
         index_labels.append('Hartley')
         data.append(np.concatenate([rmse_values['Hartley'], np.zeros_like(rmse_values['Hartley'])]))
+
+        rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
+        locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
+        d = {'llve': {}, 'estimate': {}}
+        d['llve'] = {'x': locVelHartley_overlap[:, 0], 'y': locVelHartley_overlap[:, 1], 'z': locVelHartley_overlap[:, 2]}
+        d['estimate'] = {'x': locVelHartley_imu_estim[:, 0], 'y': locVelHartley_imu_estim[:, 1], 'z': locVelHartley_imu_estim[:, 2]}
+        with open(f'{path_to_project}/output_data/evals/Hartley/loc_vel.pickle', 'wb') as f:
+            pickle.dump(d, f)
     else:
         arrays = [
             ['RMSE', 'RMSE', 'RMSE'],
@@ -809,6 +826,14 @@ if(withMocap):
         else:
             data.append(rmse_values['KO'])
 
+        rWorldImuKO_overlap = rKO_overlap * rImuFb_overlap.inv()
+        locVelKO_imu_estim = rWorldImuKO_overlap.apply(linVelKO_imu_overlap, inverse=True)
+        d = {'llve': {}, 'estimate': {}}
+        d['llve'] = {'x': locVelKO_overlap[:, 0], 'y': locVelKO_overlap[:, 1], 'z': locVelKO_overlap[:, 2]}
+        d['estimate'] = {'x': locVelKO_imu_estim[:, 0], 'y': locVelKO_imu_estim[:, 1], 'z': locVelKO_imu_estim[:, 2]}
+        with open(f'{path_to_project}/output_data/evals/KineticsObserver/loc_vel.pickle', 'wb') as f:
+            pickle.dump(d, f)
+
     if(withVanyte):
         velVanyte_overlap = np.diff(posVanyte_overlap, axis=0)/timeStep_s
         velVanyte_overlap = np.vstack((zeros_row,velVanyte_overlap))
@@ -832,6 +857,15 @@ if(withMocap):
             data.append(np.concatenate([rmse_values['Vanyte'], relative_errors['Vanyte']]))
         else:
             data.append(rmse_values['Vanyte'])
+
+        rWorldImuVanyte_overlap = rVanyte_overlap * rImuFb_overlap.inv()
+        locVelVanyte_imu_estim = rWorldImuVanyte_overlap.apply(linVelVanyte_imu_overlap, inverse=True)
+        d = {'llve': {}, 'estimate': {}}
+        d['llve'] = {'x': locVelVanyte_overlap[:, 0], 'y': locVelVanyte_overlap[:, 1], 'z': locVelVanyte_overlap[:, 2]}
+        d['estimate'] = {'x': locVelVanyte_imu_estim[:, 0], 'y': locVelVanyte_imu_estim[:, 1], 'z': locVelVanyte_imu_estim[:, 2]}
+        with open(f'{path_to_project}/output_data/evals/Vanyte/loc_vel.pickle', 'wb') as f:
+            pickle.dump(d, f)
+
     if(withTilt):
         velTilt_overlap = np.diff(posTilt_overlap, axis=0)/timeStep_s
         velTilt_overlap = np.vstack((zeros_row,velTilt_overlap))
@@ -855,6 +889,15 @@ if(withMocap):
             data.append(np.concatenate([rmse_values['Tilt'], relative_errors['Tilt']]))
         else:
             data.append(rmse_values['Tilt'])
+
+        rWorldImuTilt_overlap = rTilt_overlap * rImuFb_overlap.inv()
+        locVelTilt_imu_estim = rWorldImuTilt_overlap.apply(linVelTilt_imu_overlap, inverse=True)
+        d = {'llve': {}, 'estimate': {}}
+        d['llve'] = {'x': locVelTilt_overlap[:, 0], 'y': locVelTilt_overlap[:, 1], 'z': locVelTilt_overlap[:, 2]}
+        d['estimate'] = {'x': locVelTilt_imu_estim[:, 0], 'y': locVelTilt_imu_estim[:, 1], 'z': locVelTilt_imu_estim[:, 2]}
+        with open(f'{path_to_project}/output_data/evals/Tilt/loc_vel.pickle', 'wb') as f:
+            pickle.dump(d, f)
+
     if(withController):
         velController_overlap = np.diff(posController_overlap, axis=0)/timeStep_s
         velController_overlap = np.vstack((zeros_row,velController_overlap))
@@ -870,6 +913,19 @@ if(withMocap):
             data.append(np.concatenate([rmse_values['Controller'], relative_errors['Controller']]))
         else:
             data.append(rmse_values['Controller'])
+
+
+        posController_imu_overlap = posController_overlap + rController_overlap.apply(posFbImu_overlap)
+        velController_imu_overlap = np.diff(posController_imu_overlap, axis=0)/timeStep_s
+        velController_imu_overlap = np.vstack((zeros_row,velController_imu_overlap))
+
+        rWorldImuController_overlap = rController_overlap * rImuFb_overlap.inv()
+        locVelController_imu_estim = rWorldImuController_overlap.apply(velController_imu_overlap, inverse=True)
+        d = {'llve': {}, 'estimate': {}}
+        d['llve'] = {'x': locVelController_overlap[:, 0], 'y': locVelController_overlap[:, 1], 'z': locVelController_overlap[:, 2]}
+        d['estimate'] = {'x': locVelController_imu_estim[:, 0], 'y': locVelController_imu_estim[:, 1], 'z': locVelController_imu_estim[:, 2]}
+        with open(f'{path_to_project}/output_data/evals/Controller/loc_vel.pickle', 'wb') as f:
+            pickle.dump(d, f)
     
 
     if(displayLogs):

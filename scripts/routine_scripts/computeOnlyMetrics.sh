@@ -67,6 +67,7 @@ compute_metrics() {
                 # Call the run_analysis function for each observer
                 run_analysis "$observer" "$num_samples_rel_error" "${relative_errors_sublengths[@]}"
                 mv "$outputDataPath/evals/$observer/x_y_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_traj.pickle"
+                mv "$outputDataPath/evals/$observer/loc_vel.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/loc_vel.pickle"
             fi
         done
 
