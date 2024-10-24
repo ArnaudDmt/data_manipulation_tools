@@ -347,6 +347,8 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
     fig.show()
 
 
+
+
 def plot_llve_statistics_as_boxplot(errorStats, colors):    
     fig = go.Figure()
     
@@ -398,40 +400,166 @@ def plot_llve_statistics_as_boxplot(errorStats, colors):
     exit(1)
 
 
+def test(errorStats, colors, expe):
+    fig = go.Figure()
+
+    all_categories = sorted({cat for estimator in errorStats.keys() for cat in errorStats[estimator].keys()})
+
+    # Store traces per category for boxplots and velocity plots
+    test = []
+    traces_to_plot = {'boxplots': {}, 'scatters': {}}
+    for cat in all_categories:
+        traces_to_plot['boxplots'][cat] = []
+        traces_to_plot['scatters'][cat] = []
+
+    # Load velocity data from pickle
+    def load_velocity_data(estimator, category):
+        data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+        return data[category]  # Assuming each category has velocity data by axis
+
+    # Create traces for boxplots and velocity plots
+    for estimator in errorStats.keys():
+        for category in all_categories:
+            x_vals = []  # Collect x values (d_subTraj)
+            lower_fence = []
+            q1 = []
+            mean = []
+            median = []
+            q3 = []
+            upper_fence = []
+
+            # Collect the data across all sub-trajectory lengths for each estimator-category pair
+            for axis in errorStats[estimator][category].keys():
+                stats = errorStats[estimator][category][axis]
+                
+                x_vals.append(axis)
+                lower_fence.append(stats['min'])
+                q1.append(stats['q1'])
+                mean.append(stats['mean'])
+                median.append(stats['median'])
+                q3.append(stats['q3'])
+                upper_fence.append(stats['max'])
+
+            # Create boxplot trace
+            trace_boxplot = go.Box(
+                x=x_vals,
+                lowerfence=lower_fence,
+                q1=q1,
+                mean=mean,
+                median=median,
+                q3=q3,
+                upperfence=upper_fence,
+                name=f"{estimator}",  # Only the estimator name in the legend
+                boxpoints=False,
+                marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)',  # Outline color
+                fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
+                line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),
+                opacity=0.8,
+                visible=False  # Initially not visible
+            )
+            #traces_to_plot['boxplots'][category].append(trace_boxplot)
+            fig.add_trace(trace_boxplot)
+            test.append({'type': 'boxplot', 'category': category})
+
+            # Create velocity plot traces
+            velocity_data = load_velocity_data(estimator, category)
+            for axis, values in velocity_data.items():
+                trace_velocity = go.Scatter(
+                    x=list(range(len(values))),  # Assuming the values are ordered by time
+                    y=values,
+                    mode='lines',
+                    name=f"{estimator} ({axis})",  # Include the axis name in the legend
+                    line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),
+                    visible=False  # Initially not visible
+                )
+                #traces_to_plot['scatters'][category].append(trace_velocity)
+                fig.add_trace(trace_velocity)
+                test.append({'type': 'scatter', 'category': category})
+
+    # # Add traces to the figure
+    # for category in all_categories:
+    #     for boxplot in traces_to_plot['boxplots'][category]:
+    #         fig.add_trace(boxplot)
+    #     for scatter in traces_to_plot['scatters'][category]:
+    #         fig.add_trace(scatter)
+
+    # Update layout with buttons
+    buttons = []
+
+    for category in all_categories:
+        buttons.append(dict(
+            label=f"Show {category} Boxplots",
+            method="update",
+            args=[{"visible":  [trace['category'] == category and trace['type'] == 'boxplot' for trace in test] },  # Show boxplots for selected category
+                   {"title": f"{category} Boxplots"}]
+        ))
+        buttons.append(dict(
+            label=f"Show {category} Velocities",
+            method="update",
+            args=[{"visible": [trace['category'] == category and trace['type'] == 'scatter' for trace in test] },  # Show velocities for selected category
+                   {"title": f"{category} Velocities"}]
+        ))
+
+    fig.update_layout(
+        title='Select Plot Type and Categories',
+        xaxis_title='Sub-trajectory length [m]',
+        updatemenus=[dict(
+            buttons=buttons,
+            direction="down",
+            showactive=True,
+            x=0.1,
+            xanchor="left",
+            y=1.15,
+            yanchor="top"
+        )],
+        boxmode='group'
+    )
+
+    fig.show()
+
+
+
+
 
 def plot_llve(exps_to_merge, estimatorsList, colors):    
     regroupedErrors = dict.fromkeys(estimatorsList)
     for estimator in estimatorsList:
         data = open_pickle(f'Projects/{exps_to_merge[0]}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
-        regroupedErrors[estimator] = dict.fromkeys(data['llve'].keys())
+        regroupedErrors[estimator] = dict.fromkeys(data.keys())
+        for cat in data.keys():
+            regroupedErrors[estimator][cat] = dict.fromkeys(data[cat].keys())
 
     for expe in exps_to_merge:
         for estimator in estimatorsList:
             data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
-            for cat in data['llve'].keys():
-                if regroupedErrors[estimator][cat] is None:
-                    regroupedErrors[estimator][cat] = data['llve'][cat]
-                else:
-                    regroupedErrors[estimator][cat] = np.concatenate((regroupedErrors[estimator][cat], data['llve'][cat]))
+            for cat in data.keys():
+                for axis in data[cat].keys():
+                    if regroupedErrors[estimator][cat][axis] is None:
+                        regroupedErrors[estimator][cat][axis] = data[cat][axis]
+                    else:
+                        regroupedErrors[estimator][cat][axis] = np.concatenate((regroupedErrors[estimator][cat][axis], data[cat][axis]))
 
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for estimator in estimatorsList:
         errorStats[estimator] = dict.fromkeys(regroupedErrors[estimator].keys())
-        for cat in regroupedErrors[estimator].keys():
-            errorStats[estimator][cat]  = {
-                                    'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
-                                    'std': 0.0, 'min': 0.0, 'max': 0.0  }
-            data_vec = regroupedErrors[estimator][cat]
-            errorStats[estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
-            errorStats[estimator][cat]['mean'] = float(np.mean(data_vec))
-            errorStats[estimator][cat]['median'] = float(np.median(data_vec))
-            errorStats[estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
-            errorStats[estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
-            errorStats[estimator][cat]['std'] = float(np.std(data_vec))
-            errorStats[estimator][cat]['min'] = float(np.min(data_vec))
-            errorStats[estimator][cat]['max'] = float(np.max(data_vec))
+        for cat in errorStats[estimator].keys():
+            errorStats[estimator][cat] = dict.fromkeys(regroupedErrors[estimator][cat].keys())
+            for axis in errorStats[estimator][cat].keys():
+                errorStats[estimator][cat][axis]  = {
+                                        'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                        'std': 0.0, 'min': 0.0, 'max': 0.0  }
+                data_vec = regroupedErrors[estimator][cat][axis]
+                errorStats[estimator][cat][axis]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
+                errorStats[estimator][cat][axis]['mean'] = float(np.mean(data_vec))
+                errorStats[estimator][cat][axis]['median'] = float(np.median(data_vec))
+                errorStats[estimator][cat][axis]['q1'] = float(np.quantile(data_vec, 0.25))
+                errorStats[estimator][cat][axis]['q3'] = float(np.quantile(data_vec, 0.75))
+                errorStats[estimator][cat][axis]['std'] = float(np.std(data_vec))
+                errorStats[estimator][cat][axis]['min'] = float(np.min(data_vec))
+                errorStats[estimator][cat][axis]['max'] = float(np.max(data_vec))
 
-
+    test(errorStats, colors, exps_to_merge[0])
+    exit(1)
     plot_llve_statistics_as_boxplot(errorStats, colors)
 
 
@@ -454,6 +582,8 @@ def main():
                   if os.path.isdir(f"Projects/{exps_to_merge[0]}/output_data/evals/{d}")]
 
     colors = generate_turbo_subset_colors(estimatorsList)
+    plot_llve(exps_to_merge, estimatorsList, colors)
+    exit(1)
     plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     plot_absolute_errors(exps_to_merge, estimatorsList, colors)
     plot_relative_errors(exps_to_merge, estimatorsList, colors)
