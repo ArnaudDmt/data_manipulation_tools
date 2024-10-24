@@ -476,24 +476,18 @@ def test(errorStats, colors, expe):
                 fig.add_trace(trace_velocity)
                 test.append({'type': 'scatter', 'category': category})
 
-    # # Add traces to the figure
-    # for category in all_categories:
-    #     for boxplot in traces_to_plot['boxplots'][category]:
-    #         fig.add_trace(boxplot)
-    #     for scatter in traces_to_plot['scatters'][category]:
-    #         fig.add_trace(scatter)
 
     # Update layout with buttons
-    buttons = []
-
+    buttonsBoxplots = []
+    buttonsVel = []
     for category in all_categories:
-        buttons.append(dict(
+        buttonsBoxplots.append(dict(
             label=f"Show {category} Boxplots",
             method="update",
             args=[{"visible":  [trace['category'] == category and trace['type'] == 'boxplot' for trace in test] },  # Show boxplots for selected category
                    {"title": f"{category} Boxplots"}]
         ))
-        buttons.append(dict(
+        buttonsVel.append(dict(
             label=f"Show {category} Velocities",
             method="update",
             args=[{"visible": [trace['category'] == category and trace['type'] == 'scatter' for trace in test] },  # Show velocities for selected category
@@ -503,14 +497,10 @@ def test(errorStats, colors, expe):
     fig.update_layout(
         title='Select Plot Type and Categories',
         xaxis_title='Sub-trajectory length [m]',
-        updatemenus=[dict(
-            buttons=buttons,
-            direction="down",
-            showactive=True,
-            x=0.1,
-            xanchor="left",
-            y=1.15,
-            yanchor="top"
+        updatemenus=[
+            dict(
+                type="buttons",
+                buttons= buttonsBoxplots + buttonsVel
         )],
         boxmode='group'
     )
