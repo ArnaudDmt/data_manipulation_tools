@@ -413,8 +413,11 @@ def test(errorStats, colors, expe):
         traces_to_plot['scatters'][cat] = []
 
     # Load velocity data from pickle
-    def load_velocity_data(estimator, category):
-        data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+    def load_velocity_data(estimator, category, isMocap=False):
+        if isMocap == False:
+            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+        else:
+            data = open_pickle(f'Projects/{expe}/output_data/evals/mocap_loc_vel.pickle')
         return data[category]  # Assuming each category has velocity data by axis
 
     # Create traces for boxplots and velocity plots
@@ -476,6 +479,20 @@ def test(errorStats, colors, expe):
                 fig.add_trace(trace_velocity)
                 test.append({'type': 'scatter', 'category': category})
 
+    for category in all_categories:
+        velocity_data = load_velocity_data('MoCap', category, True)
+        for axis, values in velocity_data.items():
+            trace_velocity = go.Scatter(
+                x=list(range(len(values))),  # Assuming the values are ordered by time
+                y=values,
+                mode='lines',
+                name=f"MoCap ({axis})",  # Include the axis name in the legend
+                line=dict(width=1, color='black'),
+                visible=False  # Initially not visible
+            )
+            #traces_to_plot['scatters'][category].append(trace_velocity)
+            fig.add_trace(trace_velocity)
+            test.append({'type': 'scatter', 'category': category})
 
     # Update layout with buttons
     buttonsBoxplots = []
