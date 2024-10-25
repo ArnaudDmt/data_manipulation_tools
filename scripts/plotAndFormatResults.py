@@ -839,7 +839,7 @@ if(withMocap):
         velVanyte_overlap = np.vstack((zeros_row,velVanyte_overlap))
         locVelVanyte_overlap = rVanyte_overlap.apply(velVanyte_overlap, inverse=True)
 
-        linVelVanyte_fb_overlap = dfObservers_overlap[['Vanyte_vel_vx', 'Vanyte_vel_vx', 'Vanyte_vel_vz']].to_numpy() # estimated linear velocity
+        linVelVanyte_fb_overlap = dfObservers_overlap[['Vanyte_vel_vx', 'Vanyte_vel_vy', 'Vanyte_vel_vz']].to_numpy() # estimated linear velocity
         angVelVanyte_fb_overlap = dfObservers_overlap[['Vanyte_vel_wx', 'Vanyte_vel_wy', 'Vanyte_vel_wz']].to_numpy() # estimated angular velocity
         linVelVanyte_imu_overlap = linVelVanyte_fb_overlap + np.cross(angVelVanyte_fb_overlap, rVanyte_overlap.apply(posFbImu_overlap)) + rVanyte_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
@@ -871,7 +871,7 @@ if(withMocap):
         velTilt_overlap = np.vstack((zeros_row,velTilt_overlap))
         locVelTilt_overlap = rTilt_overlap.apply(velTilt_overlap, inverse=True) 
 
-        linVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_vx', 'Tilt_vel_vx', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
+        linVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_vx', 'Tilt_vel_vy', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
         angVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy() # estimated angular velocity
         linVelTilt_imu_overlap = linVelTilt_fb_overlap + np.cross(angVelTilt_fb_overlap, rTilt_overlap.apply(posFbImu_overlap)) + rTilt_overlap.apply(linVelFbImu_overlap)
         if(displayLogs):
