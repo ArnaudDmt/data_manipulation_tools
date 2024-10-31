@@ -5,12 +5,12 @@ run_analysis() {
     local num_samples_rel_error=$2
     shift 2  # Remove the first two arguments
 
-    local relative_errors_sublengths=("$@")  # Remaining arguments are the array
+    local predefined_sublengths=("$@")  # Remaining arguments are the array
 
     cmd="python rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py \"$outputDataPath/evals/$observerName\" --recalculate_errors --no_plot --estimator_name \"$observerName\""
     
-    if [ ${#relative_errors_sublengths[@]} -gt 0 ]; then
-        cmd="$cmd --relative_errors_sublengths ${relative_errors_sublengths[@]}"
+    if [ ${#predefined_sublengths[@]} -gt 0 ]; then
+        cmd="$cmd --predefined_sublengths ${predefined_sublengths[@]}"
     fi
     
     if [[ -n "$num_samples_rel_error" && "$num_samples_rel_error" =~ ^[0-9]+$ ]]; then
@@ -23,13 +23,13 @@ run_analysis() {
 compute_metrics() {
     cd $cwd
     
-    mocapFormattedResults="$outputDataPath/formattedMocapTraj.txt"
+    mocapFormattedResults="$outputDataPath/formattedMocap_Traj.txt"
     if [ -f "$mocapFormattedResults" ]; then
-        relative_errors_sublengths=($(yq eval '.relative_errors_sublengths[]' $projectConfig))
+        predefined_sublengths=($(yq eval '.predefined_sublengths[]' $projectConfig))
         
         num_samples_rel_error=($(yq eval '.num_samples_rel_error' $projectConfig))
         
-        if [ ${#relative_errors_sublengths[@]} -eq 0 ]; then
+        if [ ${#predefined_sublengths[@]} -eq 0 ]; then
             echo "Please give the list of lengths of the sub-trajectories for the relative error in the file $projectConfig"
             exit
         fi
@@ -48,34 +48,41 @@ compute_metrics() {
         trap cleanup SIGINT
         
         # Define an array of observer names
-        observers=("KineticsObserver" "Vanyte" "Tilt" "Controller" "Hartley")
-        
+        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_Disabled" "Vanyte" "Tilt" "Controller" "Hartley")
+
+        mv "$outputDataPath/mocap_x_y_traj.pickle" "$outputDataPath/evals/mocap_x_y_traj.pickle"
+        mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
+
         for observer in "${observers[@]}"; do
-            formattedTrajVar="formatted${observer}Traj.txt"
+            formattedTrajVar="formatted${observer}_Traj.txt"
             if [ -f "$outputDataPath/$formattedTrajVar" ]; then
-                echo "$outputDataPath/$formattedTrajVar"
-                mkdir -p "$outputDataPath/evals/$observer"
+                mkdir -p "$outputDataPath/evals/$observer/saved_results/traj_est/cached"
                 if ! [ -f "$outputDataPath/evals/$observer/eval_cfg.yaml" ]; then
                     touch "$outputDataPath/evals/$observer/eval_cfg.yaml"
-                    echo "align_type: none" >> "$outputDataPath/evals/$observer/eval_cfg.yaml"
+                    echo "align_type: posyaw" >> "$outputDataPath/evals/$observer/eval_cfg.yaml"
                     echo "align_num_frames: -1" >> "$outputDataPath/evals/$observer/eval_cfg.yaml"
                 fi
 
                 cp $mocapFormattedResults "$outputDataPath/evals/$observer/stamped_groundtruth.txt"
                 mv "$outputDataPath/$formattedTrajVar" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
+                mv "$outputDataPath/${observer}_x_y_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_traj.pickle"
+                mv "$outputDataPath/${observer}_loc_vel.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/loc_vel.pickle"
+                
 
                 # Call the run_analysis function for each observer
-                run_analysis "$observer" "$num_samples_rel_error" "${relative_errors_sublengths[@]}"
-                mv "$outputDataPath/evals/$observer/x_y_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_traj.pickle"
-                mv "$outputDataPath/evals/$observer/loc_vel.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/loc_vel.pickle"
+                run_analysis "$observer" "$num_samples_rel_error" "${predefined_sublengths[@]}"
             fi
         done
-
+        
         rm $mocapFormattedResults
+    else
+        echo "Cannot compute the metrics without the ground truth"
+        exit
     fi
 
     # Wait for all background processes to finish
     wait
+    echo "Metrics computation finished"
 }
 
 

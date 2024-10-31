@@ -10,7 +10,7 @@ if(len(sys.argv) > 1):
 
         
 # Define a list of patterns you want to match
-partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
+partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'KOAPC', 'KOASC', 'KODisabled', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
 input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
 output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
