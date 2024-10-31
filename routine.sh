@@ -146,7 +146,7 @@ if $createNewProject; then
     echo "EnabledRobot: " >> "$projectPath/projectConfig.yaml"
     if locate HartleyIEKF.so | grep install;then
         echo "Use_HartleyIEKF: " >> "$projectPath/projectConfig.yaml"
-        echo -e "\n# relative_errors_sublengths: [1, 2, 3, 4, 5]" >> $projectConfig
+        echo -e "\n# predefined_sublengths: [1, 2, 3, 4, 5]" >> $projectPath/projectConfig.yaml
 
     fi
     echo "Project created. Please add the raw data of the mocap and mc_rtc's log into $projectPath/raw_data under the names mocapData.csv and controllerLog.bin, and fill in the configuration file $projectPath/projectConfig.yaml."
@@ -473,10 +473,9 @@ if [ -f "$resultMocapLimbData" ] && ! $runScript; then
     fi
 else
     # Prompt the user for input
-    echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
-    read matchTime
+    echo "Matching the initial pose of the mocap with the one of the observer."
     cd $cwd/$scriptsPath
-    python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"
+    python matchInitPose.py 0 "$displayLogs" "y" "../$projectPath"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 
@@ -566,6 +565,7 @@ fi
 
 if $computeMetrics; then
     compute_metrics
+    exit
 fi
 
 

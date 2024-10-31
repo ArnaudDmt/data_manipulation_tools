@@ -254,16 +254,26 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
 def plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors):
     fig = go.Figure()
     dropdown_buttons = []
+    tracesNames = []
     for expe in exps_to_merge:
         for estimator in estimatorsList:
             data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle')
             for category in data.keys():
-                fig.add_trace(go.Scatter(x=data['accum_distances'], y=data['abs_e_trans'], fill='tozeroy', name=f'{expe}_{estimator}({category})', line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
-
+                if(isinstance(data[category],np.ndarray)):
+                    if(data[category].size == len(data[category])):
+                        name_t = f'{expe}_{estimator}({category})'
+                        tracesNames.append(name_t)
+                        fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category], fill='tozeroy', name=name_t, line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
+                    else:
+                        for i in range(3):
+                            name_t = f'{expe}_{estimator}({category}_{i})'
+                            tracesNames.append(name_t)
+                            fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category][:,i], fill='tozeroy', name=name_t, line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
+                
     for category in data.keys():
         visibility = [False] * len(fig.data)  # Start with all traces hidden
         for i, trace in enumerate(fig.data):
-            if trace.name.endswith(f"({category})"):
+            if category in trace.name:
                 visibility[i] = True  # Show traces of the selected category
 
         button = dict(
@@ -274,7 +284,7 @@ def plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors):
         dropdown_buttons.append(button)
 
     fig.update_layout(
-        title='Select a Category to Display Boxplots',
+        title='Select a Category to Display the absolute error plots',
         xaxis_title="Distance travelled (m)", yaxis_title="Error",
         updatemenus=[
             {
@@ -304,9 +314,9 @@ def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
                     if(data[cat].size == len(data[cat])):
                         regroupedErrors[expe][estimator][cat] = data[cat]
                     else:
-                        regroupedErrors[expe][estimator][cat + "_0"] = data[cat][0]
-                        regroupedErrors[expe][estimator][cat + "_1"] = data[cat][1]
-                        regroupedErrors[expe][estimator][cat + "_2"] = data[cat][2]   
+                        regroupedErrors[expe][estimator][cat + "_0"] = data[cat][:,0]
+                        regroupedErrors[expe][estimator][cat + "_1"] = data[cat][:,1]
+                        regroupedErrors[expe][estimator][cat + "_2"] = data[cat][:,2]
 
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for expe in regroupedErrors:
@@ -468,9 +478,6 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     )
 
     fig.show()
-
-
-
 
 
 def plot_llve(exps_to_merge, estimatorsList, colors):    
