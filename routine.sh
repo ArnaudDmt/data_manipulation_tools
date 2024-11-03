@@ -565,7 +565,6 @@ fi
 
 if $computeMetrics; then
     compute_metrics
-    exit
 fi
 
 
