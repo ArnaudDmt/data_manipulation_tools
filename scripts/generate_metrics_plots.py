@@ -63,6 +63,7 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
             median = []
             q3 = []
             upper_fence = []
+            rmse = []
 
             # Collect the data across all sub-trajectory lengths for each estimator-category pair
             for d_subTraj in errorStats.keys():
@@ -74,6 +75,8 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
+                rmse.append(stats['rmse'])
+
 
             trace = go.Box(
                 x=x_vals,  # X-axis corresponds to sub-trajectory lengths
@@ -91,8 +94,15 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
                 opacity=0.8,
                 visible=False  # Initially hidden
             )
+
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
+
+
             traces_per_category[category].append(trace)
             fig.add_trace(trace)
+
+            traces_per_category[category].append(trace2)
+            fig.add_trace(trace2)
 
     # Create dropdown buttons to toggle visibility for each category
     for category in all_categories:
@@ -191,6 +201,7 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
             median = []
             q3 = []
             upper_fence = []
+            rmse = []
 
             # Collect the data across all sub-trajectory lengths for each estimator-category pair
             for expe in errorStats.keys():
@@ -202,6 +213,7 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
+                rmse.append(stats['rmse'])
 
             trace = go.Box(
                 x=x_vals,  # X-axis corresponds to sub-trajectory lengths
@@ -219,8 +231,14 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
                 opacity=0.8,
                 visible=False  # Initially hidden
             )
+
+            trace2 = go.Scatter(x=x_vals, y=rmse, fill='tozeroy', name=f"{estimator} rmse ({category})", line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3))
+
             traces_per_category[category].append(trace)
             fig.add_trace(trace)
+
+            traces_per_category[category].append(trace2)
+            fig.add_trace(trace2)
 
     # Create dropdown buttons to toggle visibility for each category
     for category in all_categories:
