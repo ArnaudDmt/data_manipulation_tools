@@ -232,7 +232,7 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
                 visible=False  # Initially hidden
             )
 
-            trace2 = go.Scatter(x=x_vals, y=rmse, fill='tozeroy', name=f"{estimator} rmse ({category})", line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3))
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
 
             traces_per_category[category].append(trace)
             fig.add_trace(trace)
@@ -403,6 +403,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
             median = []
             q3 = []
             upper_fence = []
+            rmse = []
 
             # Collect the data across all sub-trajectory lengths for each estimator-category pair
             for axis in errorStats[estimator][category].keys():
@@ -415,6 +416,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
+                rmse.append(stats['rmse'])
 
             # Create boxplot trace
             trace_boxplot = go.Box(
@@ -435,6 +437,11 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
             )
 
             fig.add_trace(trace_boxplot)
+            traces_to_plot.append({'type': 'boxplot', 'category': category})
+
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
+
+            fig.add_trace(trace2)
             traces_to_plot.append({'type': 'boxplot', 'category': category})
 
             # Create velocity plot traces
@@ -467,6 +474,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
             fig.add_trace(trace_velocity)
             traces_to_plot.append({'type': 'scatter', 'category': category})
 
+            
+
     # Update layout with buttons
     buttonsBoxplots = []
     buttonsVel = []
@@ -496,6 +505,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     )
 
     fig.show()
+    exit(0)
 
 
 def plot_llve(exps_to_merge, estimatorsList, colors):    
