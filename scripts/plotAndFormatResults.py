@@ -94,7 +94,6 @@ if 'Mocap_pos_x' in dfObservers.columns:
 if 'Controller_tx' in dfObservers.columns:
     withController = True
 
-
 ###############################  Definition  ###############################
 
 def continuous_euler(angles):
@@ -797,7 +796,7 @@ if(displayLogs):
             z=posKO_APC[:,2],
             mode='lines',
             line=dict(color='darkgreen'),
-            name='Kinetics Observer'
+            name='Kinetics Observer APC'
         ))
         
     if(withKO_ASC):
@@ -815,7 +814,7 @@ if(displayLogs):
             z=posKO_ASC[:,2],
             mode='lines',
             line=dict(color='darkgreen'),
-            name='Kinetics Observer'
+            name='Kinetics Observer ASC'
         ))
 
     if(withKO_Disabled):
@@ -833,7 +832,7 @@ if(displayLogs):
             z=posKO_Disabled[:,2],
             mode='lines',
             line=dict(color='darkgreen'),
-            name='Kinetics Observer'
+            name='Kinetics Observer Disabled'
         ))
 
     if(withTilt):
@@ -996,7 +995,7 @@ if(writeFormattedData):
             locVelHartley_overlap = rHartley_fb_overlap.apply(velHartley_overlap, inverse=True)
 
             # estimated velocity
-            linVelImu_Hartley_overlap = dfHartley[['Velocity_x', 'Velocity_y', 'Velocity_z']].to_numpy()
+            linVelImu_Hartley_overlap = dfHartley_overlap[['Velocity_x', 'Velocity_y', 'Velocity_z']].to_numpy()
             
             if(displayLogs):
                 figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,0], mode='lines', name='locVelHartley_x'))
@@ -1013,8 +1012,9 @@ if(writeFormattedData):
             ]
             index_labels.append('Hartley')
             data.append(np.concatenate([rmse_values['Hartley'], np.zeros_like(rmse_values['Hartley'])]))
-
+            
             rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
+
             locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
             d = {'llve': {}, 'estimate': {}}
             d['llve'] = {'x': locVelHartley_overlap[:, 0], 'y': locVelHartley_overlap[:, 1], 'z': locVelHartley_overlap[:, 2]}
@@ -1267,4 +1267,3 @@ if(writeFormattedData):
 
 
         df = pd.DataFrame(data, index=index_labels, columns=index)
-        print(df)
