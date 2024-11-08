@@ -362,16 +362,16 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
     fig = go.Figure()
     for expe in exps_to_merge:
         for estimator in estimatorsList:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_traj.pickle')
+            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle')
             fig.add_trace(go.Scatter(x=data['x'], y=data['y'],
                     mode='lines',
                     name=f'{expe}_{estimator}', line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'))
     
-    mocapData = open_pickle(f'Projects/{expe}/output_data/evals/mocap_x_y_traj.pickle')
-    fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
-                    mode='lines',
-                    name=f'{expe}_mocap', line_color='black'))
-    
+        mocapData = open_pickle(f'Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle')
+        fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
+                        mode='lines',
+                        name=f'{expe}_mocap', line_color='black'))
+        
     fig.show()
 
 
@@ -505,7 +505,6 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     )
 
     fig.show()
-    exit(0)
 
 
 def plot_llve(exps_to_merge, estimatorsList, colors):    
