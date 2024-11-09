@@ -50,7 +50,7 @@ compute_metrics() {
         # Define an array of observer names
         observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_Disabled" "Vanyte" "Tilt" "Controller" "Hartley")
 
-        mv "$outputDataPath/mocap_x_y_traj.pickle" "$outputDataPath/evals/mocap_x_y_traj.pickle"
+        mv "$outputDataPath/mocap_x_y_z_traj.pickle" "$outputDataPath/evals/mocap_x_y_z_traj.pickle"
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
 
         for observer in "${observers[@]}"; do
@@ -65,7 +65,7 @@ compute_metrics() {
 
                 cp $mocapFormattedResults "$outputDataPath/evals/$observer/stamped_groundtruth.txt"
                 mv "$outputDataPath/$formattedTrajVar" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
-                mv "$outputDataPath/${observer}_x_y_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_traj.pickle"
+                mv "$outputDataPath/${observer}_x_y_z_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_z_traj.pickle"
                 mv "$outputDataPath/${observer}_loc_vel.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/loc_vel.pickle"
                 
 
