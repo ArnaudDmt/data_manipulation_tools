@@ -1,3 +1,4 @@
+import os
 import sys
 import pandas as pd
 
@@ -8,7 +9,9 @@ path_to_project = ".."
 if(len(sys.argv) > 1):
     path_to_project = sys.argv[1]
 
-        
+
+
+    
 # Define a list of patterns you want to match
 partial_pattern = ['MocapAligner', 'MCVanytEstimator', 'MCKineticsObserver', 'KOAPC', 'KOASC', 'KODisabled', 'MainObserverPipeline_Tilt', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
@@ -29,10 +32,22 @@ replayData = pd.read_csv(f'{path_to_project}/output_data/logReplay.csv', delimit
 light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
 replayData_light = replayData[light_columns].copy()
 
-#mocapData = pd.read_csv('resampledMocapData.csv', delimiter=',')
+if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'HartleyIEKF_imuFbKine_position_x' in replayData:
+    dfHartley = pd.read_csv(f'{path_to_project}/output_data/HartleyOutputCSV.csv', delimiter=';')
+    dfHartley=dfHartley.set_index(['t']).add_prefix('Hartley_').reset_index()
 
-#extractedData = pd.concat([replayData_light, mocapData], axis=1)
-extractedData = replayData_light
+    replayData_light = pd.merge(replayData_light, dfHartley, on ='t')
 
-extractedData.to_csv(output_csv_file_path, index=False,  sep=';')
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'KO'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOAPC_mcko_fb', 'KO_APC'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOASC_mcko_fb', 'KO_ASC'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KODisabled_mcko_fb', 'KO_Disabled'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState', 'KoState'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)    
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'Tilt'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MocapVisualizer_mocap', 'Mocap'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MocapVisualizer_worldFb', 'Mocap'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('ff', 'Controller'), inplace=True)
+
+replayData_light.to_csv(output_csv_file_path, index=False,  sep=';')
 print("Output CSV file has been saved to", output_csv_file_path)

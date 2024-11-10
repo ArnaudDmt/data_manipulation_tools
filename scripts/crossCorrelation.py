@@ -42,7 +42,7 @@ except ValueError:
     sys.exit(1)
 
 
-output_csv_file_path = f'{path_to_project}/output_data/realignedMocapLimbData.csv'
+output_csv_file_path = f'{path_to_project}/output_data/synchronizedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
 observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv',  delimiter=';')
 mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=';')
