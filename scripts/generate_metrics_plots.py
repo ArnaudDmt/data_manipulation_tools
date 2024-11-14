@@ -575,7 +575,7 @@ def main():
     plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
-    plotMultipleTrajs.plotMultipleTrajs(estimatorsList, exps_to_merge, colors)
+    plotMultipleTrajs.plot_multiple_trajs(estimatorsList, exps_to_merge, colors)
     
     
     
