@@ -573,6 +573,9 @@ def main():
     plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     plot_absolute_errors(exps_to_merge, estimatorsList, colors)
     plot_relative_errors(exps_to_merge, estimatorsList, colors)
+
+    import plotMultipleTrajs
+    plotMultipleTrajs.plot_average(estimatorsList, exps_to_merge, colors)
     
     
     
