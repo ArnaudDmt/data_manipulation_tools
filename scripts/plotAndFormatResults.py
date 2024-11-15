@@ -1,5 +1,6 @@
 import math
 import pickle
+import signal
 import sys
 import numpy as np
 import pandas as pd
@@ -34,7 +35,7 @@ def continuous_euler(angles):
     return continuous_angles
 
 
-def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None, colors = None, scriptName = "finalResults"):
+def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None, colors = None, scriptName = "finalResults", timeStep_s = 0.005):
 
 # Read the CSV file into a DataFrame
 
@@ -884,6 +885,10 @@ if(writeFormattedData):
 
         rWorldImuMocap_overlap = rMocap_overlap * rImuFb_overlap.inv()
         locVelMocap_imu_estim = rWorldImuMocap_overlap.apply(velMocap_imu_overlap, inverse=True)
+            b, a = butter(2, 0.15, analog=False)
+
+            locVelMocap_overlap = filtfilt(b, a, locVelMocap_overlap, axis=0)
+            locVelMocap_imu_estim = filtfilt(b, a, locVelMocap_imu_estim, axis=0)
         d = {'llve': {}, 'estimate': {}}
         d['llve'] = {'x': locVelMocap_overlap[:, 0], 'y': locVelMocap_overlap[:, 1], 'z': locVelMocap_overlap[:, 2]}
         d['estimate'] = {'x': locVelMocap_imu_estim[:, 0], 'y': locVelMocap_imu_estim[:, 1], 'z': locVelMocap_imu_estim[:, 2]}
