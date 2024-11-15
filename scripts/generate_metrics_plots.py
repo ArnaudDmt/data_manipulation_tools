@@ -56,6 +56,8 @@ def open_pickle(pickle_file):
 
 
 def plot_relative_error_statistics_as_boxplot(errorStats, colors):    
+    f = open('/tmp/relative_errors.yaml', 'w+')
+    yaml.dump(errorStats, f, allow_unicode=True)
     fig = go.Figure()
 
     all_categories = sorted({cat for distance in errorStats.values() for estimator in distance.values() for cat in estimator.keys()})
@@ -168,6 +170,7 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
                         else:
                             regroupedErrors[d_subTraj][estimator][cat] = np.concatenate((regroupedErrors[d_subTraj][estimator][cat], data[d_subTraj][cat]))
 
+
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for d_subTraj in regroupedErrors:
         errorStats[d_subTraj] = dict.fromkeys(regroupedErrors[d_subTraj].keys())
@@ -194,6 +197,9 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
 
 
 def plot_absolute_error_statistics_as_boxplot(errorStats, colors):    
+    f = open('/tmp/absolute_errors.yaml', 'w+')
+    yaml.dump(errorStats, f, allow_unicode=True)
+
     fig = go.Figure()
 
     all_categories = sorted({cat for distance in errorStats.values() for estimator in distance.values() for cat in estimator.keys()})
@@ -389,7 +395,8 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
 
 def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     fig = go.Figure()
-
+    f = open('/tmp/llve.yaml', 'w+')
+    yaml.dump(errorStats, f, allow_unicode=True)
     all_categories = sorted({cat for estimator in errorStats.keys() for cat in errorStats[estimator].keys()})
 
     # Store traces per category for boxplots and velocity plots
@@ -536,6 +543,17 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
                         regroupedErrors[estimator][cat][axis] = data[cat][axis]
                     else:
                         regroupedErrors[estimator][cat][axis] = np.concatenate((regroupedErrors[estimator][cat][axis], data[cat][axis]))
+
+    for estimator in estimatorsList:
+        for cat in data.keys():
+            if isinstance(data[cat], np.ndarray):
+                if(data[cat].size != len(data[cat])):
+                    # Combine x, y, z components into a single array
+                    components = ['x', 'y', 'z']  # Adjust keys as needed
+                    combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
+
+                    # Compute the Euclidean norm for each sample
+                    regroupedErrors[estimator][cat]["norm"] = np.linalg.norm(combined, axis=-1)
 
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for estimator in estimatorsList:
