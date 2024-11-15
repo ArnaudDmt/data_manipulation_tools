@@ -590,7 +590,10 @@ def main():
     estimators_to_plot.append("Mocap")
     colors_to_plot = colors
     colors_to_plot["Mocap"] = [0, 0, 0]
-    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_names_to_plot, 'Projects/')
+
+    import plotAndFormatResults
+    for expe in exps_to_merge:
+        plotAndFormatResults.run(True, False, f'Projects/{expe}', estimators_to_plot, colors_to_plot)
     
     
     
