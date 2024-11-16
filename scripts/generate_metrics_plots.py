@@ -546,8 +546,6 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
 
     for estimator in estimatorsList:
         for cat in data.keys():
-            if isinstance(data[cat], np.ndarray):
-                if(data[cat].size != len(data[cat])):
                     # Combine x, y, z components into a single array
                     components = ['x', 'y', 'z']  # Adjust keys as needed
                     combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
