@@ -4,6 +4,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from scipy.spatial.transform import Rotation as R
+from scipy.signal import butter,filtfilt
 
 
 
@@ -44,7 +45,7 @@ except ValueError:
 
 output_csv_file_path = f'{path_to_project}/output_data/synchronizedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv',  delimiter=';')
+observer_data = pd.read_csv(f'{path_to_project}/output_data/correctedObsTimesteps.csv',  delimiter=';')
 mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=';')
 
 
@@ -289,7 +290,7 @@ def realignData(data1, data2, data1_name, data2_name):
         if(np.argmax(crosscorr) > max_cross_corr):
             max_index = np.argmax(crosscorr)
 
-    
+
     # Shift the second observer_data file by the calculated index
     shift = max_index - (data1.shape[0] - 1)
 
@@ -321,8 +322,9 @@ def realignData(data1, data2, data1_name, data2_name):
 
     return data2, shift
 
-
-world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel, "world_mocapLimb_LocVel", "world_ObserverLimb_LocVel")
+b, a = butter(2, 0.1, analog=False)
+world_mocapLimb_LocVel_filtered = filtfilt(b, a, world_mocapLimb_LocVel, axis=0)
+world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel_filtered, "world_ObserverLimb_LocVel", "world_mocapLimb_LocVel")
 
 
 # Version which receives the shift to apply as an input
