@@ -326,7 +326,7 @@ world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_moc
 
 
 # Version which receives the shift to apply as an input
-def realignData(data_to_shift,  shift):
+def realignDataframe(data_to_shift,  shift):
     print(f"The mocap data will be shifted by {shift} indexes.")
 
     data_shifted = data_to_shift
@@ -375,7 +375,14 @@ def realignData(data_to_shift,  shift):
 
     return data_shifted
 
-realignedMocapData = realignData(mocapData, shift)
+realignedMocapData = realignDataframe(mocapData, shift)
+
+
+realignedMocapData = realignedMocapData[observer_data["is_virtual"] == False]
+observer_data = observer_data[observer_data["is_virtual"] == False]
+
+observer_data = observer_data.drop(['is_virtual'], axis=1)
+
 
 ###############################  Shifted poses retrieval  ###############################
 
