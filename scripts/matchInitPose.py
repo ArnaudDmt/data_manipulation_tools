@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.spatial.transform import Rotation as R
 import plotly.graph_objects as go
 
-
+import yaml
 
 
 ###############################  Main variables initialization  ###############################
@@ -213,7 +213,67 @@ if(displayLogs):
 # Find the index in the pandas dataframe that corresponds to the input time
 matchIndex = mocapData[mocapData['t'] == matchTime].index[0]
 
-alignedPoses = {}
+
+def get_mocap_pitch_offset_from_accelero():
+    ya = np.array(df_Observers[['Accelerometer_linearAcceleration_x', 'Accelerometer_linearAcceleration_y', 'Accelerometer_linearAcceleration_z']])
+
+    avg_interval = 10
+    Rt_ez_accelero = ya / np.linalg.norm(ya, axis = 1, keepdims=True)
+    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[:avg_interval], axis=0)
+    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[:avg_interval], axis=0)
+
+    print(Rt_ez_accelero_avg.shape)
+    print(init_mocap_avg_R_quat.shape)
+    true_R_init_avg_quat = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero_avg, R.from_quat(init_mocap_avg_R_quat).as_matrix()))
+    mocap_pitch_offset = R.from_quat(init_mocap_avg_R_quat).inv() * true_R_init_avg_quat
+    print(f"The offset on the mocap pitch is not contained in the configuration file, computing it from the accelerometer signal: {mocap_pitch_offset.as_quat()}")
+
+    return mocap_pitch_offset
+
+def get_mocap_pitch_offset_from_yaml(robot_name):
+    # Iterate over the robots
+    for robot in markers_yamlData['robots']:
+        # If the robot name matches
+        if robot['name'] == robot_name:
+            try:
+                mocap_pitch_offset = R.from_quat(robot['mocap_pitch_offset'])
+                print("Retrieved the offset on the mocap pitch from the configuration file.")
+                return mocap_pitch_offset
+            except:
+                return get_mocap_pitch_offset_from_accelero()
+            
+
+    return get_mocap_pitch_offset_from_accelero()
+            
+
+
+with open('../markersPlacements.yaml', 'r') as file:
+    try:
+        markers_yaml_str = file.read()
+        markers_yamlData = yaml.safe_load(markers_yaml_str)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+with open(f'{path_to_project}/projectConfig.yaml', 'r') as file:
+    try:
+        projConf_yaml_str = file.read()
+        projConf_yamlData = yaml.safe_load(projConf_yaml_str)
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# Get the value of EnabledRobot and EnabledBody
+enabled_robot = projConf_yamlData.get('EnabledRobot')
+
+# Check if EnabledRobot exists and is uncommented
+if enabled_robot is None:
+    print("EnabledRobot does not exist or is commented out.")
+    enabled_robot = input("Please enter the name of the robot: ")
+
+
+# Get the markers and print them
+mocap_pitch_offset = get_mocap_pitch_offset_from_yaml(enabled_robot)
+
+
 def compute_aligned_pose(
         dictToWrite: dict, 
         dataName: str, 
@@ -292,6 +352,8 @@ compute_aligned_pose(
         averageInterval
     )
 
+# Once the initial pose of the mocap has been matched with the one of the observer, we correct the pitch of the mocap as there might be an offset due to the marker placements
+alignedPoses["Mocap"]["aligned_orientation"] = alignedPoses["Mocap"]["aligned_orientation"] * mocap_pitch_offset
 new_world_MocapLimb_Ori_quat = alignedPoses["Mocap"]["aligned_orientation"].as_quat()
 
 mocapData['worldMocapLimbPos_x'] = alignedPoses["Mocap"]["aligned_position"][:,0]
