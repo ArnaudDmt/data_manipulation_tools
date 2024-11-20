@@ -21,7 +21,8 @@ estimator_names_to_plot = {
     'KineticsObserver': 'Kinetics Observer',
     'KO_APC': 'KO_APC',
     'KO_ASC': 'KO_ASC',
-    'KO_Disabled': 'KO-FPC',
+    'KO_ZPC': 'KO-ZPC',
+    'KODisabled_WithProcess': 'KODisabled_WithProcess',
     'Mocap': 'Ground truth'
 }
 

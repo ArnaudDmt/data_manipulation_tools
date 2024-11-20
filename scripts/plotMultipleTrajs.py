@@ -15,7 +15,8 @@ estimator_names_to_plot_default = {
     'KineticsObserver': 'Kinetics Observer',
     'KO_APC': 'KO_APC',
     'KO_ASC': 'KO_ASC',
-    'KO_Disabled': 'KO-FPC',
+    'KO_ZPC': 'KO-ZPC',
+    'KODisabled_WithProcess': 'KODisabled_WithProcess',
     'Mocap': 'Ground truth'
 }
 
@@ -49,7 +50,8 @@ default_estimators = [
     'KineticsObserver',
     'KO_APC',
     'KO_ASC',
-    'KO_Disabled',
+    'KO_ZPC',
+    'KODisabled_WithProcess',
     'Mocap'
 ]
 
@@ -62,7 +64,8 @@ data = {
     'KineticsObserver': {'group': 0, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
     #'KO_APC': {'group': 1, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
-    'KO_Disabled': {'group': 1, 'column_names': ['KO_Disabled_posW_tx', 'KO_Disabled_posW_ty']},
+    #'KO_ZPC': {'group': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
+    'KODisabled_WithProcess': {'group': 1, 'column_names': ['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty']},
     'Mocap': {'group': 0, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
 }
 
