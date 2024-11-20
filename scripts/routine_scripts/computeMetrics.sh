@@ -48,7 +48,7 @@ compute_metrics() {
         trap cleanup SIGINT
         
         # Define an array of observer names
-        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_Disabled" "Vanyte" "Tilt" "Controller" "Hartley")
+        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_ZPC" "KODisabled_WithProcess" "Vanyte" "Tilt" "Controller" "Hartley")
 
         mv "$outputDataPath/mocap_x_y_z_traj.pickle" "$outputDataPath/evals/mocap_x_y_z_traj.pickle"
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
@@ -89,7 +89,7 @@ compute_metrics() {
 
 cd $cwd/scripts
 echo "Starting the formatting for $projectName."; 
-python plotAndFormatResults.py "$timeStep" $plotResults "$cwd/$projectPath" "True"; 
+python plotAndFormatResults.py "$timeStep" $plotResults "$projectPath" "True"; 
 echo "Formatting for $projectName finished."; 
 compute_metrics
 echo "Computation of the metrics for $projectName finished."; 

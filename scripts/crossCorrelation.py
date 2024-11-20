@@ -45,7 +45,7 @@ except ValueError:
 
 output_csv_file_path = f'{path_to_project}/output_data/synchronizedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
-observer_data = pd.read_csv(f'{path_to_project}/output_data/correctedObsTimesteps.csv',  delimiter=';')
+observer_data = pd.read_csv(f'{path_to_project}/output_data/repairedSkipped_mc_rtc_iters.csv',  delimiter=';')
 mocapData = pd.read_csv(f'{path_to_project}/output_data/resampledMocapData.csv', delimiter=';')
 
 

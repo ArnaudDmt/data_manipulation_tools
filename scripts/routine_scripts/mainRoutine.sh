@@ -144,7 +144,7 @@ else
     if [ -f "$logReplayBin" ] && [[ "$runFromZero" == "false" ]]; then
         echo "The bin file of the replay with the observers has been found. Converting to csv."
         cd $outputDataPath
-        mc_bin_to_log "../$logReplayBin"
+        mc_bin_to_log "$outputDataPath/$logReplayBin"
     else
         mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
@@ -197,8 +197,8 @@ else
             cd /tmp
             LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
             echo "Copying the replay's bin file ($LOG) to the output_data folder as logReplay.bin"
-            mv $LOG $cwd/$logReplayBin
-            cd $cwd/$outputDataPath
+            mv $LOG $logReplayBin
+            cd $outputDataPath
             mc_bin_to_log logReplay.bin
             cd $cwd
 
@@ -216,27 +216,7 @@ fi
 
 ############################ Handling mocap's data ############################
 
-cd $cwd
 
-if [ -f "$resampledMocapData" ]; then
-    if $debug; then
-        echo "Do you want to run again the mocap data's resampling with the dynamic plots?"
-        select rerunResample in "No" "Yes"; do
-        case $rerunResample in
-            Yes ) cd $cwd/$scriptsPath; python resampleAndExtract_fromMocap.py "$timeStep" "$displayLogs" "y" "../$projectPath"; break;;
-            No ) break;;
-        esac
-        done
-    else
-        echo "The mocap's data has already been resampled. Using the existing data."
-    fi
-else
-    echo "Starting the resampling of the mocap's signal."
-    cd $cwd/$scriptsPath
-    python resampleAndExtract_fromMocap.py "$timeStep" "$displayLogs" "y" "../$projectPath"
-    echo "Resampling of the mocap's signal completed."
-    runScript=true
-fi
 
 cd $cwd
 
@@ -264,16 +244,66 @@ else
     fi
 fi
 
+
 if [[ "$runFromZero" == "false" ]] && [[ -f "$lightData" ]]; then
     echo "The light version of the observer's data has already been extracted. Using the existing data."
 else
     echo "Starting the extraction of the light version of the observer's data."
-    cd $cwd/$scriptsPath
-    python extractLightReplayVersion.py "../$projectPath"
+    cd $scriptsPath
+    python extractLightReplayVersion.py "$projectPath"
     echo "Extraction of the light version of the observer's data completed."
     runScript=true
 fi
-echo 
+
+cd $rawDataPath
+
+if [ ! -f "$outputDataPath/perf_GlobalRun_log.csv" ]; then
+    mc_bin_utils extract "controllerLog.bin" "perf_GlobalRun_log.bin" --keys perf_GlobalRun
+    mc_bin_to_log perf_GlobalRun_log.bin $outputDataPath/perf_GlobalRun_log.csv
+    rm perf_GlobalRun_log.bin
+fi
+
+if [ -f "$outputDataPath/repairedSkipped_mc_rtc_iters.csv" ] && [[ "$runFromZero" == "false" ]] ; then
+    if $debug; then
+        echo "Do you want to correct again the skipped iterations in the mc_rtc log?"
+        select rerun in "No" "Yes"; do
+        case $rerun in
+            Yes ) echo "Repairing the missing iterations"; cd $scriptsPath; python repair_mc_rtc_skipped_iters.py "$timeStep" "$projectPath"; echo "Finished repairing the missing iterations."; break;;
+            No ) break;;
+        esac
+        done
+    else
+        echo "The skipped iterations in mc_rtc log have already been repaired."
+    fi
+else
+    echo "Repairing the missing iterations"
+    cd $scriptsPath
+    python repair_mc_rtc_skipped_iters.py "$timeStep" "$projectPath"
+    echo "Finished repairing the missing iterations."
+    runScript=true
+fi
+
+cd $cwd
+
+if [ -f "$resampledMocapData" ]; then
+    if $debug; then
+        echo "Do you want to run again the mocap data's resampling with the dynamic plots?"
+        select rerunResample in "No" "Yes"; do
+        case $rerunResample in
+            Yes ) cd $scriptsPath; python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
+            No ) break;;
+        esac
+        done
+    else
+        echo "The mocap's data has already been resampled. Using the existing data."
+    fi
+else
+    echo "Starting the resampling of the mocap's signal."
+    cd $scriptsPath
+    python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"
+    echo "Resampling of the mocap's signal completed."
+    runScript=true
+fi
 
 cd $cwd
 
@@ -283,8 +313,8 @@ if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "
         echo "Do you want to run again the temporal data alignement with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
             case $rerunResample in
-                Yes )   cd $cwd/$scriptsPath;
-                        python crossCorrelation.py "$timeStep" "$displayLogs" "y" "../$projectPath"; break;;
+                Yes )   cd $scriptsPath;
+                        python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
                 No ) break;;
             esac
         done
@@ -293,8 +323,8 @@ if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "
     fi
 else
     echo "Starting the cross correlation for temporal data alignement."
-    cd $cwd/$scriptsPath
-    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "../$projectPath"
+    cd $scriptsPath
+    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"
     echo "Temporal alignement of the mocap's data with the observer's data completed."
     runScript=true
 fi
@@ -310,8 +340,8 @@ if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" 
         case $rerunResample in
             Yes )   echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
                     read matchTime
-                    cd $cwd/$scriptsPath
-                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "../$projectPath"; break;;
+                    cd $scriptsPath
+                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "$projectPath"; break;;
             No ) break;;
         esac
         done
@@ -319,8 +349,8 @@ if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" 
 else
     # Prompt the user for input
     echo "Matching the initial pose of the mocap with the one of the observer."
-    cd $cwd/$scriptsPath
-    python matchInitPose.py 0 "$displayLogs" "y" "../$projectPath"
+    cd $scriptsPath
+    python matchInitPose.py 0 "$displayLogs" "y" "$projectPath"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 
@@ -357,33 +387,28 @@ if [[ "$computeMetrics" == "true" ]]; then
         echo "It seems that the estimator evaluation metrics have already been computed, do you want to compute them again?"
         select recomputeMetrics in "No" "Yes"; do
             case "$recomputeMetrics" in
-                No )    cd "$cwd/$scriptsPath"
-                        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
+                No )    cd "$scriptsPath"
+                        python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
                         break;;
-                Yes )   cd "$cwd/$scriptsPath"
-                        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
+                Yes )   cd "$scriptsPath"; source routine_scripts/computeMetrics.sh;
                         break;;
             esac
         done   
         
     else
         echo "Formatting the results to evaluate the performances of the observers."; 
-        cd $cwd/$scriptsPath
-        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "True"; 
+        cd $scriptsPath
+        source routine_scripts/computeMetrics.sh
         echo "Formatting finished."; 
     fi
 elif $plotResults; then
     echo "Plotting the observer results."; 
-        cd "$cwd/$scriptsPath"
-        python plotAndFormatResults.py "$timeStep" "$plotResults" "../$projectPath" "False"; 
+    cd "$scriptsPath"
+    python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
 fi
+
 
 cd $cwd
-
-if $computeMetrics; then
-    source scripts/routine_scripts/computeMetrics.sh
-fi
-
 
 if [[ "$runFromZero" == "false" ]]; then 
     echo "Do you want to replay the log with the obtained mocap's data?"

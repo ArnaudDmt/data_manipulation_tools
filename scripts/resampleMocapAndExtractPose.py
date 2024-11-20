@@ -55,55 +55,6 @@ except ValueError:
 
 csv_file_path = f'{path_to_project}/raw_data/mocapData.csv'
 output_csv_file_path_mocap = f'{path_to_project}/output_data/resampledMocapData.csv'
-output_csv_file_path_observers = f'{path_to_project}/output_data/correctedObsTimesteps.csv'
-
-
-###############################  Remove skipped indexes  ###############################
-# In this part we check on what iterations the computation time exceeded the timestep, so we add a timestep to the time on these iterations and the following.
-
-observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv',  delimiter=';')
-perf_GlobalRun_log = pd.read_csv(f'{path_to_project}/output_data/perf_GlobalRun_log.csv',  delimiter=';')
-
-# Make a copy of the 't' column to modify
-corrected_t = observer_data['t'].copy()
-
-# List to store new virtual rows
-virtual_rows = []
-
-# Iterate over the rows to fix the `t` column
-for i in range(1, len(observer_data)):
-    # Detect skipped iteration
-    if perf_GlobalRun_log.loc[i, 'perf_GlobalRun'] > timeStep_ms:
-        nb_skipped = int(perf_GlobalRun_log.loc[i, 'perf_GlobalRun'] / timeStep_ms)
-        for j in range(1,nb_skipped+1):
-            # Calculate the time of the skipped iteration
-            skipped_t = corrected_t.iloc[i-1] + timeStep_s * j
-            
-            interpolated_values = dict.fromkeys(observer_data.columns)
-            for col in observer_data.columns:
-                interpolated_values[col] = observer_data.loc[i-1, col]
-
-            interpolated_values['t'] = skipped_t
-            interpolated_values['is_virtual'] = True  # Mark as a virtual row
-
-            # Add the virtual row to the list
-            virtual_rows.append(interpolated_values)
-
-            # Adjust the subsequent timestamps
-            corrected_t.iloc[i:] += timeStep_s
-
-# Update the corrected 't' column in the DataFrame
-observer_data['t'] = corrected_t
-observer_data['is_virtual'] = False  # Mark original rows as not virtual
-
-# Convert the list of virtual rows into a DataFrame
-virtual_data = pd.DataFrame(virtual_rows)
-
-# Combine the original data with the virtual rows
-combined_data = pd.concat([observer_data, virtual_data], ignore_index=True)
-
-# Sort by time to ensure proper order
-combined_data = combined_data.sort_values(by='t').reset_index(drop=True)
 
 
 
@@ -628,9 +579,8 @@ else:
     save_csv = save_csv.lower()
 
 if save_csv == 'y':
-    combined_data.to_csv(output_csv_file_path_observers, index=False,  sep=';')
     resampled_df.to_csv(output_csv_file_path_mocap, index=False, sep=';')
-    print("Output CSV file has been saved to ", output_csv_file_path_mocap)
+    print("Resampled mocap has been saved to ", output_csv_file_path_mocap)
 else:
     print("Data not saved.")
 

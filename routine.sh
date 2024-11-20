@@ -254,11 +254,11 @@ fi
 for projectName in "${selected_folders[@]}"; do
     echo -e "${YELLOW}Starting to work on project $projectName !${RESET}"
     
-    projectPath="Projects/$projectName"
+    projectPath="$cwd/Projects/$projectName"
     # main folders
     rawDataPath="$projectPath/raw_data"
     outputDataPath="$projectPath/output_data"
-    scriptsPath="/scripts"
+    scriptsPath="$cwd/scripts"
 
     # files of the resulting data after each step
     resampledMocapData="$outputDataPath/resampledMocapData.csv"
@@ -274,9 +274,9 @@ for projectName in "${selected_folders[@]}"; do
     projectConfig="$projectPath/projectConfig.yaml"
 
     if $compute_metrics_only; then
-        source scripts/routine_scripts/computeMetrics.sh
+        source $scriptsPath/routine_scripts/computeMetrics.sh
     else
-        source scripts/routine_scripts/mainRoutine.sh
+        source $scriptsPath/routine_scripts/mainRoutine.sh
     fi
 
 done
