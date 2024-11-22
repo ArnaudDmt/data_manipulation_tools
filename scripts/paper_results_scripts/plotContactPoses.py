@@ -52,8 +52,10 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
     observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
 
-    estimatorsPoses = {  'Mocap': {'pos': observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy(), \
+    estimatorsPoses = { 'Mocap': {'pos': observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy(), \
                                     'ori': R.from_quat(observer_data[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy())}, \
+                        # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
+                        #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
                         'KineticsObserver': {  'pos': observer_data[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy(), \
                                                 'ori': R.from_quat(observer_data[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy())}, \
                         'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
@@ -183,14 +185,12 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
                     bgcolor = 'rgba(0,0,0,0)',
                     font = dict(family = 'Times New Roman')
                     ),
+                margin=dict(l=0,r=0,b=0,t=0),
                 font = dict(family = 'Times New Roman')
             )
 
     # Show the plotly figure
     fig.show()
-
-    # fig_fusible = px.scatter(x=[0, 1, 2, 3, 4], y=[0, 1, 4, 9, 16])
-    # fig_fusible.write_image("random.pdf")
 
     fig.write_image(f'/tmp/rightFoot_yaw.pdf')
     

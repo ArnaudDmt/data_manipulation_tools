@@ -7,8 +7,11 @@ def to_camel_case_with_letters(snake_str):
     Numbers are converted to their alphabetical equivalent: 1 -> A, 2 -> B, etc.
     """
     def number_to_letter(match):
-        # Convert digit to corresponding letter (1 -> A, 2 -> B, etc.)
-        return chr(int(match.group()) + 64)  # 1 -> 'A' (ASCII 65), 2 -> 'B', ...
+        # Convert digit to corresponding letter (1 -> A, 2 -> B, ..., 0 -> O)
+        digit = int(match.group())
+        if digit == 0:
+            return "O"
+        return chr(digit + 64)  # 1 -> 'A' (ASCII 65), 2 -> 'B', ...
 
     import re
     # Replace numbers with letters using regex
@@ -58,7 +61,7 @@ relErrorsFilter = {'rel_trans_x_y_norm': 'transXY', 'rel_trans_z': 'transZ', 're
 velErrorsFilter = {'llve_norm': 'llve', 'estimate_norm': 'estimate'}
 
 
-desired_subdistances = [0.5]
+desired_subdistances = [1.0]
 
 
 # Create the LaTeX variables file

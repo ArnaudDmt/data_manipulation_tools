@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px  # For color palette generation
@@ -9,17 +10,7 @@ import plotly.io as pio
 pio.kaleido.scope.mathjax = None
 
 
-estimator_plot_args_default = {
-    'Controller': {'name': 'Control', 'lineWidth': 2},
-    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
-    'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
-    'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
-    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-    'KODisabled_WithProcess': {'name': 'KODisabled_WithProcess', 'lineWidth': 2},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
-}
+
 
 default_path = '.../Projects/'
 
@@ -58,22 +49,22 @@ default_estimators = [
 
 
 # Define columns for each estimator
-data = {
-    'Controller': {'group': 1, 'column_names': ['Controller_tx', 'Controller_ty']},
-    #'Vanyte': {'group': 1, 'column_names': ['Vanyte_pose_tx', 'Vanyte_pose_ty']},
-    'Hartley': {'group': 1, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
-    'KineticsObserver': {'group': 0, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
-    #'KO_APC': {'group': 1, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
-    #'KO_ASC': {'group': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
-    #'KO_ZPC': {'group': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
-    'KODisabled_WithProcess': {'group': 1, 'column_names': ['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty']},
-    'Mocap': {'group': 0, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
+estimator_plot_args_default = {
+    'Controller': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
+    #'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_pose_tx', 'Vanyte_pose_ty']},
+    'Hartley': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
+    'KineticsObserver': {'group': 0, 'lineWidth': 2, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
+    #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
+    #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
+    'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
+    #'KODisabled_WithProcess': {'group': 1, 'lineWidth': 2, 'column_names': ['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty']},
+    'Mocap': {'group': 0, 'lineWidth': 2, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
 }
 
 
 
 def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args = estimator_plot_args_default, path = default_path):
-    estimators = list(filter(lambda x: x in data, estimators))
+    estimators = list(filter(lambda x: x in estimator_plot_args, estimators))
 
     home = str(Path.home())
 
@@ -83,11 +74,11 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
     all_groups_keys = set()
 
     for estimator in estimators:
-        all_groups_keys.add(data[estimator]['group'])
+        all_groups_keys.add(estimator_plot_args[estimator]['group'])
         xys[estimator] = dict.fromkeys(range(len(exps)))
         for k in range(len(exps)):
             xys[estimator][k] = {0: [], 1:[]}
-        for col in data[estimator]['column_names']:
+        for col in estimator_plot_args[estimator]['column_names']:
             all_columns.append(col)
 
     all_groups = dict.fromkeys(all_groups_keys)
@@ -97,15 +88,15 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
     for group in all_groups.keys():
         all_groups[group] = {'estimators': [], 'plot_lims': {'xmin': {}, 'xmax': {}, 'ymin': {}, 'ymax': {}}}
     for estimator in estimators:
-        all_groups[data[estimator]['group']]["estimators"].append(estimator)
+        all_groups[estimator_plot_args[estimator]['group']]["estimators"].append(estimator)
 
     for e, exp in enumerate(exps):
         file = f'{path}{exp}/output_data/observerResultsCSV.csv'
         df = pd.read_csv(file, sep=';', usecols=all_columns)
         df_overlap = df[df["Mocap_datasOverlapping"] == "Datas overlap"]
         for estimator in estimators:
-            xys[estimator][e][0] = df_overlap[data[estimator]['column_names'][0]]
-            xys[estimator][e][1] = df_overlap[data[estimator]['column_names'][1]]
+            xys[estimator][e][0] = df_overlap[estimator_plot_args[estimator]['column_names'][0]]
+            xys[estimator][e][1] = df_overlap[estimator_plot_args[estimator]['column_names'][1]]
     
     
 
@@ -134,6 +125,7 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
         fig = make_subplots(rows=2, cols=2, shared_xaxes=True, shared_yaxes=True)
         combined_estimators = all_groups[group]["estimators"] + all_groups[0]["estimators"]
         for estimator in combined_estimators:
+            estimatorName = estimator_plot_args[estimator]["name"]
             color = colors[estimator]
 
             # Process each CSV for the current estimator
@@ -144,13 +136,13 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
                     fig.add_trace(go.Scatter(
                         x=xys[estimator][e][0], y=xys[estimator][e][1],
                         mode='lines', line=dict(color=transparent_color, width=2),
-                        name=f'{estimator_plot_args[estimator]["name"]}', showlegend=True), row = e+1, col = 1)
+                        name=f'{estimatorName}', showlegend=True), row = e+1, col = 1)
                 else:
                     transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
                     fig.add_trace(go.Scatter(
                         x=xys[estimator][e][0], y=xys[estimator][e][1],
                         mode='lines', line=dict(color=transparent_color, width=2),
-                        name=f'{estimator_plot_args[estimator]["name"]}', showlegend=True), row = e+1, col = 1)
+                        name=f'{estimatorName}', showlegend=True), row = e+1, col = 1)
                
 
         x_min = all_groups[group]['plot_lims']['xmin']
@@ -170,7 +162,8 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
                 x=0.01,
                 orientation='h',
                 bgcolor = 'rgba(0,0,0,0)'
-                )
+                ),
+            margin=dict(l=0,r=0,b=0,t=0)
         )
 
         fig.update_yaxes(
@@ -194,10 +187,11 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
 
 
 
-def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path = default_path,  main_expe = 0):
-    estimators = list(filter(lambda x: x in data, estimators))
+def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):
+    estimators = list(set(estimators).intersection(estimator_plot_args_default.keys()))
 
-    home = str(Path.home())
+    for estimatorName in estimators:
+        estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
 
     xys = dict.fromkeys(estimators)
 
@@ -205,11 +199,11 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
     all_groups_keys = set()
 
     for estimator in estimators:
-        all_groups_keys.add(data[estimator]['group'])
+        all_groups_keys.add(estimator_plot_args[estimator]['group'])
         xys[estimator] = dict.fromkeys(range(len(exps)))
         for k in range(len(exps)):
             xys[estimator][k] = {0: [], 1:[]}
-        for col in data[estimator]['column_names']:
+        for col in estimator_plot_args[estimator]['column_names']:
             all_columns.append(col)
 
     all_groups = dict.fromkeys(all_groups_keys)
@@ -219,15 +213,15 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
     for group in all_groups.keys():
         all_groups[group] = {'estimators': [], 'plot_lims': {'xmin': {}, 'xmax': {}, 'ymin': {}, 'ymax': {}}}
     for estimator in estimators:
-        all_groups[data[estimator]['group']]["estimators"].append(estimator)
+        all_groups[estimator_plot_args[estimator]['group']]["estimators"].append(estimator)
 
     for e, exp in enumerate(exps):
         file = f'{path}{exp}/output_data/observerResultsCSV.csv'
         df = pd.read_csv(file, sep=';', usecols=all_columns)
         df_overlap = df[df["Mocap_datasOverlapping"] == "Datas overlap"]
         for estimator in estimators:
-            xys[estimator][e][0] = df_overlap[data[estimator]['column_names'][0]]
-            xys[estimator][e][1] = df_overlap[data[estimator]['column_names'][1]]
+            xys[estimator][e][0] = df_overlap[estimator_plot_args[estimator]['column_names'][0]]
+            xys[estimator][e][1] = df_overlap[estimator_plot_args[estimator]['column_names'][1]]
     
     
 
@@ -256,6 +250,7 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
         fig = go.Figure()
         combined_estimators = all_groups[group]["estimators"] + all_groups[0]["estimators"]
         for estimator in combined_estimators:
+            estimatorName = estimator_plot_args[estimator]["name"]
             color = colors[estimator]
 
             # Process each CSV for the current estimator
@@ -266,33 +261,43 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
                         # Use transparent_color in the line color
                         fig.add_trace(go.Scatter(
                             x=xys[estimator][e][0], y=xys[estimator][e][1],
-                            mode='lines', line=dict(color=transparent_color, width=3),
-                            name=f'{estimator_names_to_plot[estimator]}', showlegend=True))
+                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2),
+                            name=f'{estimatorName}', showlegend=True))
                     else:
                         transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
                         fig.add_trace(go.Scatter(
                             x=xys[estimator][e][0], y=xys[estimator][e][1],
-                            mode='lines', line=dict(color=transparent_color, width=3),
-                            name=f'{estimator_names_to_plot[estimator]}', showlegend=True))
+                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2),
+                            name=f'{estimatorName}', showlegend=True))
                 else:
                     if(estimator == 'Mocap'):
                         transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 0.6)'
                         fig.add_trace(go.Scatter(
                             x=xys[estimator][e][0], y=xys[estimator][e][1],
                             mode='lines', line=dict(color=transparent_color, width=1, dash='5px,2px'),
-                            name=f'{estimator_names_to_plot[estimator]} - CSV {e+1} X', showlegend=False))
-                    else:
-                        transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 0.6)'
-                        fig.add_trace(go.Scatter(
-                            x=xys[estimator][e][0], y=xys[estimator][e][1],
-                            mode='lines', line=dict(color=transparent_color, width=1, dash='5px,2px'), visible=False,
-                            name=f'{estimator_names_to_plot[estimator]} - CSV {e+1} X', showlegend=False))
+                            name=f'{estimatorName} - CSV {e+1} X', showlegend=False))
+                    # else:
+                    #     transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 0.6)'
+                    #     fig.add_trace(go.Scatter(
+                    #         x=xys[estimator][e][0], y=xys[estimator][e][1],
+                    #         mode='lines', line=dict(color=transparent_color, width=1, dash='5px,2px'), visible=False,
+                    #         name=f'{estimatorName} - CSV {e+1} X', showlegend=False))
 
 
         x_min = all_groups[group]['plot_lims']['xmin']
         y_min = all_groups[group]['plot_lims']['ymin']
         x_max = all_groups[group]['plot_lims']['xmax']
         y_max = all_groups[group]['plot_lims']['ymax']
+
+
+        max_x_abs = max(np.abs(x_min), np.abs(x_max))
+        max_y_abs = max(np.abs(y_min), np.abs(y_max))
+
+        x_min = x_min - max_x_abs * 0.1
+        x_max = x_max + max_x_abs * 0.1
+
+        y_min = y_min - max_y_abs * 0.1
+        y_max = y_max + max_y_abs * 0.1
 
         # Update layout
         fig.update_layout(
@@ -307,6 +312,7 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
                 orientation='h',
                 bgcolor = 'rgba(0,0,0,0)'
                 ),
+            margin=dict(l=0,r=0,b=0,t=0),
             font = dict(family = 'Times New Roman')
         )
 
@@ -316,11 +322,13 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
         )
 
         fig.update_xaxes(
-            range=[x_min, x_max]
+            range=[x_min, x_max],
+            autorange=False
         )
 
         fig.update_yaxes(
-            range=[y_min, y_max]
+            range=[y_min, y_max],
+            autorange=False
         )
         fig.write_image(f'/tmp/trajectories_{group}.pdf')
 
