@@ -223,8 +223,6 @@ def get_mocap_pitch_offset_from_accelero():
     Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[:avg_interval], axis=0)
     init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[:avg_interval], axis=0)
 
-    print(Rt_ez_accelero_avg.shape)
-    print(init_mocap_avg_R_quat.shape)
     true_R_init_avg_quat = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero_avg, R.from_quat(init_mocap_avg_R_quat).as_matrix()))
     mocap_pitch_offset = R.from_quat(init_mocap_avg_R_quat).inv() * true_R_init_avg_quat
     print(f"The offset on the mocap pitch is not contained in the configuration file, computing it from the accelerometer signal: {mocap_pitch_offset.as_quat()}")

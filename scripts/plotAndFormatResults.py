@@ -10,7 +10,8 @@ from scipy.spatial.transform import Rotation as R
 import plotly.express as px  # For color palette generation
 from scipy.signal import butter,filtfilt
 
-
+import plotly.io as pio   
+pio.kaleido.scope.mathjax = None
 
 
 ###############################  Main variables initialization  ###############################

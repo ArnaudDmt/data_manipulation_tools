@@ -5,22 +5,23 @@ from plotly.subplots import make_subplots
 
 from pathlib import Path
 
+import plotly.io as pio   
+pio.kaleido.scope.mathjax = None
 
 
-
-estimator_names_to_plot_default = {
-    'Controller': 'Control',
-    'Vanyte': 'Vanyt-e',
-    'Hartley':'RI-EKF',
-    'KineticsObserver': 'Kinetics Observer',
-    'KO_APC': 'KO_APC',
-    'KO_ASC': 'KO_ASC',
-    'KO_ZPC': 'KO-ZPC',
-    'KODisabled_WithProcess': 'KODisabled_WithProcess',
-    'Mocap': 'Ground truth'
+estimator_plot_args_default = {
+    'Controller': {'name': 'Control', 'lineWidth': 2},
+    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
+    'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
+    'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
+    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
+    'KODisabled_WithProcess': {'name': 'KODisabled_WithProcess', 'lineWidth': 2},
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
 }
 
-default_path = '../Projects/'
+default_path = '.../Projects/'
 
 # default_exps = [
 #     'HRP5_MultiContact_1', 
@@ -71,7 +72,7 @@ data = {
 
 
 
-def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_names_to_plot, path = default_path):
+def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args = estimator_plot_args_default, path = default_path):
     estimators = list(filter(lambda x: x in data, estimators))
 
     home = str(Path.home())
@@ -143,13 +144,13 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_names_to_pl
                     fig.add_trace(go.Scatter(
                         x=xys[estimator][e][0], y=xys[estimator][e][1],
                         mode='lines', line=dict(color=transparent_color, width=2),
-                        name=f'{estimator_names_to_plot[estimator]}', showlegend=True), row = e+1, col = 1)
+                        name=f'{estimator_plot_args[estimator]["name"]}', showlegend=True), row = e+1, col = 1)
                 else:
                     transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
                     fig.add_trace(go.Scatter(
                         x=xys[estimator][e][0], y=xys[estimator][e][1],
                         mode='lines', line=dict(color=transparent_color, width=2),
-                        name=f'{estimator_names_to_plot[estimator]}', showlegend=True), row = e+1, col = 1)
+                        name=f'{estimator_plot_args[estimator]["name"]}', showlegend=True), row = e+1, col = 1)
                
 
         x_min = all_groups[group]['plot_lims']['xmin']
@@ -305,7 +306,8 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
                 x=0.01,
                 orientation='h',
                 bgcolor = 'rgba(0,0,0,0)'
-                )
+                ),
+            font = dict(family = 'Times New Roman')
         )
 
         fig.update_yaxes(
@@ -320,7 +322,7 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_names_to_plot, path 
         fig.update_yaxes(
             range=[y_min, y_max]
         )
-        fig.write_image(f'{home}/Downloads/test{group}.png')
+        fig.write_image(f'/tmp/trajectories_{group}.pdf')
 
     
         # Show the plot
@@ -336,4 +338,4 @@ if __name__ == '__main__':
         colors[estimator] = colors_t[i]
     
     #plot_multiple_trajs(default_estimators, default_exps, colors, estimator_names_to_plot_default)
-    plot_multiple_trajs(default_estimators, default_exps, colors, estimator_names_to_plot_default)
+    plot_multiple_trajs(default_estimators, default_exps, colors)

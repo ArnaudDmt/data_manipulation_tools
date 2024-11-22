@@ -7,23 +7,38 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
 
+import pathlib
+cwd = pathlib.Path(__file__).parent.resolve()
+sys.path.append(f'{cwd.parent}')
+sys.path.append(f'{cwd.parent}/paper_results_scripts')
+
+
+def float_representer(dumper, value):
+    text = '{0:.4f}'.format(value)
+    return dumper.represent_scalar(u'tag:yaml.org,2002:float', text)
+yaml.add_representer(float, float_representer)
 
 import pandas as pd
 import pickle
 
+import plotly.io as pio   
+pio.kaleido.scope.mathjax = None
+
+from copy import deepcopy
+
 
 import argparse
 
-estimator_names_to_plot = {
-    'Controller': 'Control',
-    'Vanyte': 'Vanyt-e',
-    'Hartley':'RI-EKF',
-    'KineticsObserver': 'Kinetics Observer',
-    'KO_APC': 'KO_APC',
-    'KO_ASC': 'KO_ASC',
-    'KO_ZPC': 'KO-ZPC',
-    'KODisabled_WithProcess': 'KODisabled_WithProcess',
-    'Mocap': 'Ground truth'
+estimator_plot_args = {
+    'Controller': {'name': 'Control', 'lineWidth': 2},
+    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 3},
+    'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
+    'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
+    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
+    'KODisabled_WithProcess': {'name': 'KODisabled_WithProcess', 'lineWidth': 2},
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
 }
 
 
@@ -48,7 +63,7 @@ def generate_turbo_subset_colors(estimatorsList):
 
 def lighten_color(color, amount=0.5):
     r, g, b, _ = color
-    return f'rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, {amount})'
+    return f"rgba({int(r*255)}, {int(g*255)}, {int(b*255)}, {amount})"
 
 def open_pickle(pickle_file):
     with open(pickle_file, 'rb') as f:
@@ -101,16 +116,16 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
                 median=median,
                 q3=q3,
                 upperfence=upper_fence,
-                name=f"{estimator_names_to_plot[estimator]} ({category})",  # Single legend entry per estimator-category pair
+                name=f"{estimator_plot_args[estimator]['name']} ({category})",  # Single legend entry per estimator-category pair
                 boxpoints=False,
-                marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)',  # Outline color
+                marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)",  # Outline color
                 fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
-                line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),  # Well-visible outline
+                line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"),  # Well-visible outline
                 opacity=0.8,
                 visible=False  # Initially hidden
             )
 
-            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_names_to_plot[estimator]} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_plot_args[estimator]['name']} rmse ({category})", marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, mode='markers')
 
 
             traces_per_category[category].append(trace)
@@ -151,7 +166,7 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
 
 
 def plot_relative_errors(exps_to_merge, estimatorsList, colors):
-    data1 = open_pickle(f'Projects/{exps_to_merge[0]}/output_data/evals/{estimatorsList[0]}/saved_results/traj_est/cached/cached_rel_err.pickle')
+    data1 = open_pickle(f"Projects/{exps_to_merge[0]}/output_data/evals/{estimatorsList[0]}/saved_results/traj_est/cached/cached_rel_err.pickle")
     regroupedErrors = dict.fromkeys(data1.keys())
 
     for d_subTraj in regroupedErrors.keys():
@@ -162,7 +177,7 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
 
     for expe in exps_to_merge:        
         for estimator in regroupedErrors[d_subTraj].keys():
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_rel_err.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_rel_err.pickle")
             for d_subTraj in regroupedErrors.keys():
                 for cat in data[d_subTraj]:
                     if isinstance(data[d_subTraj][cat], np.ndarray):
@@ -197,7 +212,7 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
     plot_relative_error_statistics_as_boxplot(errorStats, colors)
 
 
-def plot_absolute_error_statistics_as_boxplot(errorStats, colors):    
+def plot_absolute_error_statistics_as_boxplot(errorStats, colors):  
     f = open('/tmp/absolute_errors.yaml', 'w+')
     yaml.dump(errorStats, f, allow_unicode=True)
 
@@ -242,16 +257,16 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
                 median=median,
                 q3=q3,
                 upperfence=upper_fence,
-                name=f"{estimator_names_to_plot[estimator]} ({category})",  # Single legend entry per estimator-category pair
+                name=f"{estimator_plot_args[estimator]['name']} ({category})",  # Single legend entry per estimator-category pair
                 boxpoints=False,
-                marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)',  # Outline color
+                marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)",  # Outline color
                 fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
-                line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),  # Well-visible outline
+                line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"),  # Well-visible outline
                 opacity=0.8,
                 visible=False  # Initially hidden
             )
 
-            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_names_to_plot[estimator]} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_plot_args[estimator]['name']} rmse ({category})", marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, mode='markers')
 
             traces_per_category[category].append(trace)
             fig.add_trace(trace)
@@ -294,18 +309,18 @@ def plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors):
     tracesNames = []
     for expe in exps_to_merge:
         for estimator in estimatorsList:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle")
             for category in data.keys():
                 if(isinstance(data[category],np.ndarray)):
                     if(data[category].size == len(data[category])):
-                        name_t = f'{expe}_{estimator_names_to_plot[estimator]}({category})'
+                        name_t = f"{expe}_{estimator_plot_args[estimator]['name']}({category})"
                         tracesNames.append(name_t)
-                        fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category], fill='tozeroy', name=name_t, line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
+                        fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category], fill='tozeroy', name=name_t, line_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
                     else:
                         for i in range(3):
-                            name_t = f'{expe}_{estimator_names_to_plot[estimator]}({category}_{i})'
+                            name_t = f"{expe}_{estimator_plot_args[estimator]['name']}({category}_{i})"
                             tracesNames.append(name_t)
-                            fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category][:,i], fill='tozeroy', name=name_t, line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
+                            fig.add_trace(go.Scatter(x=data['accum_distances'], y=data[category][:,i], fill='tozeroy', name=name_t, line_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, fillcolor=lighten_color(colors[estimator], 0.3)))
                 
     for category in data.keys():
         visibility = [False] * len(fig.data)  # Start with all traces hidden
@@ -343,7 +358,7 @@ def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
                 regroupedErrors[expe][estimator] = {}
     for expe in regroupedErrors.keys():        
         for estimator in regroupedErrors[expe].keys():
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/cached_abs_err.pickle")
             for cat in data.keys():
                 if isinstance(data[cat], np.ndarray):
                     if(data[cat].size == len(data[cat])):
@@ -376,18 +391,19 @@ def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
     plot_absolute_error_statistics_as_boxplot(errorStats, colors)
 
 def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
+    # For better plots, please check 'plotMultipleTrajs.py'
     fig = go.Figure()
     for expe in exps_to_merge:
         for estimator in estimatorsList:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle")
             fig.add_trace(go.Scatter(x=data['x'], y=data['y'],
                     mode='lines',
-                    name=f'{expe}_{estimator_names_to_plot[estimator]}', line_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'))
+                    name=f"{expe}_{estimator_plot_args[estimator]['name']}", line_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"))
     
-        mocapData = open_pickle(f'Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle')
+        mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f'{expe}_{estimator_names_to_plot["Mocap"]}', line_color='black'))
+                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}', line_color='black"))
         
     fig.show()
 
@@ -396,7 +412,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
 
 def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     fig = go.Figure()
-    f = open('/tmp/llve.yaml', 'w+')
+    f = open('/tmp/velocity_errors.yaml', 'w+')
     yaml.dump(errorStats, f, allow_unicode=True)
     all_categories = sorted({cat for estimator in errorStats.keys() for cat in errorStats[estimator].keys()})
 
@@ -406,9 +422,9 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     # Load velocity data from pickle
     def load_velocity_data(estimator, category, isMocap=False):
         if isMocap == False:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle")
         else:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/mocap_loc_vel.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/mocap_loc_vel.pickle")
         return data[category]  # Assuming each category has velocity data by axis
 
     # Create traces for boxplots and velocity plots
@@ -445,11 +461,11 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 median=median,
                 q3=q3,
                 upperfence=upper_fence,
-                name=f"{estimator_names_to_plot[estimator]}",  # Only the estimator name in the legend
+                name=f"{estimator_plot_args[estimator]['name']}",  # Only the estimator name in the legend
                 boxpoints=False,
-                marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)',  # Outline color
+                marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)",  # Outline color
                 fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
-                line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),
+                line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"),
                 opacity=0.8,
                 visible=False  # Initially not visible
             )
@@ -457,7 +473,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
             fig.add_trace(trace_boxplot)
             traces_to_plot.append({'type': 'boxplot', 'category': category})
 
-            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_names_to_plot[estimator]} rmse ({category})", marker_color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)', visible=False, mode='markers')
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_plot_args[estimator]['name']} rmse ({category})", marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, mode='markers')
 
             fig.add_trace(trace2)
             traces_to_plot.append({'type': 'boxplot', 'category': category})
@@ -469,8 +485,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                     x=list(range(len(values))),  # Assuming the values are ordered by time
                     y=values,
                     mode='lines',
-                    name=f"{estimator_names_to_plot[estimator]} ({axis})",  # Include the axis name in the legend
-                    line=dict(width=2, color=f'rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)'),
+                    name=f"{estimator_plot_args[estimator]['name']} ({axis})",  # Include the axis name in the legend
+                    line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"),
                     visible=False  # Initially not visible
                 )
 
@@ -484,8 +500,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 x=list(range(len(values))),  # Assuming the values are ordered by time
                 y=values,
                 mode='lines',
-                name=f"{estimator_names_to_plot['Mocap']} ({axis})",  # Include the axis name in the legend
-                line=dict(width=1, color='black'),
+                name=f"{estimator_plot_args['Mocap']['name']} ({axis})",  # Include the axis name in the legend
+                line=dict(width=estimator_plot_args['Mocap']['lineWidth'], color='black'),
                 visible=False  # Initially not visible
             )
 
@@ -528,18 +544,18 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
 def plot_llve(exps_to_merge, estimatorsList, colors):    
     regroupedErrors = dict.fromkeys(estimatorsList)
     for estimator in estimatorsList:
-        data = open_pickle(f'Projects/{exps_to_merge[0]}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+        data = open_pickle(f"Projects/{exps_to_merge[0]}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle")
         regroupedErrors[estimator] = dict.fromkeys(data.keys())
         for cat in data.keys():
             regroupedErrors[estimator][cat] = dict.fromkeys(data[cat].keys())
 
     for expe in exps_to_merge:
-        mocapData = open_pickle(f'Projects/{expe}/output_data/evals/mocap_loc_vel.pickle')
+        mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_loc_vel.pickle")
         for estimator in estimatorsList:
-            data = open_pickle(f'Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle')
+            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle")
             for cat in data.keys():
                 for axis in data[cat].keys():
-                    data[cat][axis] = data[cat][axis] - mocapData[cat][axis]
+                    data[cat][axis] = data[cat][axis] - mocapData[cat][axis]    
                     if regroupedErrors[estimator][cat][axis] is None:
                         regroupedErrors[estimator][cat][axis] = data[cat][axis]
                     else:
@@ -547,12 +563,12 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
 
     for estimator in estimatorsList:
         for cat in data.keys():
-                    # Combine x, y, z components into a single array
-                    components = ['x', 'y', 'z']  # Adjust keys as needed
-                    combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
+            # Combine x, y, z components into a single array
+            components = ['x', 'y', 'z']  # Adjust keys as needed
+            combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
 
-                    # Compute the Euclidean norm for each sample
-                    regroupedErrors[estimator][cat]["norm"] = np.linalg.norm(combined, axis=-1)
+            # Compute the Euclidean norm for each sample
+            regroupedErrors[estimator][cat]["norm"] = np.linalg.norm(combined, axis=-1)
 
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for estimator in estimatorsList:
@@ -596,8 +612,9 @@ def main():
                   if os.path.isdir(f"Projects/{exps_to_merge[0]}/output_data/evals/{d}")]
 
     colors = generate_turbo_subset_colors(estimatorsList)
+
     plot_llve(exps_to_merge, estimatorsList, colors)
-    plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
+    #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     #plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     plot_absolute_errors(exps_to_merge, estimatorsList, colors)
     plot_relative_errors(exps_to_merge, estimatorsList, colors)
@@ -607,10 +624,20 @@ def main():
     estimators_to_plot.append("Mocap")
     colors_to_plot = colors
     colors_to_plot["Mocap"] = [0, 0, 0]
+    #plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
 
+    
+    #if(len(exps_to_merge) == 1):
+        #import plotContactPoses
+        #plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
+    
+    #if(len(exps_to_merge) == 1):
+    #    import plotExternalForce
+    #    plotExternalForce.plotExternalForce(colors_to_plot, f'Projects/{exps_to_merge[0]}')
+    
     import plotAndFormatResults
-    for expe in exps_to_merge:
-        plotAndFormatResults.run(True, False, f'Projects/{expe}', estimators_to_plot, colors_to_plot)
+    #for expe in exps_to_merge:
+       # plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
     
     
     
