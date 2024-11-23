@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px  # For color palette generation
 from scipy.spatial.transform import Rotation as R
+import matplotlib.pyplot as plt
 
 import plotly.io as pio   
 pio.kaleido.scope.mathjax = None
@@ -14,6 +15,9 @@ pio.kaleido.scope.mathjax = None
 default_path = '.../Projects/HRP5_MultiContact_1'
 
 contactNames = ["RightFootForceSensor"] #, "LeftFootForceSensor", "LeftHandForceSensor"] # ["RightFootForceSensor", "LeftFootForceSensor", "LeftHandForceSensor"]
+contactNames2 = ["LeftFootForceSensor", "LeftHandForceSensor"]
+
+contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor": "Left foot", "LeftHandForceSensor": "Left hand"}
 
 estimator_plot_args = {
     'Controller': {'name': 'Control', 'lineWidth': 2},
@@ -83,7 +87,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
 
     fbContactPoses = dict.fromkeys(contactNames)
 
-    index_range = [0,3000]
+    index_range = [0,2830]
     y_mins = []
     y_maxs = []
 
@@ -149,12 +153,78 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', name=f'{estimatorName} | {contactName}: yaw'))
 
             fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=color, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))
+            iterations = range(index_range[0], index_range[1])
+            shapes = []
+        
 
             list_without_nan = [x for x in worldContactOri_euler[index_range[0]:index_range[1],2] if str(x) != 'nan']
             y_mins.append(np.min(list_without_nan))
             y_maxs.append(np.max(list_without_nan))
 
     
+
+    def generate_turbo_subset_colors(colormapName, contactsList):
+        cmap = plt.get_cmap(colormapName)
+        listCoeffs = np.linspace(0.2, 0.8, len(contactsList))
+        colors={}
+        # Generate colors and reduce intensity
+        for idx, estimator in enumerate(contactsList):
+            r, g, b, t = cmap(listCoeffs[idx])
+            colors[estimator] = (r, g, b, 1) 
+    
+        return colors
+
+    colors2 = generate_turbo_subset_colors('rainbow', contactNames2)
+
+    for contactName2 in contactNames2:
+        is_set_mask = encoders_data[f"Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_{contactName2}"][index_range[0]:index_range[1]] == "Set"
+        #contact_state = [encoders_data[f"Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_{contactName2}"]  for _ in iterations]
+        # Identify "Set" regions
+        set_regions = []
+        start = None
+        for i, state in enumerate(is_set_mask):
+            if state and start is None:
+                # Begin a new region
+                start = observer_data["t"][iterations[i]]  # Start of "Set" region
+            elif not state and start is not None:
+                # End the current region
+                set_regions.append((start, observer_data["t"][iterations[i - 1]]))
+                start = None
+
+        # Handle the case where the last region ends at the final iteration
+        if start is not None:
+            set_regions.append((start, observer_data["t"][iterations[-1]]))
+
+        # Assign color for the current contact
+        fillcolor2 = colors2[contactName2]
+        fillcolor2 = f'rgba({fillcolor2[0]}, {fillcolor2[1]}, {fillcolor2[2]}, 0.3)'
+
+        # Add an scatter trace as a legend proxy
+        fig.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="markers",
+            marker=dict(size=10, color=fillcolor2),
+            name=f"{contactNameToPlot[contactName2]}",
+            legend="legend2"
+        ))
+        
+        # Create shapes for shaded regions
+        y_min, y_max = -10, 10  # Set bounds for y-axis
+        for start, end in set_regions:
+            shapes.append(dict(
+                type="rect",
+                xref="x",
+                yref="y",
+                x0=start,
+                y0=y_min,
+                x1=end,
+                y1=y_max,
+                opacity=0.4,
+                line_width=0,
+                layer="below",
+                fillcolor=fillcolor2,
+            ))
 
     y_min = min(y_mins)
     y_max = max(y_maxs)
@@ -171,8 +241,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     fig.update_yaxes(
                 range=[y_min, y_max]
             )
-
     fig.update_layout(
+                shapes=shapes,
                 xaxis_title="Time (s)",
                 yaxis_title="Yaw (°)",
                 template="plotly_white",
@@ -185,6 +255,13 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
                     bgcolor = 'rgba(0,0,0,0)',
                     font = dict(family = 'Times New Roman')
                     ),
+                    legend2=dict(
+                        yanchor="top",
+                        y=0.92,
+                        xanchor="left",
+                        x=0.01,
+                        bgcolor='rgba(0,0,0,0)',
+                    ),
                 margin=dict(l=0,r=0,b=0,t=0),
                 font = dict(family = 'Times New Roman')
             )
@@ -193,6 +270,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     fig.show()
 
     fig.write_image(f'/tmp/rightFoot_yaw.pdf')
+
+    
     
 
 
