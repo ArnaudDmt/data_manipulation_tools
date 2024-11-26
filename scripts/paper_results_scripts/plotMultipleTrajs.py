@@ -43,7 +43,7 @@ default_estimators = [
     'KO_APC',
     'KO_ASC',
     'KO_ZPC',
-    'KODisabled_WithProcess',
+    'KOWithoutWrenchSensors',
     'Mocap'
 ]
 
@@ -57,7 +57,7 @@ estimator_plot_args_default = {
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
     'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
-    #'KODisabled_WithProcess': {'group': 1, 'lineWidth': 2, 'column_names': ['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty']},
+    #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
     'Mocap': {'group': 0, 'lineWidth': 2, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
 }
 

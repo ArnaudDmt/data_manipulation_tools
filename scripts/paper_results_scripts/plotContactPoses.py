@@ -27,7 +27,7 @@ estimator_plot_args = {
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-    'KODisabled_WithProcess': {'name': 'KODisabled_WithProcess', 'lineWidth': 2},
+    'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
     'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
 }
 
@@ -91,6 +91,9 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     y_mins = []
     y_maxs = []
 
+    iterations = range(index_range[0], index_range[1])
+    shapes = []
+
     for estimatorName in estimators_to_plot:
         color = colors[estimatorName]
         color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
@@ -152,10 +155,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,1], mode='lines', name=f'{estimatorName} | {contactName}: pitch'))
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', name=f'{estimatorName} | {contactName}: yaw'))
 
-            fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=color, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))
-            iterations = range(index_range[0], index_range[1])
-            shapes = []
-        
+            fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=color, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
 
             list_without_nan = [x for x in worldContactOri_euler[index_range[0]:index_range[1],2] if str(x) != 'nan']
             y_mins.append(np.min(list_without_nan))

@@ -13,7 +13,7 @@ if(len(sys.argv) > 1):
 
     
 # Define a list of patterns you want to match
-partial_pattern = ['MocapAligner', 'Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState', 'Observers_MainObserverPipeline_KOAPC_mcko_fb', 'Observers_MainObserverPipeline_KOASC_mcko_fb', 'Observers_MainObserverPipeline_KOZPC_mcko_fb', 'Observers_MainObserverPipeline_KODisabled_WithProcess_mcko_fb', 'Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
+partial_pattern = ['MocapAligner', 'Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState', 'Observers_MainObserverPipeline_KOAPC_mcko_fb', 'Observers_MainObserverPipeline_KOASC_mcko_fb', 'Observers_MainObserverPipeline_KOZPC_mcko_fb', 'Observers_MainObserverPipeline_KOWithoutWrenchSensors_mcko_fb', 'Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
 input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
 output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
@@ -43,7 +43,7 @@ replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipel
 replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOAPC_mcko_fb', 'KO_APC'), inplace=True)
 replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOASC_mcko_fb', 'KO_ASC'), inplace=True)
 replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOZPC_mcko_fb', 'KO_ZPC'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KODisabled_WithProcess_mcko_fb', 'KODisabled_WithProcess'), inplace=True)
+replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOWithoutWrenchSensors_mcko_fb', 'KOWithoutWrenchSensors'), inplace=True)
 replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)    
 replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'Tilt'), inplace=True)
 replayData_light.rename(columns=lambda x: x.replace('ff', 'Controller'), inplace=True)

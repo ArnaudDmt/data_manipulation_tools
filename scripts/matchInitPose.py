@@ -451,26 +451,26 @@ if 'KO_ZPC_posW_tx' in df_Observers.columns:
     df_Observers['KO_ZPC_posW_qz'] = new_world_KO_ZPCLimb_Ori_quat[:,2]
     df_Observers['KO_ZPC_posW_qw'] = new_world_KO_ZPCLimb_Ori_quat[:,3]
 
-if 'KODisabled_WithProcess_posW_tx' in df_Observers.columns:
-    world_KODisabled_WithProcessLimb_Pos = np.array([df_Observers['KODisabled_WithProcess_posW_tx'], df_Observers['KODisabled_WithProcess_posW_ty'], df_Observers['KODisabled_WithProcess_posW_tz']]).T
-    world_KODisabled_WithProcessLimb_Ori_R = R.from_quat(df_Observers[["KODisabled_WithProcess_posW_qx", "KODisabled_WithProcess_posW_qy", "KODisabled_WithProcess_posW_qz", "KODisabled_WithProcess_posW_qw"]].values)
+if 'KOWithoutWrenchSensors_posW_tx' in df_Observers.columns:
+    world_KOWithoutWrenchSensorsLimb_Pos = np.array([df_Observers['KOWithoutWrenchSensors_posW_tx'], df_Observers['KOWithoutWrenchSensors_posW_ty'], df_Observers['KOWithoutWrenchSensors_posW_tz']]).T
+    world_KOWithoutWrenchSensorsLimb_Ori_R = R.from_quat(df_Observers[["KOWithoutWrenchSensors_posW_qx", "KOWithoutWrenchSensors_posW_qy", "KOWithoutWrenchSensors_posW_qz", "KOWithoutWrenchSensors_posW_qw"]].values)
     # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KODisabled_WithProcessLimb_Ori_R = world_KODisabled_WithProcessLimb_Ori_R.inv()
-    alignedPoses["KODisabled_WithProcess"] =  compute_aligned_pose(
-        world_KODisabled_WithProcessLimb_Pos, 
-        world_KODisabled_WithProcessLimb_Ori_R, 
+    world_KOWithoutWrenchSensorsLimb_Ori_R = world_KOWithoutWrenchSensorsLimb_Ori_R.inv()
+    alignedPoses["KOWithoutWrenchSensors"] =  compute_aligned_pose(
+        world_KOWithoutWrenchSensorsLimb_Pos, 
+        world_KOWithoutWrenchSensorsLimb_Ori_R, 
         matchIndex,
         averageInterval
     )
 
-    new_world_KODisabled_WithProcessLimb_Ori_quat = alignedPoses["KODisabled_WithProcess"]["aligned_orientation"].as_quat()
-    df_Observers['KODisabled_WithProcess_posW_tx'] = alignedPoses["KODisabled_WithProcess"]["aligned_position"][:,0]
-    df_Observers['KODisabled_WithProcess_posW_ty'] = alignedPoses["KODisabled_WithProcess"]["aligned_position"][:,1]
-    df_Observers['KODisabled_WithProcess_posW_tz'] = alignedPoses["KODisabled_WithProcess"]["aligned_position"][:,2]
-    df_Observers['KODisabled_WithProcess_posW_qx'] = new_world_KODisabled_WithProcessLimb_Ori_quat[:,0]
-    df_Observers['KODisabled_WithProcess_posW_qy'] = new_world_KODisabled_WithProcessLimb_Ori_quat[:,1]
-    df_Observers['KODisabled_WithProcess_posW_qz'] = new_world_KODisabled_WithProcessLimb_Ori_quat[:,2]
-    df_Observers['KODisabled_WithProcess_posW_qw'] = new_world_KODisabled_WithProcessLimb_Ori_quat[:,3]
+    new_world_KOWithoutWrenchSensorsLimb_Ori_quat = alignedPoses["KOWithoutWrenchSensors"]["aligned_orientation"].as_quat()
+    df_Observers['KOWithoutWrenchSensors_posW_tx'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,0]
+    df_Observers['KOWithoutWrenchSensors_posW_ty'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,1]
+    df_Observers['KOWithoutWrenchSensors_posW_tz'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,2]
+    df_Observers['KOWithoutWrenchSensors_posW_qx'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,0]
+    df_Observers['KOWithoutWrenchSensors_posW_qy'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,1]
+    df_Observers['KOWithoutWrenchSensors_posW_qz'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,2]
+    df_Observers['KOWithoutWrenchSensors_posW_qw'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,3]
 
 if 'Vanyte_pose_tx' in df_Observers.columns:
     world_VanyteLimb_Pos = np.array([df_Observers['Vanyte_pose_tx'], df_Observers['Vanyte_pose_ty'], df_Observers['Vanyte_pose_tz']]).T

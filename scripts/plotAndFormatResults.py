@@ -53,8 +53,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             estimatorsList.add("KO_ASC")
         if 'KO_ZPC_posW_tx' in dfObservers.columns:
             estimatorsList.add("KO_ZPC")
-        if 'KODisabled_WithProcess_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KODisabled_WithProcess")
+        if 'KOWithoutWrenchSensors_posW_tx' in dfObservers.columns:
+            estimatorsList.add("KOWithoutWrenchSensors")
         if 'Vanyte_pose_tx' in dfObservers.columns:
             estimatorsList.add("Vanyte")
         if 'Tilt_pose_tx' in dfObservers.columns:
@@ -152,17 +152,17 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
             
 
-    if("KODisabled_WithProcess" in estimatorsList):
-        posKODisabled_WithProcess = dfObservers[['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty', 'KODisabled_WithProcess_posW_tz']].to_numpy()
-        quaternionsKODisabled_WithProcess = dfObservers[['KODisabled_WithProcess_posW_qx', 'KODisabled_WithProcess_posW_qy', 'KODisabled_WithProcess_posW_qz', 'KODisabled_WithProcess_posW_qw']].to_numpy()
-        rKODisabled_WithProcess = R.from_quat(quaternionsKODisabled_WithProcess)
-        euler_angles_KODisabled_WithProcess = rKODisabled_WithProcess.as_euler('xyz')
-        euler_angles_KODisabled_WithProcess = continuous_euler(euler_angles_KODisabled_WithProcess)
+    if("KOWithoutWrenchSensors" in estimatorsList):
+        posKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
+        quaternionsKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
+        rKOWithoutWrenchSensors = R.from_quat(quaternionsKOWithoutWrenchSensors)
+        euler_angles_KOWithoutWrenchSensors = rKOWithoutWrenchSensors.as_euler('xyz')
+        euler_angles_KOWithoutWrenchSensors = continuous_euler(euler_angles_KOWithoutWrenchSensors)
 
         if("Mocap" in estimatorsList):
-            posKODisabled_WithProcess_overlap = dfObservers_overlap[['KODisabled_WithProcess_posW_tx', 'KODisabled_WithProcess_posW_ty', 'KODisabled_WithProcess_posW_tz']].to_numpy()
-            quaternionsKODisabled_WithProcess_overlap = dfObservers_overlap[['KODisabled_WithProcess_posW_qx', 'KODisabled_WithProcess_posW_qy', 'KODisabled_WithProcess_posW_qz', 'KODisabled_WithProcess_posW_qw']].to_numpy()
-            rKODisabled_WithProcess_overlap = R.from_quat(quaternionsKODisabled_WithProcess_overlap)
+            posKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
+            quaternionsKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
+            rKOWithoutWrenchSensors_overlap = R.from_quat(quaternionsKOWithoutWrenchSensors_overlap)
             
 
 
@@ -360,19 +360,19 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 with open(f'{path_to_project}/output_data/KO_ZPC_x_y_z_traj.pickle', 'wb') as f:
                     pickle.dump(d, f)
 
-            if("KODisabled_WithProcess" in estimatorsList):
-                dfKODisabled_WithProcessPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKODisabled_WithProcessPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKODisabled_WithProcessPose_overlap['tx'] = posKODisabled_WithProcess_overlap[:,0]
-                dfKODisabled_WithProcessPose_overlap['ty'] = posKODisabled_WithProcess_overlap[:,1]
-                dfKODisabled_WithProcessPose_overlap['tz'] = posKODisabled_WithProcess_overlap[:,2]
-                dfKODisabled_WithProcessPose_overlap['qx'] = quaternionsKODisabled_WithProcess_overlap[:,0]
-                dfKODisabled_WithProcessPose_overlap['qy'] = quaternionsKODisabled_WithProcess_overlap[:,1]
-                dfKODisabled_WithProcessPose_overlap['qz'] = quaternionsKODisabled_WithProcess_overlap[:,2]
-                dfKODisabled_WithProcessPose_overlap['qw'] = quaternionsKODisabled_WithProcess_overlap[:,3]
+            if("KOWithoutWrenchSensors" in estimatorsList):
+                dfKOWithoutWrenchSensorsPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+                dfKOWithoutWrenchSensorsPose_overlap['timestamp'] = dfObservers_overlap['t']
+                dfKOWithoutWrenchSensorsPose_overlap['tx'] = posKOWithoutWrenchSensors_overlap[:,0]
+                dfKOWithoutWrenchSensorsPose_overlap['ty'] = posKOWithoutWrenchSensors_overlap[:,1]
+                dfKOWithoutWrenchSensorsPose_overlap['tz'] = posKOWithoutWrenchSensors_overlap[:,2]
+                dfKOWithoutWrenchSensorsPose_overlap['qx'] = quaternionsKOWithoutWrenchSensors_overlap[:,0]
+                dfKOWithoutWrenchSensorsPose_overlap['qy'] = quaternionsKOWithoutWrenchSensors_overlap[:,1]
+                dfKOWithoutWrenchSensorsPose_overlap['qz'] = quaternionsKOWithoutWrenchSensors_overlap[:,2]
+                dfKOWithoutWrenchSensorsPose_overlap['qw'] = quaternionsKOWithoutWrenchSensors_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedKODisabled_WithProcess_Traj.txt'
-                dfKODisabled_WithProcessPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+                txtOutput = f'{path_to_project}/output_data/formattedKOWithoutWrenchSensors_Traj.txt'
+                dfKOWithoutWrenchSensorsPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
                 line = '# timestamp tx ty tz qx qy qz qw' 
                 with open(txtOutput, 'r+') as file: 
@@ -380,8 +380,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     file.seek(0, 0) 
                     file.write(line + '\n' + file_data) 
 
-                d = {'x': posKODisabled_WithProcess_overlap[:, 0], 'y': posKODisabled_WithProcess_overlap[:, 1], 'z': posKODisabled_WithProcess_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KODisabled_WithProcess_x_y_z_traj.pickle', 'wb') as f:
+                d = {'x': posKOWithoutWrenchSensors_overlap[:, 0], 'y': posKOWithoutWrenchSensors_overlap[:, 1], 'z': posKOWithoutWrenchSensors_overlap[:, 2]}
+                with open(f'{path_to_project}/output_data/KOWithoutWrenchSensors_x_y_z_traj.pickle', 'wb') as f:
                     pickle.dump(d, f)
 
             if("Vanyte" in estimatorsList):
@@ -543,13 +543,13 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ZPC[:, 1], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Pitch'))
             fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ZPC[:, 2], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Yaw'))
 
-        if("KODisabled_WithProcess" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKODisabled_WithProcess[:, 0], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKODisabled_WithProcess[:, 1], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKODisabled_WithProcess[:, 2], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KODisabled_WithProcess[:, 0], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KODisabled_WithProcess[:, 1], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KODisabled_WithProcess[:, 2], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_Yaw'))
+        if("KOWithoutWrenchSensors" in estimatorsList):
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_x'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_y'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_z'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Roll'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Pitch'))
+            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Yaw'))
             
         if("Tilt" in estimatorsList):
             fig.add_trace(go.Scatter(x=dfObservers['t'], y=posTilt[:, 0], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Position_x'))
@@ -607,8 +607,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             fig2.add_trace(go.Scatter(x=posKO_ASC[:, 0], y=posKO_ASC[:, 1], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_2dMotion_xy'))
         if("KO_ZPC" in estimatorsList):
             fig2.add_trace(go.Scatter(x=posKO_ZPC[:, 0], y=posKO_ZPC[:, 1], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_2dMotion_xy'))
-        if("KODisabled_WithProcess" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKODisabled_WithProcess[:, 0], y=posKODisabled_WithProcess[:, 1], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='KODisabled_WithProcess_2dMotion_xy'))
+        if("KOWithoutWrenchSensors" in estimatorsList):
+            fig2.add_trace(go.Scatter(x=posKOWithoutWrenchSensors[:, 0], y=posKOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_2dMotion_xy'))
 
         if("Tilt" in estimatorsList):
             fig2.add_trace(go.Scatter(x=posTilt[:, 0], y=posTilt[:, 1], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_2dMotion_xy'))
@@ -802,20 +802,20 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 name='Kinetics Observer ASC'
             ))
 
-        if("KODisabled_WithProcess" in estimatorsList):
-            x_min = min(x_min, (posKODisabled_WithProcess[:,0]).min())
-            y_min = min(y_min, (posKODisabled_WithProcess[:,1]).min())
-            z_min = min(z_min, (posKODisabled_WithProcess[:,2]).min())
+        if("KOWithoutWrenchSensors" in estimatorsList):
+            x_min = min(x_min, (posKOWithoutWrenchSensors[:,0]).min())
+            y_min = min(y_min, (posKOWithoutWrenchSensors[:,1]).min())
+            z_min = min(z_min, (posKOWithoutWrenchSensors[:,2]).min())
 
-            x_max = max(x_max, (posKODisabled_WithProcess[:,0]).max())
-            y_max = max(y_max, (posKODisabled_WithProcess[:,1]).max())
-            z_max = max(z_max, (posKODisabled_WithProcess[:,2]).max())
+            x_max = max(x_max, (posKOWithoutWrenchSensors[:,0]).max())
+            y_max = max(y_max, (posKOWithoutWrenchSensors[:,1]).max())
+            z_max = max(z_max, (posKOWithoutWrenchSensors[:,2]).max())
 
             fig3d.add_trace(go.Scatter3d(
-                x=posKODisabled_WithProcess[:,0], 
-                y=posKODisabled_WithProcess[:,1], 
-                z=posKODisabled_WithProcess[:,2],
-                mode='lines', line=dict(color = colors["KODisabled_WithProcess"]),
+                x=posKOWithoutWrenchSensors[:,0], 
+                y=posKOWithoutWrenchSensors[:,1], 
+                z=posKOWithoutWrenchSensors[:,2],
+                mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]),
                 name='Kinetics Observer Disabled'
             ))
 
@@ -1152,38 +1152,38 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     pickle.dump(d, f)
 
 
-            if("KODisabled_WithProcess" in estimatorsList):
-                velKODisabled_WithProcess_overlap = np.diff(posKODisabled_WithProcess_overlap, axis=0)/timeStep_s
-                velKODisabled_WithProcess_overlap = np.vstack((zeros_row,velKODisabled_WithProcess_overlap)) # Velocity obtained by finite differences
-                locVelKODisabled_WithProcess_overlap = rKODisabled_WithProcess_overlap.apply(velKODisabled_WithProcess_overlap, inverse=True)
+            if("KOWithoutWrenchSensors" in estimatorsList):
+                velKOWithoutWrenchSensors_overlap = np.diff(posKOWithoutWrenchSensors_overlap, axis=0)/timeStep_s
+                velKOWithoutWrenchSensors_overlap = np.vstack((zeros_row,velKOWithoutWrenchSensors_overlap)) # Velocity obtained by finite differences
+                locVelKOWithoutWrenchSensors_overlap = rKOWithoutWrenchSensors_overlap.apply(velKOWithoutWrenchSensors_overlap, inverse=True)
 
-                linVelKODisabled_WithProcess_fb_overlap = dfObservers_overlap[['KODisabled_WithProcess_velW_vx', 'KODisabled_WithProcess_velW_vy', 'KODisabled_WithProcess_velW_vz']].to_numpy() # estimated linear velocity
-                angVelKODisabled_WithProcess_fb_overlap = dfObservers_overlap[['KODisabled_WithProcess_velW_wx', 'KODisabled_WithProcess_velW_wy', 'KODisabled_WithProcess_velW_wz']].to_numpy() # estimated angular velocity
-                linVelKODisabled_WithProcess_imu_overlap = linVelKODisabled_WithProcess_fb_overlap + np.cross(angVelKODisabled_WithProcess_fb_overlap, rKODisabled_WithProcess_overlap.apply(posFbImu_overlap)) + rKODisabled_WithProcess_overlap.apply(linVelFbImu_overlap)
+                linVelKOWithoutWrenchSensors_fb_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_velW_vx', 'KOWithoutWrenchSensors_velW_vy', 'KOWithoutWrenchSensors_velW_vz']].to_numpy() # estimated linear velocity
+                angVelKOWithoutWrenchSensors_fb_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_velW_wx', 'KOWithoutWrenchSensors_velW_wy', 'KOWithoutWrenchSensors_velW_wz']].to_numpy() # estimated angular velocity
+                linVelKOWithoutWrenchSensors_imu_overlap = linVelKOWithoutWrenchSensors_fb_overlap + np.cross(angVelKOWithoutWrenchSensors_fb_overlap, rKOWithoutWrenchSensors_overlap.apply(posFbImu_overlap)) + rKOWithoutWrenchSensors_overlap.apply(linVelFbImu_overlap)
 
                 if(displayLogs):
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKODisabled_WithProcess_overlap[:,0], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='locVelKODisabled_WithProcess_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKODisabled_WithProcess_overlap[:,1], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='locVelKODisabled_WithProcess_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKODisabled_WithProcess_overlap[:,2], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='locVelKODisabled_WithProcess_z'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKOWithoutWrenchSensors_overlap[:,0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='locVelKOWithoutWrenchSensors_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKOWithoutWrenchSensors_overlap[:,1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='locVelKOWithoutWrenchSensors_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelKOWithoutWrenchSensors_overlap[:,2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='locVelKOWithoutWrenchSensors_z'))
 
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKODisabled_WithProcess_imu_overlap[:,0], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='linVel_IMU__KODisabled_WithProcess_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKODisabled_WithProcess_imu_overlap[:,1], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='linVel_IMU_KODisabled_WithProcess_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKODisabled_WithProcess_imu_overlap[:,2], mode='lines', line=dict(color = colors["KODisabled_WithProcess"]), name='linVel_IMU_KODisabled_WithProcess_z'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKOWithoutWrenchSensors_imu_overlap[:,0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='linVel_IMU__KOWithoutWrenchSensors_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKOWithoutWrenchSensors_imu_overlap[:,1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='linVel_IMU_KOWithoutWrenchSensors_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelKOWithoutWrenchSensors_imu_overlap[:,2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='linVel_IMU_KOWithoutWrenchSensors_z'))
 
-                rmse_values['KODisabled_WithProcess'] = computeRMSE(locVelMocap_overlap, locVelKODisabled_WithProcess_overlap, "KODisabled_WithProcess")
-                index_labels.append('KODisabled_WithProcess')
+                rmse_values['KOWithoutWrenchSensors'] = computeRMSE(locVelMocap_overlap, locVelKOWithoutWrenchSensors_overlap, "KOWithoutWrenchSensors")
+                index_labels.append('KOWithoutWrenchSensors')
                 if("Hartley" in estimatorsList):
-                    relative_errors['KODisabled_WithProcess'] = compute_relative_error(rmse_values['KODisabled_WithProcess'], rmse_values['Hartley'])
-                    data.append(np.concatenate([rmse_values['KODisabled_WithProcess'], relative_errors['KODisabled_WithProcess']]))
+                    relative_errors['KOWithoutWrenchSensors'] = compute_relative_error(rmse_values['KOWithoutWrenchSensors'], rmse_values['Hartley'])
+                    data.append(np.concatenate([rmse_values['KOWithoutWrenchSensors'], relative_errors['KOWithoutWrenchSensors']]))
                 else:
-                    data.append(rmse_values['KODisabled_WithProcess'])
+                    data.append(rmse_values['KOWithoutWrenchSensors'])
 
-                rWorldImuKODisabled_WithProcess_overlap = rKODisabled_WithProcess_overlap * rImuFb_overlap.inv()
-                locVelKODisabled_WithProcess_imu_estim = rWorldImuKODisabled_WithProcess_overlap.apply(linVelKODisabled_WithProcess_imu_overlap, inverse=True)
+                rWorldImuKOWithoutWrenchSensors_overlap = rKOWithoutWrenchSensors_overlap * rImuFb_overlap.inv()
+                locVelKOWithoutWrenchSensors_imu_estim = rWorldImuKOWithoutWrenchSensors_overlap.apply(linVelKOWithoutWrenchSensors_imu_overlap, inverse=True)
                 d = {'llve': {}, 'estimate': {}}
-                d['llve'] = {'x': locVelKODisabled_WithProcess_overlap[:, 0], 'y': locVelKODisabled_WithProcess_overlap[:, 1], 'z': locVelKODisabled_WithProcess_overlap[:, 2]}
-                d['estimate'] = {'x': locVelKODisabled_WithProcess_imu_estim[:, 0], 'y': locVelKODisabled_WithProcess_imu_estim[:, 1], 'z': locVelKODisabled_WithProcess_imu_estim[:, 2]}
-                with open(f'{path_to_project}/output_data/KODisabled_WithProcess_loc_vel.pickle', 'wb') as f:
+                d['llve'] = {'x': locVelKOWithoutWrenchSensors_overlap[:, 0], 'y': locVelKOWithoutWrenchSensors_overlap[:, 1], 'z': locVelKOWithoutWrenchSensors_overlap[:, 2]}
+                d['estimate'] = {'x': locVelKOWithoutWrenchSensors_imu_estim[:, 0], 'y': locVelKOWithoutWrenchSensors_imu_estim[:, 1], 'z': locVelKOWithoutWrenchSensors_imu_estim[:, 2]}
+                with open(f'{path_to_project}/output_data/KOWithoutWrenchSensors_loc_vel.pickle', 'wb') as f:
                     pickle.dump(d, f)
 
             if("Vanyte" in estimatorsList):

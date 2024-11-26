@@ -13,9 +13,58 @@ sys.path.append(f'{cwd.parent}')
 sys.path.append(f'{cwd.parent}/paper_results_scripts')
 
 
+# def float_representer(dumper, value):
+#     # Convert the float to a string with high precision for analysis
+#     precise_str = f"{value:.8f}"  # Use a higher precision to detect significant digits
+#     non_zero_index = next((i for i, char in enumerate(precise_str) if char not in {'0', '.'}), None)
+#     if non_zero_index is not None and non_zero_index > 5:
+#         # If the first non-zero digit is after the fourth decimal place, use scientific notation
+#         text = f"{value:.1e}"
+#         print("Case 1")
+#         print(f"precise_str: {precise_str}")
+#         print(f"non_zero_index: {non_zero_index}")
+#         print(f"value: {value}")
+#         print(f"text: {text}")
+#     elif "e" in f"{value:.1e}" or "E" in f"{value:.1e}":
+#         # If the number is already in scientific notation
+#         print("Case 2")
+#         text = f"{value:.1e}"
+#         print(f"value: {value}")
+#         print(f"text: {text}")
+#     else:
+#         print("Case 3")
+#         # Standard float: round to 4 decimal places
+#         text = f"{value:.4f}"
+#         print(f"value: {value}")
+#         print(f"text: {text}")
+    
+#     return dumper.represent_scalar(u'tag:yaml.org,2002:float', text)
+
+
 def float_representer(dumper, value):
-    text = '{0:.4f}'.format(value)
-    return dumper.represent_scalar(u'tag:yaml.org,2002:float', text)
+    # Check if the value is already in scientific notation
+    if "e" in f"{value}":
+        # Format scientific notation with 1 digit after the decimal
+        text = f"{value:.1e}"
+    else:
+        # Convert the float to a string with high precision for analysis
+        precise_str = f"{value:.8f}"  # High precision for detecting non-zero digits
+        non_zero_index = next((i for i, char in enumerate(precise_str) if char not in {'0', '.'}), None)
+        
+        if non_zero_index is not None and non_zero_index > 5:
+            # If the first non-zero digit is after the 4th decimal place
+            text = f"{value:.1e}"
+
+        else:
+            # Standard float: round to 4 decimal places
+            text = f"{value:.4f}"
+            print("Case 3")
+            print(f"value: {value}")
+            print(f"text: {text}")
+    
+    return dumper.represent_scalar(u'tag:yaml.org,2002:str', text)
+
+
 yaml.add_representer(float, float_representer)
 
 import pandas as pd
@@ -37,7 +86,7 @@ estimator_plot_args = {
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-    'KODisabled_WithProcess': {'name': 'KODisabled_WithProcess', 'lineWidth': 2},
+    'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
     'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
 }
 
@@ -73,7 +122,7 @@ def open_pickle(pickle_file):
 
 def plot_relative_error_statistics_as_boxplot(errorStats, colors):    
     f = open('/tmp/relative_errors.yaml', 'w+')
-    yaml.dump(errorStats, f, allow_unicode=True)
+    yaml.dump(errorStats, f, allow_unicode=True, default_flow_style=False)
     fig = go.Figure()
 
     all_categories = sorted({cat for distance in errorStats.values() for estimator in distance.values() for cat in estimator.keys()})
@@ -186,7 +235,6 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
                         else:
                             regroupedErrors[d_subTraj][estimator][cat] = np.concatenate((regroupedErrors[d_subTraj][estimator][cat], data[d_subTraj][cat]))
 
-
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for d_subTraj in regroupedErrors:
         errorStats[d_subTraj] = dict.fromkeys(regroupedErrors[d_subTraj].keys())
@@ -214,7 +262,7 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
 
 def plot_absolute_error_statistics_as_boxplot(errorStats, colors):  
     f = open('/tmp/absolute_errors.yaml', 'w+')
-    yaml.dump(errorStats, f, allow_unicode=True)
+    yaml.dump(errorStats, f, allow_unicode=True, default_flow_style=False)
 
     fig = go.Figure()
 
@@ -403,7 +451,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}', line_color='black"))
+                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}", line_color='black'))
         
     fig.show()
 
@@ -413,7 +461,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
 def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     fig = go.Figure()
     f = open('/tmp/velocity_errors.yaml', 'w+')
-    yaml.dump(errorStats, f, allow_unicode=True)
+    yaml.dump(errorStats, f, allow_unicode=True, default_flow_style=False)
     all_categories = sorted({cat for estimator in errorStats.keys() for cat in errorStats[estimator].keys()})
 
     # Store traces per category for boxplots and velocity plots
@@ -570,6 +618,12 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
             # Compute the Euclidean norm for each sample
             regroupedErrors[estimator][cat]["norm"] = np.linalg.norm(combined, axis=-1)
 
+            components = ['x', 'y']  # Adjust keys as needed
+            combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
+
+            # Compute the Euclidean norm for each sample
+            regroupedErrors[estimator][cat]["velXY_norm"] = np.linalg.norm(combined, axis=-1)
+
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for estimator in estimatorsList:
         errorStats[estimator] = dict.fromkeys(regroupedErrors[estimator].keys())
@@ -613,11 +667,11 @@ def main():
 
     colors = generate_turbo_subset_colors(estimatorsList)
 
-    plot_llve(exps_to_merge, estimatorsList, colors)
+    #plot_llve(exps_to_merge, estimatorsList, colors)
     #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     #plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
-    plot_absolute_errors(exps_to_merge, estimatorsList, colors)
-    plot_relative_errors(exps_to_merge, estimatorsList, colors)
+    #plot_absolute_errors(exps_to_merge, estimatorsList, colors)
+    #plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
     estimators_to_plot = estimatorsList
@@ -627,17 +681,18 @@ def main():
     #plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
 
     
-    #if(len(exps_to_merge) == 1):
-        #import plotContactPoses
-        #plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
+    # if(len(exps_to_merge) == 1):
+    #     import plotContactPoses
+    #     plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
     
-    #if(len(exps_to_merge) == 1):
-    #    import plotExternalForce
-    #    plotExternalForce.plotExternalForce(colors_to_plot, f'Projects/{exps_to_merge[0]}')
+    if(len(exps_to_merge) == 1):
+        import plotExternalForceAndBias
+        #plotExternalForceAndBias.plotGyroBias(colors_to_plot, f'Projects/{exps_to_merge[0]}')
+        plotExternalForceAndBias.plotExtWrench(colors_to_plot, f'Projects/{exps_to_merge[0]}')
     
     import plotAndFormatResults
     #for expe in exps_to_merge:
-       # plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
+        #plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
     
     
     
