@@ -24,18 +24,23 @@ def to_camel_case_with_letters(snake_str):
 
 
 
+# def format_value(value):
+#     """
+#     Formats a float value for LaTeX, ensuring:
+#     1. Negative zero (-0.0000) is replaced with 0.0000 if applicable.
+#     2. The value is rounded to four decimal places.
+#     """
+#     formatted_value = f"{float(value):.4f}"  # Format to 4 decimal places
+#     # Check if the value is effectively zero (e.g., "-0.0000" or "0.0000")
+#     #print(formatted_value.lstrip('-').replace('.', ''))
+#     if all(c in '0' for c in formatted_value.lstrip('-').replace('.', '')):  # Remove minus if all numeric characters are zero
+#         return "0.0000"
+#     return formatted_value
+
+
 def format_value(value):
-    """
-    Formats a float value for LaTeX, ensuring:
-    1. Negative zero (-0.0000) is replaced with 0.0000 if applicable.
-    2. The value is rounded to four decimal places.
-    """
-    formatted_value = f"{float(value):.4f}"  # Format to 4 decimal places
-    # Check if the value is effectively zero (e.g., "-0.0000" or "0.0000")
-    #print(formatted_value.lstrip('-').replace('.', ''))
-    if all(c in '0' for c in formatted_value.lstrip('-').replace('.', '')):  # Remove minus if all numeric characters are zero
-        return "0.0000"
-    return formatted_value
+    return value
+
 
 
 
@@ -58,10 +63,10 @@ scenarioName = input("Please give the name of the experimental scenario:")
 
 absErrorsFilter = {'abs_e_trans_x_y': 'transXY', 'abs_e_trans_z': 'transZ', 'abs_e_tilt': 'tilt', 'abs_e_ypr_0': 'yaw'}
 relErrorsFilter = {'rel_trans_x_y_norm': 'transXY', 'rel_trans_z': 'transZ', 'rel_tilt': 'tilt', 'rel_yaw': 'yaw'}
-velErrorsFilter = {'llve_norm': 'llve', 'estimate_norm': 'estimate'}
+velErrorsFilter = {'velXY_norm': 'xy', 'z': 'z', 'norm': 'norm'}
 
 
-desired_subdistances = [1.0]
+desired_subdistances = ["0.5000"]
 
 
 # Create the LaTeX variables file
@@ -69,12 +74,12 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
     for estimator, cats in velocity_errors.items():
         for cat, metrics in cats.items():
             for var_name, metrics in metrics.items():
-                if(var_name == 'norm'):
+                if(var_name in velErrorsFilter.keys()):
                     for metric, value in metrics.items():
                         if(metric == 'mean' or metric == 'std'):
                             # Construct the variable name
-                            varName = f'{cat}_{var_name}'
-                            snake_case_var = f"{scenarioName}_{estimator}_velError_{velErrorsFilter[varName]}_{metric}"
+                            varName = f'{cat}_{velErrorsFilter[var_name]}'
+                            snake_case_var = f"{scenarioName}_{estimator}_velError_{varName}_{metric}"
                             camel_case_var = to_camel_case_with_letters(snake_case_var)
                             
                             # Ensure the value is properly formatted as a float
