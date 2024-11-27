@@ -1,6 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
+from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px  # For color palette generation
 
@@ -21,8 +22,9 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 
 
 estimator_plot_args = {
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 3},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
+    'GroundTruth': {'name': 'Gound truth', 'lineWidth': 2}
 }
 
 
@@ -44,7 +46,7 @@ def plotGyroBias(colors = None, path = default_path):
         HartleyBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), HartleyBias))
         KineticsBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), KineticsBias))
 
-        withTrueBias = False
+        withTrueBias = True
         if(withTrueBias):
                 trueBias =  observer_data[['NoisySensors_gyro_Accelerometer_bias_x', 'NoisySensors_gyro_Accelerometer_bias_y', 'NoisySensors_gyro_Accelerometer_bias_z']].to_numpy()
                 trueBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), trueBias))
@@ -59,43 +61,214 @@ def plotGyroBias(colors = None, path = default_path):
                 for i,estimator in enumerate(colors.keys()):
                         colors[estimator] = colors_t[i]
 
-        figBias = go.Figure()
+        # Calculate y-axis limits
+        def calculate_limits(*datas):
+                # Finding the axis limits linked to the max spike
+                margin = 0.001
+
+                max_signed_value = 0
+                for data in datas:
+                        # Find the index of the maximum absolute value
+                        max_abs_index = np.argmax(np.abs(data))
+                        # Get the value at this index (with the original sign)
+                        max_sv = data[max_abs_index]
+                        if(np.abs(max_sv) > np.abs(max_signed_value)):
+                                max_signed_value = max_sv
+
+                y_min_spike = max_signed_value * (1 - margin * np.sign(max_signed_value))
+                y_max_spike = max_signed_value * (1 + margin * np.sign(max_signed_value))
+
+                # Finding the axis limits linked to final values
+
+                final_data = [data[-1] for data in datas]
+
+                min_signed_value = min(final_data)
+                max_signed_value = max(final_data)
+
+                # Apply the margin to the min and max signed values
+                y_min_end = min_signed_value * (1 - margin * np.sign(min_signed_value))
+                y_max_end = max_signed_value * (1 + margin * np.sign(max_signed_value))
+
+                return (min(y_min_spike, y_min_end), max(y_max_spike, y_max_end))
+
+        y_limits_x = calculate_limits(HartleyBias[:, 0], KineticsBias[:, 0], trueBias[:, 0])
+        y_limits_y = calculate_limits(HartleyBias[:, 1], KineticsBias[:, 1], trueBias[:, 1])
+        y_limits_z = calculate_limits(HartleyBias[:, 2], KineticsBias[:, 2], trueBias[:, 2])
+
+        # Create the figure
+        figBias = make_subplots(
+        rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.1, x_title='Time (s)',
+        )
+
+        # Add traces for x-axis bias
         color_Hartley = f'rgba({colors["Hartley"][0]}, {colors["Hartley"][1]}, {colors["Hartley"][2]}, 1)'
-        figBias.add_trace(go.Scatter(x=observer_data['t'], y=HartleyBias[:,0], mode='lines', line=dict(color = color_Hartley), name='Hartley_GyroBias_x'))
-        figBias.add_trace(go.Scatter(x=observer_data['t'], y=HartleyBias[:,1], mode='lines', line=dict(color = color_Hartley), name='Hartley_GyroBias_y'))
-        figBias.add_trace(go.Scatter(x=observer_data['t'], y=HartleyBias[:,2], mode='lines', line=dict(color = color_Hartley), name='Hartley_GyroBias_z'))
-
         color_Kinetics = f'rgba({colors["KineticsObserver"][0]}, {colors["KineticsObserver"][1]}, {colors["KineticsObserver"][2]}, 1)'
-        figBias.add_trace(go.Scatter(x=observer_data["t"], y=KineticsBias[:,0], mode='lines', line=dict(color = color_Kinetics), name='KineticsObserver_GyroBias_x'))
-        figBias.add_trace(go.Scatter(x=observer_data["t"], y=KineticsBias[:,1], mode='lines', line=dict(color = color_Kinetics), name='KineticsObserver_GyroBias_y'))
-        figBias.add_trace(go.Scatter(x=observer_data["t"], y=KineticsBias[:,2], mode='lines', line=dict(color = color_Kinetics), name='KineticsObserver_GyroBias_z'))
+        color_Gt = "black"
 
-        if(withTrueBias):
-                figBias.add_trace(go.Scatter(x=observer_data["t"], y=trueBias[:,0], mode='lines', name='True Bias x'))
-                figBias.add_trace(go.Scatter(x=observer_data["t"], y=trueBias[:,1], mode='lines', name='True Bias y'))
-                figBias.add_trace(go.Scatter(x=observer_data["t"], y=trueBias[:,2], mode='lines', name='True Bias z'))
-
+        figBias.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="lines",
+            marker=dict(size=10, color=color_Kinetics),
+            name=f"KineticsObserver"
+        ))
+        figBias.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="lines",
+            marker=dict(size=10, color=color_Gt),
+            name="Ground truth"
+        ))
+        figBias.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="lines",
+            marker=dict(size=10, color=color_Hartley),
+            name=f"RI-EKF"
+        ))
         
-        figBias.update_layout(
-                xaxis_title="Time (s)",
-                yaxis_title="Bias (rad.s-1)",
-                template="plotly_white",
-                legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left",
-                        x=0.01,
-                        orientation='h',
-                        bgcolor = 'rgba(0,0,0,0)',
-                        font = dict(family = 'Times New Roman')
-                        )
-                        
+
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=HartleyBias[:, 0],
+                mode="lines",showlegend= False,
+                line=dict(width=estimator_plot_args["Hartley"]["lineWidth"], color=color_Hartley)
+        ),
+        row=1,
+        col=1,
+        )
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=KineticsBias[:, 0],
+                mode="lines",showlegend= False,
+                line=dict(width=estimator_plot_args["KineticsObserver"]["lineWidth"], color=color_Kinetics)
+        ),
+        row=1,
+        col=1,
+        )
+        if withTrueBias:
+                figBias.add_trace(
+                        go.Scatter(
+                        x=observer_data["t"],
+                        y=trueBias[:, 0],
+                        line=dict(width=estimator_plot_args["GroundTruth"]["lineWidth"], color=color_Gt),
+                        mode="lines",showlegend= False,
+                        ),
+                        row=1,
+                        col=1,
                 )
 
-        # Show the plotly figure
+        # Add traces for y-axis bias
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=HartleyBias[:, 1],
+                mode="lines",showlegend= False,
+                line=dict(width=estimator_plot_args["Hartley"]["lineWidth"], color=color_Hartley),
+        ),
+        row=2,
+        col=1,
+        )
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=KineticsBias[:, 1],
+                mode="lines",showlegend= False,
+                line=dict(width=estimator_plot_args["KineticsObserver"]["lineWidth"], color=color_Kinetics),
+        ),
+        row=2,
+        col=1,
+        )
+        if withTrueBias:
+                figBias.add_trace(
+                        go.Scatter(
+                        x=observer_data["t"],
+                        y=trueBias[:, 1],
+                        line=dict(width=estimator_plot_args["GroundTruth"]["lineWidth"], color=color_Gt),showlegend= False,
+                        mode="lines",
+                        ),
+                        row=2,
+                        col=1,
+        )
+
+        # Add traces for z-axis bias
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=HartleyBias[:, 2],
+                mode="lines",showlegend= False,
+                line=dict(width=estimator_plot_args["Hartley"]["lineWidth"], color=color_Hartley),
+        ),
+        row=3,
+        col=1,
+        )
+        figBias.add_trace(
+        go.Scatter(
+                x=observer_data["t"],
+                y=KineticsBias[:, 2],
+                mode="lines",
+                showlegend= False,
+                line=dict(width=estimator_plot_args["KineticsObserver"]["lineWidth"], color=color_Kinetics),
+        ),
+        row=3,
+        col=1,
+        )
+        if withTrueBias:
+                figBias.add_trace(
+                        go.Scatter(
+                        x=observer_data["t"],
+                        y=trueBias[:, 2],
+                        line=dict(width=estimator_plot_args["GroundTruth"]["lineWidth"], color=color_Gt), showlegend= False,
+                        mode="lines",
+                        ),
+                        row=3,
+                        col=1,
+                )
+
+        
+
+        # Apply calculated y-axis limits
+        figBias.update_yaxes(range=y_limits_x, row=1, col=1)
+        figBias.update_yaxes(range=y_limits_y, row=2, col=1)
+        figBias.update_yaxes(range=y_limits_z, row=3, col=1)
+
+        # Update layout
+        figBias.update_layout(
+                template="plotly_white",
+                legend=dict(
+                        yanchor="bottom",
+                        y=1.06,
+                        xanchor="left",
+                        x=0.01,
+                        orientation="h",
+                        bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="Times New Roman"),
+                ),
+                font = dict(family = 'Times New Roman'),
+                yaxis=dict(
+                        title=dict(text="Bias x (rad.s⁻¹)", standoff=20),  # Add spacing for alignment
+                ),
+                yaxis2=dict(
+                        title=dict(text="Bias y (rad.s⁻¹)", standoff=20),
+                ),
+                yaxis3=dict(
+                        title=dict(text="Bias z (rad.s⁻¹)", standoff=20),
+                ),
+                margin=dict(l=0.0,r=0.0,b=0.0,t=0.0)
+                ,autosize=True  # Automatically adjusts the figure size
+        )
+
+        figBias.update_yaxes(
+                dtick=0.01,        # Set interval between tick marks
+                row=2, col=1
+        )
+        
+        # Show the plot
         figBias.show()
 
-
+        figBias.write_image(f'/tmp/biases.pdf')
 
 
 
@@ -333,7 +506,6 @@ def plotExtWrench(colors = None, path = default_path):
                         x=0.01,
                         bgcolor='rgba(0,0,0,0)',
                 ),
-                margin=dict(l=0,r=0,b=0,t=0),
                 font = dict(family = 'Times New Roman')
                 )
 
