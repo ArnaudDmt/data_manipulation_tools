@@ -15,7 +15,7 @@ default_path = '.../Projects/HRP5_MultiContact_1'
 
 
 contactNames = ["RightFootForceSensor"] #, "LeftFootForceSensor", "LeftHandForceSensor"] # ["RightFootForceSensor", "LeftFootForceSensor", "LeftHandForceSensor"]
-contactNames2 = ["LeftHandForceSensor"]
+contacts_area_when_set = [] # ["LeftHandForceSensor"]
 
 contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor": "Left foot", "LeftHandForceSensor": "Left hand"}
 
@@ -273,6 +273,9 @@ def plotGyroBias(colors = None, path = default_path):
 
 
 def plotExtWrench(colors = None, path = default_path):
+        figForces = make_subplots(
+        rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1, x_title='Time (s)',
+        )
         if(colors == None):
                 # Generate color palette for the estimators
                 colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
@@ -282,6 +285,7 @@ def plotExtWrench(colors = None, path = default_path):
                 for i,estimator in enumerate(colors.keys()):
                         colors[estimator] = colors_t[i]
 
+        print(colors)
 
         #observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
         observer_data = pd.read_csv(f'{path}/output_data/logReplay.csv',  delimiter=';')
@@ -302,11 +306,14 @@ def plotExtWrench(colors = None, path = default_path):
                         colors[estimator] = (r, g, b, 1) 
         
                 return colors
+        
+        color_Kinetics = f'rgba({colors["KineticsObserver"][0]}, {colors["KineticsObserver"][1]}, {colors["KineticsObserver"][2]}, 1)'
+        color_Gt = f'rgba({colors["Mocap"][0]}, {colors["Mocap"][1]}, {colors["Mocap"][2]}, 1)'
 
-        colors2 = generate_turbo_subset_colors('rainbow', contactNames2)
+        colors2 = generate_turbo_subset_colors('rainbow', contacts_area_when_set)
 
         contactLegendPlots = []
-        for contactName2 in contactNames2:
+        for contactName2 in contacts_area_when_set:
                 is_set_mask = observer_data[f"Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_{contactName2}"] == "Set"
                 #contact_state = [encoders_data[f"Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_{contactName2}"]  for _ in iterations]
                 # Identify "Set" regions
@@ -359,8 +366,8 @@ def plotExtWrench(colors = None, path = default_path):
 
 
         figForceX.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_x"], mode='lines', name='Estimated force'))
-        figForceX.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_fx"], mode='lines', name='Ground truth'))
-        for k, cont2 in enumerate(contactNames2):
+        figForceX.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_x"], mode='lines', name='Ground truth'))
+        for k, cont2 in enumerate(contacts_area_when_set):
                 figForceX.add_trace(contactLegendPlots[k])
 
         y_min = min(
@@ -408,12 +415,12 @@ def plotExtWrench(colors = None, path = default_path):
         
 
         # Show the plotly figure
-        figForceX.show()
+        #figForceX.show()
 
         figForceY = go.Figure()
 
         figForceY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_y"], mode='lines', name='Estimated force'))
-        figForceY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_fy"], mode='lines', name='Ground truth'))
+        figForceY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_y"], mode='lines', name='Ground truth'))
 
         y_min = min(
                 np.min(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_y"]),
@@ -431,7 +438,7 @@ def plotExtWrench(colors = None, path = default_path):
                 range=[y_min, y_max]
             )
 
-        for k, cont2 in enumerate(contactNames2):
+        for k, cont2 in enumerate(contacts_area_when_set):
                 figForceY.add_trace(contactLegendPlots[k])
 
         figForceY.update_layout(
@@ -460,14 +467,10 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        figForceY.show()
+        #figForceY.show()
 
-        figForceZ = go.Figure()
-
-        figForceZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_z"], mode='lines', name='Estimated force'))
-        figForceZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_fz"], mode='lines', name='Ground truth'))
-        for k, cont2 in enumerate(contactNames2):
-                figForceZ.add_trace(contactLegendPlots[k])
+        figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_z"], marker=dict(color=color_Kinetics), mode='lines', showlegend= False, name='Estimated force'), row = 1, col = 1)
+        figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_z"], marker=dict(color=color_Gt), showlegend= False, mode='lines', name='Ground truth'), row = 1, col = 1)
 
         y_min = min(
                 np.min(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_z"]),
@@ -480,45 +483,45 @@ def plotExtWrench(colors = None, path = default_path):
 
         y_min = y_min - max_abs * 0.1
         y_max = y_max + max_abs * 0.1
+
+
+        # Apply calculated y-axis limits
+        #figForces.update_yaxes(range=(y_min, y_max), row=1, col=1)
         
-        figForceZ.update_yaxes(
-                range=[y_min, y_max]
-            )
+        
+        # figForceZ.update_yaxes(
+        #         range=[y_min, y_max]
+        #     )
 
-        figForceZ.update_layout(
-                shapes=shapes,
-                xaxis_title="Time (s)",
-                yaxis_title="Force Z (N)",
-                template="plotly_white",
-                legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left",
-                        x=0.01,
-                        orientation='h',
-                        bgcolor = 'rgba(0,0,0,0)',
-                        font = dict(family = 'Times New Roman')
-                        ),
-                legend2=dict(
-                        yanchor="top",
-                        y=0.92,
-                        xanchor="left",
-                        x=0.01,
-                        bgcolor='rgba(0,0,0,0)',
-                ),
-                font = dict(family = 'Times New Roman')
-                )
+        # figForceZ.update_layout(
+        #         shapes=shapes,
+        #         xaxis_title="Time (s)",
+        #         yaxis_title="Force Z (N)",
+        #         template="plotly_white",
+        #         legend=dict(
+        #                 yanchor="top",
+        #                 y=1.03,
+        #                 xanchor="left",
+        #                 x=0.01,
+        #                 orientation='h',
+        #                 bgcolor = 'rgba(0,0,0,0)',
+        #                 font = dict(family = 'Times New Roman')
+        #                 ),
+        #         legend2=dict(
+        #                 yanchor="top",
+        #                 y=0.92,
+        #                 xanchor="left",
+        #                 x=0.01,
+        #                 bgcolor='rgba(0,0,0,0)',
+        #         ),
+        #         margin=dict(l=0,r=0,b=0,t=0),
+        #         font = dict(family = 'Times New Roman')
+        #         )
 
-        # Show the plotly figure
-        figForceZ.show()
+        
 
-
-        figTorqueX = go.Figure()
-
-        figTorqueX.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_x"], mode='lines', name='Estimated Torque'))
-        figTorqueX.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_cx"], mode='lines', name='Ground truth'))
-        for k, cont2 in enumerate(contactNames2):
-                figTorqueX.add_trace(contactLegendPlots[k])
+        figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_x"], marker=dict(color=color_Kinetics), showlegend= False, mode='lines'), row = 2, col = 1)
+        figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_x"], marker=dict(color=color_Gt), showlegend= False, mode='lines'), row = 2, col = 1)
 
         y_min = min(
                 np.min(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_x"]),
@@ -532,43 +535,32 @@ def plotExtWrench(colors = None, path = default_path):
         y_min = y_min - max_abs * 0.1
         y_max = y_max + max_abs * 0.1
         
-        figTorqueX.update_yaxes(
-                range=[y_min, y_max]
-            )
+        #figForces.update_yaxes(range=(y_min, y_max), row=2, col=1)
         
-        figTorqueX.update_layout(
-                shapes=shapes,
-                xaxis_title="Time (s)",
-                yaxis_title="Torque X (N.m)",
-                template="plotly_white",
-                legend=dict(
-                        yanchor="top",
-                        y=0.99,
-                        xanchor="left",
-                        x=0.01,
-                        orientation='h',
-                        bgcolor = 'rgba(0,0,0,0)',
-                        font = dict(family = 'Times New Roman')
-                        ),
-                legend2=dict(
-                        yanchor="top",
-                        y=0.92,
-                        xanchor="left",
-                        x=0.01,
-                        bgcolor='rgba(0,0,0,0)',
-                ),
-                margin=dict(l=0,r=0,b=0,t=0),
-                font = dict(family = 'Times New Roman')
-                )
+        # figForces.update_yaxes(
+        #         range=[y_min, y_max]
+        #     )
 
-        # Show the plotly figure
-        figTorqueX.show()
+        # figTorqueX.add_annotation(
+        #         x=0.9,
+        #         y=0.9,
+        #         xref="x domain",
+        #         yref="y domain",
+        #         text="STD:",
+        #         font=dict(
+        #         family="Times New Roman",
+        #         size=16,
+        #         color="black"
+        #         ),
+        #         bgcolor="rgba(0,0,0,0)",
+        #         )
+
 
         figTorqueY = go.Figure()
 
-        figTorqueY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_y"], mode='lines', name='Estimated Torque'))
-        figTorqueY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_cy"], mode='lines', name='Ground truth'))
-        for k, cont2 in enumerate(contactNames2):
+        figTorqueY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_y"], mode='lines', name='Estimated torque'))
+        figTorqueY.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_y"], mode='lines', name='Ground truth'))
+        for k, cont2 in enumerate(contacts_area_when_set):
                 figTorqueY.add_trace(contactLegendPlots[k])
 
         y_min = min(
@@ -613,13 +605,13 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        figTorqueY.show()
+        #figTorqueY.show()
 
         figTorqueZ = go.Figure()
 
-        figTorqueZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_z"], mode='lines', name='Estimated Torque'))
-        figTorqueZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["LeftHandForceSensor_cz"], mode='lines', name='Ground truth'))
-        for k, cont2 in enumerate(contactNames2):
+        figTorqueZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_z"], mode='lines', name='Estimated torque'))
+        figTorqueZ.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_z"], mode='lines', name='Ground truth'))
+        for k, cont2 in enumerate(contacts_area_when_set):
                 figTorqueZ.add_trace(contactLegendPlots[k])
 
         y_min = min(
@@ -664,7 +656,51 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        figTorqueZ.show()
+        #figTorqueZ.show()
+        
+        
+
+        figForces.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="lines",
+            marker=dict(size=10, color=color_Kinetics),
+            name=f"Estimated wrench"
+        ))
+
+        figForces.add_trace(go.Scatter(
+            x=[None],  # Dummy x value
+            y=[None],  # Dummy y value
+            mode="lines",
+            marker=dict(size=10, color=color_Gt),
+            name="Ground truth"
+        ))
+        
+
+        figForces.update_layout(
+                template="plotly_white",
+                legend=dict(
+                        yanchor="bottom",
+                        y=1.06,
+                        xanchor="left",
+                        x=0.01,
+                        orientation="h",
+                        bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="Times New Roman"),
+                ),
+                font = dict(family = 'Times New Roman'),
+                yaxis=dict(
+                        title=dict(text="Force Z (N)", standoff=20),  # Add spacing for alignment
+                ),
+                yaxis2=dict(
+                        title=dict(text="Torque X (N.m)", standoff=20),
+                ),
+                margin=dict(l=0.0,r=0.0,b=0.0,t=0.0)
+                ,autosize=True  # Automatically adjusts the figure size
+        )
+
+        figForces.show()
+        figForces.write_image(f'/tmp/extForces.pdf')
 
 
 if __name__ == '__main__':
