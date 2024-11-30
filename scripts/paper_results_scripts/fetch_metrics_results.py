@@ -66,7 +66,10 @@ relErrorsFilter = {'rel_trans_x_y_norm': 'transXY', 'rel_trans_z': 'transZ', 're
 velErrorsFilter = {'velXY_norm': 'xy', 'z': 'z', 'norm': 'norm'}
 
 
-desired_subdistances = ["0.5000"]
+desired_subdistances = []
+desired_subdistances.append(input("Please give the desired subdistance length:"))
+
+#desired_subdistances = ["0.5000"]
 
 
 # Create the LaTeX variables file
