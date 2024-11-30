@@ -53,12 +53,12 @@ estimator_plot_args_default = {
     'Controller': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
     #'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_pose_tx', 'Vanyte_pose_ty']},
     'Hartley': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
-    'KineticsObserver': {'group': 0, 'lineWidth': 2, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
+    'KineticsObserver': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
     'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
     #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
-    'Mocap': {'group': 0, 'lineWidth': 2, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
+    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
 }
 
 
@@ -293,11 +293,11 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         max_x_abs = max(np.abs(x_min), np.abs(x_max))
         max_y_abs = max(np.abs(y_min), np.abs(y_max))
 
-        x_min = x_min - max_x_abs * 0.1
-        x_max = x_max + max_x_abs * 0.1
+        x_min = x_min - max_x_abs * 0.01
+        x_max = x_max + max_x_abs * 0.01
 
-        y_min = y_min - max_y_abs * 0.1
-        y_max = y_max + max_y_abs * 0.1
+        y_min = y_min - max_y_abs * 0.01
+        y_max = y_max + max_y_abs * 0.01
 
         # Update layout
         fig.update_layout(
@@ -330,6 +330,9 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
             range=[y_min, y_max],
             autorange=False
         )
+        print(f'(x_min, x_max): {(x_min, x_max)}')
+        print(f'(y_min, y_max): {(y_min, y_max)}')
+
         fig.write_image(f'/tmp/trajectories_{group}.pdf')
 
     
