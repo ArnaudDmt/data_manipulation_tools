@@ -680,10 +680,9 @@ def main():
     colors_to_plot["Mocap"] = [0, 0, 0]
     #plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
 
-    
-    # if(len(exps_to_merge) == 1):
-    #     import plotContactPoses
-    #     plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
+    if(len(exps_to_merge) == 1):
+        import plotPoseAndVelocity
+        #plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
     
     if(len(exps_to_merge) == 1):
         import plotExternalForceAndBias
