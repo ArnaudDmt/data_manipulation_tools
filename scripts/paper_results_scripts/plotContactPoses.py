@@ -75,7 +75,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     if(estimators_to_plot == None):
         estimators_to_plot = estimatorsPoses.keys()
     else:
-        estimators_to_plot = list(set(estimators_to_plot).intersection(estimatorsPoses.keys()))
+        #estimators_to_plot = list(set(estimators_to_plot).intersection(estimatorsPoses.keys()))
+        estimators_to_plot = [x for x in estimators_to_plot if x in estimatorsPoses]
 
     if(colors == None):
         # Generate color palette for the estimators

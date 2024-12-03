@@ -79,14 +79,14 @@ from copy import deepcopy
 import argparse
 
 estimator_plot_args = {
-    'Controller': {'name': 'Control', 'lineWidth': 2},
-    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
     'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 3},
+    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
-    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
     'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
+    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
+    'Controller': {'name': 'Control', 'lineWidth': 2},
     'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
 }
 
@@ -451,7 +451,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}", line_color='black'))
+                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}", line_color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"))
         
     fig.show()
 
@@ -549,7 +549,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 y=values,
                 mode='lines',
                 name=f"{estimator_plot_args['Mocap']['name']} ({axis})",  # Include the axis name in the legend
-                line=dict(width=estimator_plot_args['Mocap']['lineWidth'], color='black'),
+                line=dict(width=estimator_plot_args['Mocap']['lineWidth'], color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"),
                 visible=False  # Initially not visible
             )
 
@@ -664,8 +664,11 @@ def main():
 
     estimatorsList = [d for d in os.listdir(f"Projects/{exps_to_merge[0]}/output_data/evals/") 
                   if os.path.isdir(f"Projects/{exps_to_merge[0]}/output_data/evals/{d}")]
+    if "KineticsObserver" in estimatorsList:
+        estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
 
-    colors = generate_turbo_subset_colors(estimatorsList)
+    estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
+    colors = generate_turbo_subset_colors(estimatorsList + ["Mocap"])
 
     #plot_llve(exps_to_merge, estimatorsList, colors)
     #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)

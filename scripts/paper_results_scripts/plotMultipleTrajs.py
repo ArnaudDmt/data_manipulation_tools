@@ -50,10 +50,10 @@ default_estimators = [
 
 # Define columns for each estimator
 estimator_plot_args_default = {
+    'KineticsObserver': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
     'Controller': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
     #'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_pose_tx', 'Vanyte_pose_ty']},
     'Hartley': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
-    'KineticsObserver': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
     'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
@@ -188,7 +188,8 @@ def plot_multiple_trajs_per_expe(estimators, exps, colors, estimator_plot_args =
 
 
 def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):
-    estimators = list(set(estimators).intersection(estimator_plot_args_default.keys()))
+    #estimators = list(set(estimators).intersection(estimator_plot_args_default.keys()))
+    estimators = [x for x in estimators if x in estimator_plot_args_default]
 
     for estimatorName in estimators:
         estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
@@ -230,7 +231,8 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         xmaxs = []
         ymins = []
         ymaxs = []
-        combined_estimators = all_groups[group]["estimators"] + all_groups[0]["estimators"]
+        combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
+        combined_estimators = sorted(combined_estimators, key=estimators.index)
         for estimator in combined_estimators:
             for e in range(len(exps)):
                 xmins.append(min(xys[estimator][e][0]))
@@ -248,7 +250,8 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
     
     for group in list(filter(lambda x: x != 0, all_groups.keys())):
         fig = go.Figure()
-        combined_estimators = all_groups[group]["estimators"] + all_groups[0]["estimators"]
+        combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
+        combined_estimators = sorted(combined_estimators, key=estimators.index)
         for estimator in combined_estimators:
             estimatorName = estimator_plot_args[estimator]["name"]
             color = colors[estimator]
