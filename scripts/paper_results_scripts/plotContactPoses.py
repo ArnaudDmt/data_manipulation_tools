@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px  # For color palette generation
+import plotly.express as px  # For colorKinetics palette generation
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 
@@ -79,8 +79,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
         estimators_to_plot = [x for x in estimators_to_plot if x in estimatorsPoses]
 
     if(colors == None):
-        # Generate color palette for the estimators
-        colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
+        # Generate colorKinetics palette for the estimators
+        colors_t = px.colors.qualitative.Plotly  # Use Plotly's colorKinetics palette
         colors_t = [px.colors.hex_to_rgb(colors_t[i]) for i in range(len(estimators_to_plot))]
         colors = dict.fromkeys(estimators_to_plot)
         
@@ -100,8 +100,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     shapes = []
 
     for estimatorName in estimators_to_plot:
-        color = colors[estimatorName]
-        color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
+        colorEst = colors[estimatorName]
+        colorEst = f'rgba({colorEst[0]}, {colorEst[1]}, {colorEst[2]}, 1)'
 
         for contactName in fbContactPoses.keys():
             # Create a boolean mask based on whether the contact state is "set"
@@ -159,7 +159,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,1], mode='lines', name=f'{estimatorName} | {contactName}: pitch'))
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', name=f'{estimatorName} | {contactName}: yaw'))
 
-            fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=color, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
+            fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=colorEst, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
 
             list_without_nan = [x for x in worldContactOri_euler[index_range[0]:index_range[1],2] if str(x) != 'nan']
             y_mins.append(np.min(list_without_nan))
@@ -199,7 +199,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
         if start is not None:
             set_regions.append((start, observer_data["t"][iterations[-1]]))
 
-        # Assign color for the current contact
+        # Assign colorKinetics for the current contact
         fillcolor2 = colors2[contactName2]
         fillcolor2 = f'rgba({fillcolor2[0]}, {fillcolor2[1]}, {fillcolor2[2]}, 0.3)'
 
@@ -326,8 +326,8 @@ def plotContactRestPoses(colors = None, path = default_path):
     observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
 
     if(colors == None):
-        # Generate color palette for the estimators
-        colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
+        # Generate colorKinetics palette for the estimators
+        colors_t = px.colors.qualitative.Plotly  # Use Plotly's colorKinetics palette
         colors_t = [px.colors.hex_to_rgb(colors_t[0])]
         colors = dict.fromkeys("KineticsObserver")
         
@@ -347,11 +347,12 @@ def plotContactRestPoses(colors = None, path = default_path):
 
     iterations = range(index_range[0], index_range[1])
     shapes = []
-
-    kineticsName = "KineticsObserver"
     
-    color = colors[kineticsName]
-    color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
+    colorKinetics = colors["KineticsObserver"]
+    colorKinetics = f'rgba({colorKinetics[0]}, {colorKinetics[1]}, {colorKinetics[2]}, 1)'
+
+    colorMocap = colors["Mocap"]
+    colorMocap = f'rgba({colorMocap[0]}, {colorMocap[1]}, {colorMocap[2]}, 1)'
 
     for contactName in restContactPoses.keys():
         # Create a boolean mask based on whether the contact state is "set"
@@ -364,7 +365,7 @@ def plotContactRestPoses(colors = None, path = default_path):
         # Replace invalid quaternion rows with a default identity quaternion [0, 0, 0, 1]
         default_quat = [0, 0, 0, 1]
 
-        ori_quat = encoders_data[
+        ori_quat_fbContact = encoders_data[
             [f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_inputUserContactKine_orientation_x', 
             f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_inputUserContactKine_orientation_y', 
             f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_inputUserContactKine_orientation_z', 
@@ -372,12 +373,12 @@ def plotContactRestPoses(colors = None, path = default_path):
         ].to_numpy()
 
         # Replace invalid quaternions where isSet is "unset"
-        ori_quat[~is_set_mask] = default_quat
+        ori_quat_fbContact[~is_set_mask] = default_quat
 
         # Use `from_quat` on the full array
-        orientations = R.from_quat(ori_quat)
+        orientations = R.from_quat(ori_quat_fbContact)
 
-        fbContactPoses[contactName]["orientation"] = R.from_quat(ori_quat).inv()
+        
 
         mocapPose = {'pos': observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy(), \
                                     'ori': R.from_quat(observer_data[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy())
@@ -387,8 +388,9 @@ def plotContactRestPoses(colors = None, path = default_path):
         worldFbPos_mocap = mocapPose['pos']
         worldFbOri_R_mocap = mocapPose['ori']
 
-        worldContactPoses_mocap = dict.fromkeys(contactNames)
+        worldContactPoses_mocap = dict.fromkeys(contactNames_restPoses)
 
+        fbContactPoses[contactName]["orientation"] = R.from_quat(ori_quat_fbContact).inv()
         worldContactPoses_mocap[contactName] = {"position": None, "orientation": None}
         worldContactPoses_mocap[contactName]["position"] = worldFbPos_mocap + worldFbOri_R_mocap.apply(fbContactPoses[contactName]["position"])
         worldContactPoses_mocap[contactName]["orientation"] = worldFbOri_R_mocap * fbContactPoses[contactName]["orientation"]
@@ -408,7 +410,14 @@ def plotContactRestPoses(colors = None, path = default_path):
         # Replace invalid quaternion rows with a default identity quaternion [0, 0, 0, 1]
         default_quat = [0, 0, 0, 1]
 
-        ori_quat = encoders_data[
+        ori_quat_KO_rest_init = encoders_data[
+            [f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_initKine_ori_x', 
+            f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_initKine_ori_y', 
+            f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_initKine_ori_z', 
+            f'Observers_MainObserverPipeline_MCKineticsObserver_debug_contactKine_{contactName}_initKine_ori_w']
+        ].to_numpy()
+
+        ori_quat_KO_rest = encoders_data[
             [f'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_contact_{contactName}_orientation_x', 
             f'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_contact_{contactName}_orientation_y', 
             f'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_contact_{contactName}_orientation_z', 
@@ -416,25 +425,33 @@ def plotContactRestPoses(colors = None, path = default_path):
         ].to_numpy()
 
         # Replace invalid quaternions where isSet is "unset"
-        ori_quat[~is_set_mask] = default_quat
+        ori_quat_KO_rest[~is_set_mask] = default_quat
 
-        restContactPoses[contactName]["orientation"] = R.from_quat(ori_quat).inv()
+        restContactPoses[contactName]["orientation"] = R.from_quat(ori_quat_KO_rest).inv()
         restContactOri_euler = restContactPoses[contactName]["orientation"].as_euler('xyz', degrees=True)
 
         restContactPoses[contactName]["position"][~is_set_mask] = None
         restContactOri_euler[~is_set_mask] = None
 
-
+        # Track previous state
+        for i in range(1, len(is_set_mask)):
+            if is_set_mask[i]:
+                # Detect transition from unset to set
+                if not is_set_mask[i - 1]:
+                    # Update the previous value with ori_quat_KO_rest_init
+                    ori = R.from_quat(ori_quat_KO_rest_init[i]).inv()
+                    restContactOri_euler[i - 1] = ori.as_euler('xyz', degrees=True)
+            else:
+                restContactOri_euler[i] = None  # Keep None for unset states
         
 
-        for i in range(len(restContactPoses[contactName]["position"])):
-            print(i)
-            if i % 100 == 0:
-                pos = restContactPoses[contactName]["position"][i]
+        # for i in range(len(restContactPoses[contactName]["position"])):
+        #     if i % 100 == 0:
+        #         pos = restContactPoses[contactName]["position"][i]
                 
-                yaw = restContactOri_euler[i,2]
-                surface = create_surface(pos, yaw)
-                fig3d.add_trace(surface)
+        #         yaw = restContactOri_euler[i,2]
+        #         surface = create_surface(pos, yaw)
+        #         fig3d.add_trace(surface)
 
 
         # Find indices within the time range
@@ -443,11 +460,11 @@ def plotContactRestPoses(colors = None, path = default_path):
         # Find the index of the closest yaw to zero in the time range
         closest_to_zero_index = time_range_indices[0] + np.argmin(np.abs(restContactOri_euler[time_range_indices[0]:time_range_indices[1], 2]))
 
-        fig.add_vline(
-            x=observer_data["t"][closest_to_zero_index], 
-            line=dict(color="red", dash="dash"), 
-            name="Closest Yaw = 0"
-        )
+        # fig.add_vline(
+        #     x=observer_data["t"][closest_to_zero_index], 
+        #     line=dict(color="red", dash="dash"), 
+        #     name="Closest Yaw = 0"
+        # )
 
 
         # fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactPoses[contactName]["position"][:,0], mode='lines', name=f'Kinetics Observer | {contactName}: position x'))
@@ -457,14 +474,167 @@ def plotContactRestPoses(colors = None, path = default_path):
         # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactPoses_mocap[contactName]["position"][:,1], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: position y'))
         #fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactPoses_mocap[contactName]["position"][:,2], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: position z'))
         
-        fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', name=f'Kinetics Observer | {contactName}: roll'))
+        #fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', name=f'Kinetics Observer | {contactName}: roll'))
         #fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,1], mode='lines', name=f'Kinetics Observer | {contactName}: pitch'))
-        fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,2], mode='lines', name=f'Kinetics Observer | {contactName}: yaw'))
-        fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: roll'))
+        #fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,2], mode='lines', name=f'Kinetics Observer | {contactName}: yaw'))
+        #fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: roll'))
         #fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,1], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: pitch'))
         #fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,2], mode='lines', line=dict(color="black"), name=f'MoCap | {contactName}: yaw'))
 
-        #fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,2], mode='lines', line=dict(color=color, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
+        #fig.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,2], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
+
+        iter_start = 3000
+        iter_end = 4600
+
+        traceKO = go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), name=f'Kinetics Observer')
+        traceMocap = go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']), name=f'Motion Capture')
+        traceInset_KO = go.Scatter(
+                        x=observer_data["t"][iter_start:iter_end], 
+                        y=restContactOri_euler[iter_start:iter_end,0], 
+                        line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), 
+                        mode='lines',
+                        showlegend= False,
+                        xaxis='x2',
+                        yaxis='y2'
+                    )
+        traceInset_Mocap = go.Scatter(
+                        x=observer_data["t"][iter_start:iter_end], 
+                        y=worldContactOri_mocap_euler[iter_start:iter_end,0], 
+                        line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']),
+                        xaxis='x2',
+                        showlegend= False,
+                        yaxis='y2'
+                    )
+        x_interval = [t for t, is_set in zip(observer_data["t"][iter_start:iter_end], is_set_mask[iter_start:iter_end]) if is_set]
+        traceInset_real = go.Scatter(
+                        x = observer_data["t"][iter_start+50:iter_end-50],
+                        y= - 19.7 * np.ones(len(observer_data["t"][iter_start:iter_end])), 
+                        line=dict(color="green", width = 2),
+                        name='Actual Roll',
+                        xaxis='x2',
+                        yaxis='y2'
+                    )
+        
+        minY2 = np.min(list(filter(lambda v: v==v, restContactOri_euler[iter_start:iter_end:,0] -1)))
+        maxY2 = np.max(list(filter(lambda v: v==v, worldContactOri_mocap_euler[iter_start:iter_end:,0] +1)))
+
+        rect_x_start_main = observer_data["t"][iter_start]
+        rect_x_end_main = observer_data["t"][iter_end]
+        rect_y_start_main = minY2
+        rect_y_end_main = maxY2
+
+        rect_x_start_inset = 0.5  # Domain start for xaxis2
+        rect_x_end_inset = 0.8    # Domain end for xaxis2
+        rect_y_start_inset = 0.1  # Domain start for yaxis2
+        rect_y_end_inset = 0.40    # Domain end for yaxis2
+
+
+        data = [traceKO, traceMocap, traceInset_KO, traceInset_Mocap, traceInset_real]
+
+        zoom_lines = [
+            dict(type="line", xref="x", yref="y", x0=rect_x_end_main, y0=rect_y_start_main, x1=observer_data["t"][5200], y1=-24.7, line=dict(color="black", width=1, dash="dot")),
+            dict(type="line", xref="x", yref="y", x0=rect_x_end_main, y0=rect_y_end_main, x1=observer_data["t"][5140], y1=-6, line=dict(color="black", width=1, dash="dot")),
+        ]
+        
+        layout = go.Layout(
+                plot_bgcolor= "rgba(0,0,0,0)", 
+                paper_bgcolor= "rgba(0,0,0,0)",
+                legend=dict(
+                        yanchor="bottom",
+                        y=1.00,
+                        xanchor="left",
+                        x=0.01,
+                        orientation="h",
+                        bgcolor="rgba(0,0,0,0)",
+                        font=dict(family="Times New Roman"),
+                ),
+                # plot_bgcolor='rgba(0, 0, 0, 0)',
+                # paper_bgcolor='rgba(0, 0, 0, 0)',
+                margin=dict(l=0,r=0,b=0,t=0),
+                font = dict(family = 'Times New Roman'),
+                xaxis=dict(  # Primary x-axis configuration
+                        title="Time (s)",
+                        gridcolor= 'lightgrey', 
+                        gridwidth= 3,
+                    ),
+                yaxis=dict(  # Primary y-axis configuration
+                        title="Roll (°)",
+                        gridcolor= 'lightgrey',
+                        gridwidth= 3,
+                        zerolinecolor= 'lightgrey',
+                    ),
+                xaxis2=dict(  # Inset x-axis configuration
+                        domain=[rect_x_start_inset, rect_x_end_inset],
+                        range=[rect_x_start_main, rect_x_end_main],
+                        anchor="y2",
+                        gridcolor= 'lightgrey',
+                    ),
+                yaxis2=dict(  # Inset y-axis configuration
+                        domain=[rect_y_start_inset, rect_y_end_inset],
+                        range=[rect_y_start_main, rect_y_end_main],
+                        anchor="x2",
+                        gridcolor= 'lightgrey',
+                        
+                    ),
+                shapes=[
+                    # Rectangle for the inset area
+                    dict(
+                        type="rect",
+                        xref="x",  # Reference to the primary x-axis
+                        yref="y",  # Reference to the primary y-axis
+                        x0=rect_x_start_main,
+                        x1=rect_x_end_main,
+                        y0=rect_y_start_main,
+                        y1=rect_y_end_main,
+                        line=dict(
+                            color="black",  # Border color of the rectangle
+                            width=2,
+                        ),
+                    ),
+                    # Rectangle for the inset plot itself
+                    dict(
+                        type="rect",
+                        #fillcolor="white",
+                        xref="paper",  # Reference to the figure's paper coordinates
+                        yref="paper",  # Reference to the figure's paper coordinates
+                        x0=rect_x_start_inset - 0.04,
+                        x1=rect_x_end_inset + 0.03,
+                        y0=rect_y_start_inset - 0.05,
+                        y1=rect_y_end_inset + 0.04,
+                        line=dict(
+                            color="black",  # Border color for the inset plot
+                            width=2,
+                        ),
+                    ),
+                ] + zoom_lines ,
+            )
+            
+
+        fig = go.Figure(data=data, layout=layout)
+
+        # fig.update_xaxes(
+        #             mirror=True,
+        #             ticks='outside',
+        #             showline=True,
+        #             linecolor='black',
+        #             gridcolor='lightgrey'
+        #         )
+        # fig.update_yaxes(
+        #             mirror=True,
+        #             ticks='outside',
+        #             showline=True,
+        #             linecolor='black',
+        #             gridcolor='lightgrey'
+        #         )
+        
+        # fig.update_layout({'plot_bgcolor': "rgba(0,0,0,0)", 'paper_bgcolor': "rgba(0,0,0,0)"})
+        # fig.update_xaxes({'gridcolor': 'lightgrey', 'zerolinecolor': 'lightgrey', 'linecolor': 'white', 'linewidth': 5})
+        # fig.update_yaxes({'gridcolor': 'lightgrey', 'zerolinecolor': 'lightgrey', 'linecolor': 'white'})
+
+
+        fig.show()
+        fig.write_image(f'/tmp/rightFoot_rest_roll.pdf')
+        exit(0)
 
         y_mins.append(np.min(restContactOri_euler[:,0]))
         y_maxs.append(np.max(worldContactOri_mocap_euler[:,0]))
@@ -506,7 +676,7 @@ def plotContactRestPoses(colors = None, path = default_path):
         if start is not None:
             set_regions.append((start, observer_data["t"][iterations[-1]]))
 
-        # Assign color for the current contact
+        # Assign colorKinetics for the current contact
         fillcolor2 = colors2[contactName2]
         fillcolor2 = f'rgba({fillcolor2[0]}, {fillcolor2[1]}, {fillcolor2[2]}, 0.3)'
 
@@ -563,7 +733,7 @@ def plotContactRestPoses(colors = None, path = default_path):
     )
 
     # Show plot
-    fig3d.show()
+    #fig3d.show()
     
     fig.update_layout(
                 shapes=shapes,
@@ -593,7 +763,7 @@ def plotContactRestPoses(colors = None, path = default_path):
     # Show the plotly figure
     fig.show()
 
-    fig.write_image(f'/tmp/rightFoot_rest_roll.pdf')
+    fig.write_image(f'/tmp/rightFoot_rest_roll_2.pdf')
 
 
 

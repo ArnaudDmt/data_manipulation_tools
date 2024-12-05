@@ -133,7 +133,9 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             ),
             row=3,
             col=1,
-            )
+            )        
+        
+        
         def continuous_euler(angles):
             continuous_angles = np.empty_like(angles)
             continuous_angles[0] = angles[0]

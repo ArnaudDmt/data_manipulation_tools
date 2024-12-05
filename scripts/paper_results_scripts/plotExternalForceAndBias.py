@@ -46,7 +46,7 @@ def plotGyroBias(colors = None, path = default_path):
         HartleyBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), HartleyBias))
         KineticsBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), KineticsBias))
 
-        withTrueBias = True
+        withTrueBias = False
         if(withTrueBias):
                 trueBias =  observer_data[['NoisySensors_gyro_Accelerometer_bias_x', 'NoisySensors_gyro_Accelerometer_bias_y', 'NoisySensors_gyro_Accelerometer_bias_z']].to_numpy()
                 trueBias = np.vstack((np.array([0.0, 0.0, 0.0]).reshape(1,3), trueBias))
@@ -91,9 +91,14 @@ def plotGyroBias(colors = None, path = default_path):
 
                 return (min(y_min_spike, y_min_end), max(y_max_spike, y_max_end))
 
-        y_limits_x = calculate_limits(HartleyBias[:, 0], KineticsBias[:, 0], trueBias[:, 0])
-        y_limits_y = calculate_limits(HartleyBias[:, 1], KineticsBias[:, 1], trueBias[:, 1])
-        y_limits_z = calculate_limits(HartleyBias[:, 2], KineticsBias[:, 2], trueBias[:, 2])
+        if(withTrueBias):
+                y_limits_x = calculate_limits(HartleyBias[:, 0], KineticsBias[:, 0], trueBias[:, 0])
+                y_limits_y = calculate_limits(HartleyBias[:, 1], KineticsBias[:, 1], trueBias[:, 1])
+                y_limits_z = calculate_limits(HartleyBias[:, 2], KineticsBias[:, 2], trueBias[:, 2])
+        else:
+                y_limits_x = calculate_limits(HartleyBias[:, 0], KineticsBias[:, 0])
+                y_limits_y = calculate_limits(HartleyBias[:, 1], KineticsBias[:, 1])
+                y_limits_z = calculate_limits(HartleyBias[:, 2], KineticsBias[:, 2])
 
         # Create the figure
         figBias = make_subplots(
@@ -112,13 +117,14 @@ def plotGyroBias(colors = None, path = default_path):
             marker=dict(size=10, color=color_Kinetics),
             name=f"KineticsObserver"
         ))
-        figBias.add_trace(go.Scatter(
-            x=[None],  # Dummy x value
-            y=[None],  # Dummy y value
-            mode="lines",
-            marker=dict(size=10, color=color_Gt),
-            name="Ground truth"
-        ))
+        if(withTrueBias):
+                figBias.add_trace(go.Scatter(
+                x=[None],  # Dummy x value
+                y=[None],  # Dummy y value
+                mode="lines",
+                marker=dict(size=10, color=color_Gt),
+                name="Ground truth"
+                ))
         figBias.add_trace(go.Scatter(
             x=[None],  # Dummy x value
             y=[None],  # Dummy y value
@@ -289,6 +295,7 @@ def plotExtWrench(colors = None, path = default_path):
 
         #observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
         observer_data = pd.read_csv(f'{path}/output_data/logReplay.csv',  delimiter=';')
+        observer_data = observer_data.truncate(after=7000)
         shapes = []
 
         # colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
@@ -415,7 +422,7 @@ def plotExtWrench(colors = None, path = default_path):
         
 
         # Show the plotly figure
-        #figForceX.show()
+        figForceX.show()
 
         figForceY = go.Figure()
 
@@ -467,7 +474,7 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        #figForceY.show()
+        figForceY.show()
 
         figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_z"], marker=dict(color=color_Kinetics), mode='lines', showlegend= False, name='Estimated force'), row = 1, col = 1)
         figForces.add_trace(go.Scatter(x=observer_data["t"], y=observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_z"], marker=dict(color=color_Gt), showlegend= False, mode='lines', name='Ground truth'), row = 1, col = 1)
@@ -605,7 +612,7 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        #figTorqueY.show()
+        figTorqueY.show()
 
         figTorqueZ = go.Figure()
 
@@ -656,7 +663,7 @@ def plotExtWrench(colors = None, path = default_path):
                 )
 
         # Show the plotly figure
-        #figTorqueZ.show()
+        figTorqueZ.show()
         
         
 
