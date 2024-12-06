@@ -668,7 +668,11 @@ def main():
         estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
 
     estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
-    colors = generate_turbo_subset_colors(estimatorsList + ["Mocap"])
+    estimators_to_plot = estimatorsList.copy()
+    estimators_to_plot.append("Mocap")
+    colors = generate_turbo_subset_colors(estimators_to_plot)
+
+    estimators_to_plot.reverse()
 
     #plot_llve(exps_to_merge, estimatorsList, colors)
     #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
