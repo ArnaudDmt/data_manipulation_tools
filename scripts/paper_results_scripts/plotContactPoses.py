@@ -24,15 +24,15 @@ contactNames_areas_to_fill2 = [] #["RightFootForceSensor"]
 contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor": "Left foot", "LeftHandForceSensor": "Left hand"}
 
 estimator_plot_args = {
-    'Controller': {'name': 'Control', 'lineWidth': 2},
-    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
-    'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
-    'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
-    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-    'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
+    'Controller': {'name': 'Control', 'lineWidth': 5},
+    'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 5},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 5},
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 7},
+    'KO_APC': {'name': 'KO_APC', 'lineWidth': 5},
+    'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 5},
+    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 5},
+    'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 5},
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 5}
 }
 
 
@@ -238,6 +238,19 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     y_min = y_min - max_abs * 0.1
     y_max = y_max + max_abs * 0.1
 
+    #listData = list(fig.data)
+
+    #print(listData[0].name)
+    #print(listData[-len(contactNames_areas_to_fill) - 1].name)
+
+    #listData = listData.reverse()
+    #listData[0], listData[-len(contactNames_areas_to_fill) - 1] = listData[-len(contactNames_areas_to_fill) - 1], listData[0]
+
+    #print(listData[0].name)
+    #print(listData[-len(contactNames_areas_to_fill) - 1].name)
+
+    #fig.data = tuple(listData)
+
     fig.update_xaxes(
                 range = [observer_data["t"][index_range[0]], observer_data["t"][index_range[1]]]
             )
@@ -251,23 +264,25 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
                 yaxis_title="Yaw (°)",
                 template="plotly_white",
                 legend=dict(
-                    yanchor="top",
-                    y=0.99,
+                    yanchor="bottom",
+                    y=1.03,
                     xanchor="left",
                     x=0.01,
                     orientation='h',
                     bgcolor = 'rgba(0,0,0,0)',
-                    font = dict(family = 'Times New Roman')
+                    traceorder='reversed',
+                    font = dict(family = 'Times New Roman', size=20, color="black")
                     ),
                     legend2=dict(
                         yanchor="top",
-                        y=0.92,
+                        y=0.98,
                         xanchor="left",
                         x=0.01,
                         bgcolor='rgba(0,0,0,0)',
+                        font = dict(family = 'Times New Roman', size=20, color="black")
                     ),
                 margin=dict(l=0,r=0,b=0,t=0),
-                font = dict(family = 'Times New Roman')
+                font = dict(family = 'Times New Roman', size=20, color="black")
             )
 
     # Show the plotly figure
@@ -455,10 +470,10 @@ def plotContactRestPoses(colors = None, path = default_path):
 
 
         # Find indices within the time range
-        time_range_indices = [3200,4400]
+        #time_range_indices = [3200,4400]
 
         # Find the index of the closest yaw to zero in the time range
-        closest_to_zero_index = time_range_indices[0] + np.argmin(np.abs(restContactOri_euler[time_range_indices[0]:time_range_indices[1], 2]))
+        #closest_to_zero_index = time_range_indices[0] + np.argmin(np.abs(restContactOri_euler[time_range_indices[0]:time_range_indices[1], 2]))
 
         # fig.add_vline(
         #     x=observer_data["t"][closest_to_zero_index], 
@@ -486,34 +501,41 @@ def plotContactRestPoses(colors = None, path = default_path):
         iter_start = 3000
         iter_end = 4600
 
-        traceKO = go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), name=f'Kinetics Observer')
-        traceMocap = go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']), name=f'Motion Capture')
-        traceInset_KO = go.Scatter(
+        print(np.mean([x for x in worldContactOri_mocap_euler[iter_start:iter_end,0] if str(x) != 'nan']))
+
+        figMain = go.Figure()
+
+        figMain.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), name=f'Kinetics Observer'))
+        figMain.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']), name=f'Motion Capture'))
+        x_interval = [t for t, is_set in zip(observer_data["t"][iter_start:iter_end], is_set_mask[iter_start:iter_end]) if is_set]
+        figMain.add_trace(go.Scatter(
+                        x = x_interval,
+                        y= - 19.7 * np.ones(len(x_interval)), 
+                        line=dict(color="green", width = estimator_plot_args["Mocap"]['lineWidth']),
+                        name='Actual Roll'
+                    ))
+
+        figInset = go.Figure()
+        figInset.add_trace(go.Scatter(
                         x=observer_data["t"][iter_start:iter_end], 
                         y=restContactOri_euler[iter_start:iter_end,0], 
                         line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), 
                         mode='lines',
-                        showlegend= False,
-                        xaxis='x2',
-                        yaxis='y2'
-                    )
-        traceInset_Mocap = go.Scatter(
+                        showlegend= False
+                    ))
+        figInset.add_trace(go.Scatter(
                         x=observer_data["t"][iter_start:iter_end], 
                         y=worldContactOri_mocap_euler[iter_start:iter_end,0], 
                         line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']),
-                        xaxis='x2',
                         showlegend= False,
-                        yaxis='y2'
-                    )
-        x_interval = [t for t, is_set in zip(observer_data["t"][iter_start:iter_end], is_set_mask[iter_start:iter_end]) if is_set]
-        traceInset_real = go.Scatter(
-                        x = observer_data["t"][iter_start+50:iter_end-50],
-                        y= - 19.7 * np.ones(len(observer_data["t"][iter_start:iter_end])), 
+                    ))
+        
+        figInset.add_trace(go.Scatter(
+                        x= x_interval,
+                        y= - 19.7 * np.ones(len(x_interval)), 
                         line=dict(color="green", width = 2),
-                        name='Actual Roll',
-                        xaxis='x2',
-                        yaxis='y2'
-                    )
+                        showlegend= False
+                    ))
         
         minY2 = np.min(list(filter(lambda v: v==v, restContactOri_euler[iter_start:iter_end:,0] -1)))
         maxY2 = np.max(list(filter(lambda v: v==v, worldContactOri_mocap_euler[iter_start:iter_end:,0] +1)))
@@ -527,56 +549,33 @@ def plotContactRestPoses(colors = None, path = default_path):
         rect_x_end_inset = 0.8    # Domain end for xaxis2
         rect_y_start_inset = 0.1  # Domain start for yaxis2
         rect_y_end_inset = 0.40    # Domain end for yaxis2
-
-
-        data = [traceKO, traceMocap, traceInset_KO, traceInset_Mocap, traceInset_real]
-
-        zoom_lines = [
-            dict(type="line", xref="x", yref="y", x0=rect_x_end_main, y0=rect_y_start_main, x1=observer_data["t"][5200], y1=-24.7, line=dict(color="black", width=1, dash="dot")),
-            dict(type="line", xref="x", yref="y", x0=rect_x_end_main, y0=rect_y_end_main, x1=observer_data["t"][5140], y1=-6, line=dict(color="black", width=1, dash="dot")),
-        ]
         
-        layout = go.Layout(
-                plot_bgcolor= "rgba(0,0,0,0)", 
-                paper_bgcolor= "rgba(0,0,0,0)",
-                legend=dict(
-                        yanchor="bottom",
-                        y=1.00,
-                        xanchor="left",
-                        x=0.01,
-                        orientation="h",
-                        bgcolor="rgba(0,0,0,0)",
-                        font=dict(family="Times New Roman"),
+        figMain.update_layout(
+            plot_bgcolor= "rgba(0,0,0,0)", 
+            paper_bgcolor= "rgba(0,0,0,0)",
+            legend=dict(
+                    yanchor="bottom",
+                    y=1.00,
+                    xanchor="left",
+                    x=0.01,
+                    orientation="h",
+                    bgcolor="rgba(0,0,0,0)",
+                    font = dict(family = 'Times New Roman', size=22, color="black"),
+            ),
+            margin=dict(l=0,r=0,b=0,t=0),
+            font = dict(family = 'Times New Roman', size=22, color="black"),
+            xaxis=dict(  # Primary x-axis configuration
+                    title="Time (s)",
+                    gridcolor= 'lightgrey', 
+                    gridwidth= 3,
                 ),
-                # plot_bgcolor='rgba(0, 0, 0, 0)',
-                # paper_bgcolor='rgba(0, 0, 0, 0)',
-                margin=dict(l=0,r=0,b=0,t=0),
-                font = dict(family = 'Times New Roman'),
-                xaxis=dict(  # Primary x-axis configuration
-                        title="Time (s)",
-                        gridcolor= 'lightgrey', 
-                        gridwidth= 3,
-                    ),
-                yaxis=dict(  # Primary y-axis configuration
-                        title="Roll (°)",
-                        gridcolor= 'lightgrey',
-                        gridwidth= 3,
-                        zerolinecolor= 'lightgrey',
-                    ),
-                xaxis2=dict(  # Inset x-axis configuration
-                        domain=[rect_x_start_inset, rect_x_end_inset],
-                        range=[rect_x_start_main, rect_x_end_main],
-                        anchor="y2",
-                        gridcolor= 'lightgrey',
-                    ),
-                yaxis2=dict(  # Inset y-axis configuration
-                        domain=[rect_y_start_inset, rect_y_end_inset],
-                        range=[rect_y_start_main, rect_y_end_main],
-                        anchor="x2",
-                        gridcolor= 'lightgrey',
-                        
-                    ),
-                shapes=[
+            yaxis=dict(  # Primary y-axis configuration
+                    title="Roll (°)",
+                    gridcolor= 'lightgrey',
+                    gridwidth= 3,
+                    zerolinecolor= 'lightgrey',
+                ),
+            shapes=[
                     # Rectangle for the inset area
                     dict(
                         type="rect",
@@ -590,27 +589,46 @@ def plotContactRestPoses(colors = None, path = default_path):
                             color="black",  # Border color of the rectangle
                             width=2,
                         ),
-                    ),
-                    # Rectangle for the inset plot itself
-                    dict(
-                        type="rect",
-                        #fillcolor="white",
-                        xref="paper",  # Reference to the figure's paper coordinates
-                        yref="paper",  # Reference to the figure's paper coordinates
-                        x0=rect_x_start_inset - 0.04,
-                        x1=rect_x_end_inset + 0.03,
-                        y0=rect_y_start_inset - 0.05,
-                        y1=rect_y_end_inset + 0.04,
-                        line=dict(
-                            color="black",  # Border color for the inset plot
-                            width=2,
-                        ),
-                    ),
-                ] + zoom_lines ,
-            )
-            
+                )]
+        )
 
-        fig = go.Figure(data=data, layout=layout)
+        figInset.update_layout(
+            plot_bgcolor= "rgba(0,0,0,0)", 
+            paper_bgcolor= "rgba(0,0,0,0)",
+            margin=dict(l=0,r=0,b=0,t=0),
+            font=dict(family="Times New Roman", size=60, color="black"),
+
+            xaxis=dict(  # Inset x-axis configuration
+                        #domain=[rect_x_start_inset, rect_x_end_inset],
+                        range=[rect_x_start_main, rect_x_end_main],
+                        gridcolor= 'lightgrey',
+                        dtick=2
+                    ),
+            yaxis=dict(  # Inset y-axis configuration
+                        #domain=[rect_y_start_inset, rect_y_end_inset],
+                        range=[rect_y_start_main, rect_y_end_main],
+                        gridcolor= 'lightgrey',
+                        dtick=5
+                    ),
+            # shapes=[
+            #         # Rectangle for the inset plot itself
+            #         dict(
+            #             type="rect",
+            #             #fillcolor="white",
+            #             xref="paper",  # Reference to the figure's paper coordinates
+            #             yref="paper",  # Reference to the figure's paper coordinates
+            #             x0=rect_x_start_inset - 0.04,
+            #             x1=rect_x_end_inset + 0.03,
+            #             y0=rect_y_start_inset - 0.05,
+            #             y1=rect_y_end_inset + 0.04,
+            #             line=dict(
+            #                 color="black",  # Border color for the inset plot
+            #                 width=2,
+            #                 ),
+            #             )
+            #         ]
+
+        )        
 
         # fig.update_xaxes(
         #             mirror=True,
@@ -632,9 +650,12 @@ def plotContactRestPoses(colors = None, path = default_path):
         # fig.update_yaxes({'gridcolor': 'lightgrey', 'zerolinecolor': 'lightgrey', 'linecolor': 'white'})
 
 
-        fig.show()
-        fig.write_image(f'/tmp/rightFoot_rest_roll.pdf')
+        figMain.show()
+        figInset.show()
+        figMain.write_image(f'/tmp/rightFoot_rest_roll_main.pdf')
+        figInset.write_image(f'/tmp/rightFoot_rest_roll_inset.pdf')
         exit(0)
+        fig.write_image(f'/tmp/rightFoot_rest_roll.pdf')
 
         y_mins.append(np.min(restContactOri_euler[:,0]))
         y_maxs.append(np.max(worldContactOri_mocap_euler[:,0]))

@@ -79,7 +79,7 @@ from copy import deepcopy
 import argparse
 
 estimator_plot_args = {
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 3},
+    'KineticsObserver': {'name': 'KO', 'lineWidth': 3},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
@@ -87,7 +87,7 @@ estimator_plot_args = {
     'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
     'Controller': {'name': 'Control', 'lineWidth': 2},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 2}
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 2},
 }
 
 
@@ -106,7 +106,7 @@ def generate_turbo_subset_colors(estimatorsList):
     colors={}
     # Generate colors and reduce intensity
     for idx, estimator in enumerate(estimatorsList):
-        colors[estimator] = reduce_intensity(cmap(listCoeffs[idx]), 0.6)
+        colors[estimator] = reduce_intensity(cmap(listCoeffs[idx]), 0.75)
     
     return colors
 
@@ -664,9 +664,11 @@ def main():
 
     estimatorsList = [d for d in os.listdir(f"Projects/{exps_to_merge[0]}/output_data/evals/") 
                   if os.path.isdir(f"Projects/{exps_to_merge[0]}/output_data/evals/{d}")]
-    if "KineticsObserver" in estimatorsList:
-        estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
 
+    # if "KineticsObserver" in estimatorsList:
+    #     estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
+
+    
     estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
     estimators_to_plot = estimatorsList.copy()
     estimators_to_plot.append("Mocap")
@@ -677,24 +679,31 @@ def main():
     #plot_llve(exps_to_merge, estimatorsList, colors)
     #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     #plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
+    
     #plot_absolute_errors(exps_to_merge, estimatorsList, colors)
     #plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
-    estimators_to_plot = estimatorsList
-    estimators_to_plot.append("Mocap")
+    
     colors_to_plot = colors
-    colors_to_plot["Mocap"] = [0, 0, 0]
-    #plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    #colors_to_plot["Mocap"] = (0, 0, 0, 1)
 
+    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
+    
     if(len(exps_to_merge) == 1):
         import plotPoseAndVelocity
         #plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
-    
+
+    #if(len(exps_to_merge) == 1):
+        import plotContactPoses
+        #plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
+        #plotContactPoses.plotContactRestPoses(colors_to_plot, f'Projects/{exps_to_merge[0]}')
+        
     if(len(exps_to_merge) == 1):
         import plotExternalForceAndBias
         #plotExternalForceAndBias.plotGyroBias(colors_to_plot, f'Projects/{exps_to_merge[0]}')
-        plotExternalForceAndBias.plotExtWrench(colors_to_plot, f'Projects/{exps_to_merge[0]}')
+        #plotExternalForceAndBias.plotExtWrench(colors_to_plot, f'Projects/{exps_to_merge[0]}')
     
     import plotAndFormatResults
     #for expe in exps_to_merge:

@@ -29,10 +29,40 @@ estimator_plot_args = {
     'Mocap': {'name': 'Gound truth', 'lineWidth': 1}
 }
 
+def continuous_euler(angles):
+            continuous_angles = np.empty_like(angles)
+            continuous_angles[0] = angles[0]
+            for i in range(1, len(angles)):
+                diff = angles[i] - angles[i-1]
+                # Check each element of the diff array
+                for j in range(len(diff)):
+                    if diff[j] > np.pi:
+                        diff[j] -= 2*np.pi
+                    elif diff[j] < -np.pi:
+                        diff[j] += 2*np.pi
+                continuous_angles[i] = continuous_angles[i-1] + diff
+            return continuous_angles
 
 def plotPoseVel(estimators, path = default_path, colors = None):
+    estimators.reverse()
     figPoseVel = make_subplots(
-    rows=3, cols=3, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.09
+    rows=3, cols=3, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.09, insets=[dict(cell=(1,1), l=0.15, w= 0.30, b= 0.25, h= 0.35), dict(cell=(2,1), l=0.15, w= 0.30, b= 0.25, h= 0.35), dict(cell=(3,1), l=0.15, w= 0.30, b= 0.55, h= 0.35), dict(cell=(3,2), l=0.15, w= 0.35, b= 0.15, h= 0.45), dict(cell=(1,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(2,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(3,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(2,2), l=0.13, w= 0.25, b= 0.15, h= 0.45)]
+    )
+
+    figPoseVel.update_layout(
+            template="plotly_white",
+            legend=dict(
+                    yanchor="bottom",
+                    y=1.06,
+                    xanchor="left",
+                    x=0.01,
+                    orientation="h",
+                    bgcolor="rgba(0,0,0,0)",
+                    font=dict(family="Times New Roman"),
+            ),
+            font = dict(family = 'Times New Roman', size=10, color="black"),
+            margin=dict(l=0.0,r=0.0,b=0.0,t=0.0)
+            ,autosize=True  # Automatically adjusts the figure size
     )
 
     observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
@@ -77,6 +107,9 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
     locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
     estimatorsPoses["Hartley"]["linVel"] = locVelHartley_imu_estim
+    estimatorsPoses["Hartley"]["ori"] = estimatorsPoses["Hartley"]["ori"].as_euler('xyz')
+    estimatorsPoses["Hartley"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Hartley"]["ori"]))
+    
 
     # Velocity of the mocap (different as we only have the position)
     posMocap_overlap = observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
@@ -89,8 +122,43 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     locVelMocap_imu_estim = rWorldImuMocap_overlap.apply(velMocap_imu_overlap, inverse=True)
     b, a = butter(2, 0.15, analog=False)
     locVelMocap_imu_estim = filtfilt(b, a, locVelMocap_imu_estim, axis=0)
-    estimatorsPoses["Mocap"]["linVel"] = locVelMocap_imu_estim        
+    estimatorsPoses["Mocap"]["linVel"] = locVelMocap_imu_estim       
+    estimatorsPoses["Mocap"]["ori"] = estimatorsPoses["Mocap"]["ori"].as_euler('xyz')
+    estimatorsPoses["Mocap"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Mocap"]["ori"]))
 
+    
+
+    index_t_z_138 = 27400
+    index_t_z_160 = 35800 
+
+    index_t_yaw_200 = 40000
+    index_t_yaw_240 = 48001
+
+    index_t_vel_139_5 = 27900
+    index_t_vel_141_5 = 28300
+
+    positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_160 + 1]
+
+    # Initialize cumulative distance
+    cumulative_distance = 0.0
+
+    # Iterate over consecutive pairs of points
+    for i in range(len(positions) - 1):
+        # Get current and next position (only x and y components)
+        pos_current = positions[i][:2]  # Take x and y components
+        pos_next = positions[i + 1][:2]  # Take x and y components
+        
+        # Compute the 2D distance between consecutive points
+        distance = np.sqrt((pos_next[0] - pos_current[0])**2 + (pos_next[1] - pos_current[1])**2)
+        
+        # Add to cumulative distance
+        cumulative_distance += distance
+
+    print(f"Cumulative 2D Distance along x and y: {cumulative_distance}")
+
+
+    rect_lims = {"pos_x": [None, None, None, None], "pos_y": [None, None, None, None], "pos_z": [None, None, None, None], "pitch": [None, None, None, None], "yaw": [None, None, None, None], "vel_x": [None, None, None, None], "vel_y": [None, None, None, None], "vel_z": [None, None, None, None]}
+    
     def computeObserverLocVel(observerName):
         linVelObserver_imu_overlap = estimatorsPoses[observerName]["linVel"] + np.cross(estimatorsPoses[observerName]["angVel"], estimatorsPoses[observerName]["ori"].apply(posFbImu_overlap)) + estimatorsPoses[observerName]["ori"].apply(linVelFbImu_overlap)
 
@@ -98,9 +166,86 @@ def plotPoseVel(estimators, path = default_path, colors = None):
         locVelObserver_imu_estim = rWorldImuObserver_overlap.apply(linVelObserver_imu_overlap, inverse=True)
         estimatorsPoses[observerName]["linVel"] = locVelObserver_imu_estim
 
+        estimatorsPoses[observerName]["ori"] = estimatorsPoses[observerName]["ori"].as_euler('xyz')
+        estimatorsPoses[observerName]["ori"] = np.degrees(continuous_euler(estimatorsPoses[observerName]["ori"]))
+
     for estimator in estimators:
-        if estimator in estimator_plot_args and estimator in estimatorsPoses.keys() and estimator not in ["Mocap", "Hartley"]:
-            computeObserverLocVel(estimator)
+        if estimator in estimator_plot_args and estimator in estimatorsPoses.keys():
+            if estimator not in ["Mocap", "Hartley"]:
+                computeObserverLocVel(estimator)
+
+            x_min_z = observer_data["t"][index_t_z_138]
+            x_max_z = observer_data["t"][index_t_z_160]
+
+            x_min_pitch = observer_data["t"][index_t_z_138]
+            x_max_pitch = observer_data["t"][index_t_z_160]
+
+            x_min_yaw = observer_data["t"][index_t_yaw_200]
+            x_max_yaw = observer_data["t"][index_t_yaw_240]
+
+            x_min_vel = observer_data["t"][index_t_vel_139_5]
+            x_max_vel = observer_data["t"][index_t_vel_141_5]
+
+            y_min_pos_x = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
+            y_max_pos_x = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
+            y_min_pos_y = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
+            y_max_pos_y = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
+            y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_160, 2])
+            y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_160, 2])
+            
+            y_min_pitch = np.min(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_160, 1])
+            y_max_pitch = np.max(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_160, 1])
+            y_min_yaw = np.min(estimatorsPoses[estimator]["ori"][index_t_yaw_200:index_t_yaw_240, 2])
+            y_max_yaw = np.max(estimatorsPoses[estimator]["ori"][index_t_yaw_200:index_t_yaw_240, 2])
+
+            y_min_vel_x = np.min(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 0])
+            y_max_vel_x = np.max(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 0])
+            y_min_vel_y = np.min(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 1])
+            y_max_vel_y = np.max(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 1])
+            y_min_vel_z = np.min(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 2])
+            y_max_vel_z = np.max(estimatorsPoses[estimator]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 2])
+
+            # Update global limits
+            rect_lims["pos_x"][0] = x_min_yaw if rect_lims["pos_x"][0] is None else min(rect_lims["pos_x"][0], x_min_yaw)
+            rect_lims["pos_x"][1] = x_max_yaw if rect_lims["pos_x"][1] is None else max(rect_lims["pos_x"][1], x_max_yaw)
+            rect_lims["pos_x"][2] = y_min_pos_x if rect_lims["pos_x"][2] is None else min(rect_lims["pos_x"][2], y_min_pos_x)
+            rect_lims["pos_x"][3] = y_max_pos_x if rect_lims["pos_x"][3] is None else max(rect_lims["pos_x"][3], y_max_pos_x)
+
+            rect_lims["pos_y"][0] = x_min_yaw if rect_lims["pos_y"][0] is None else min(rect_lims["pos_y"][0], x_min_yaw)
+            rect_lims["pos_y"][1] = x_max_yaw if rect_lims["pos_y"][1] is None else max(rect_lims["pos_y"][1], x_max_yaw)
+            rect_lims["pos_y"][2] = y_min_pos_y if rect_lims["pos_y"][2] is None else min(rect_lims["pos_y"][2], y_min_pos_y)
+            rect_lims["pos_y"][3] = y_max_pos_y if rect_lims["pos_y"][3] is None else max(rect_lims["pos_y"][3], y_max_pos_y)
+
+            rect_lims["pos_z"][0] = x_min_z if rect_lims["pos_z"][0] is None else min(rect_lims["pos_z"][0], x_min_z)
+            rect_lims["pos_z"][1] = x_max_z if rect_lims["pos_z"][1] is None else max(rect_lims["pos_z"][1], x_max_z)
+            rect_lims["pos_z"][2] = y_min_pos_z if rect_lims["pos_z"][2] is None else min(rect_lims["pos_z"][2], y_min_pos_z)
+            rect_lims["pos_z"][3] = y_max_pos_z if rect_lims["pos_z"][3] is None else max(rect_lims["pos_z"][3], y_max_pos_z)
+
+            rect_lims["pitch"][0] = x_min_pitch if rect_lims["pitch"][0] is None else min(rect_lims["pitch"][0], x_min_pitch)
+            rect_lims["pitch"][1] = x_max_pitch if rect_lims["pitch"][1] is None else max(rect_lims["pitch"][1], x_max_pitch)
+            rect_lims["pitch"][2] = y_min_pitch if rect_lims["pitch"][2] is None else min(rect_lims["pitch"][2], y_min_pitch)
+            rect_lims["pitch"][3] = y_max_pitch if rect_lims["pitch"][3] is None else max(rect_lims["pitch"][3], y_max_pitch) 
+
+            rect_lims["yaw"][0] = x_min_yaw if rect_lims["yaw"][0] is None else min(rect_lims["yaw"][0], x_min_yaw)
+            rect_lims["yaw"][1] = x_max_yaw if rect_lims["yaw"][1] is None else max(rect_lims["yaw"][1], x_max_yaw)
+            rect_lims["yaw"][2] = y_min_yaw if rect_lims["yaw"][2] is None else min(rect_lims["yaw"][2], y_min_yaw)
+            rect_lims["yaw"][3] = y_max_yaw if rect_lims["yaw"][3] is None else max(rect_lims["yaw"][3], y_max_yaw) 
+
+            rect_lims["vel_x"][0] = x_min_vel if rect_lims["vel_x"][0] is None else min(rect_lims["vel_x"][0], x_min_vel)
+            rect_lims["vel_x"][1] = x_max_vel if rect_lims["vel_x"][1] is None else max(rect_lims["vel_x"][1], x_max_vel)
+            rect_lims["vel_x"][2] = y_min_vel_x if rect_lims["vel_x"][2] is None else min(rect_lims["vel_x"][2], y_min_vel_x)
+            rect_lims["vel_x"][3] = y_max_vel_x if rect_lims["vel_x"][3] is None else max(rect_lims["vel_x"][3], y_max_vel_x)
+
+            rect_lims["vel_y"][0] = x_min_vel if rect_lims["vel_y"][0] is None else min(rect_lims["vel_y"][0], x_min_vel)
+            rect_lims["vel_y"][1] = x_max_vel if rect_lims["vel_y"][1] is None else max(rect_lims["vel_y"][1], x_max_vel)
+            rect_lims["vel_y"][2] = y_min_vel_y if rect_lims["vel_y"][2] is None else min(rect_lims["vel_y"][2], y_min_vel_y)
+            rect_lims["vel_y"][3] = y_max_vel_y if rect_lims["vel_y"][3] is None else max(rect_lims["vel_y"][3], y_max_vel_y)
+
+            rect_lims["vel_z"][0] = x_min_vel if rect_lims["vel_z"][0] is None else min(rect_lims["vel_z"][0], x_min_vel)
+            rect_lims["vel_z"][1] = x_max_vel if rect_lims["vel_z"][1] is None else max(rect_lims["vel_z"][1], x_max_vel)
+            rect_lims["vel_z"][2] = y_min_vel_z if rect_lims["vel_z"][2] is None else min(rect_lims["vel_z"][2], y_min_vel_z)
+            rect_lims["vel_z"][3] = y_max_vel_z if rect_lims["vel_z"][3] is None else max(rect_lims["vel_z"][3], y_max_vel_z)
+
 
     def plotPoseAndVel(observerName):
         color_Observer = f'rgba({colors[observerName][0]}, {colors[observerName][1]}, {colors[observerName][2]}, 1)'
@@ -136,46 +281,296 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             )        
         
         
-        def continuous_euler(angles):
-            continuous_angles = np.empty_like(angles)
-            continuous_angles[0] = angles[0]
-            for i in range(1, len(angles)):
-                diff = angles[i] - angles[i-1]
-                # Check each element of the diff array
-                for j in range(len(diff)):
-                    if diff[j] > np.pi:
-                        diff[j] -= 2*np.pi
-                    elif diff[j] < -np.pi:
-                        diff[j] += 2*np.pi
-                continuous_angles[i] = continuous_angles[i-1] + diff
-            return continuous_angles
-        
-        worldObserverOri_euler = estimatorsPoses[observerName]["ori"].as_euler('xyz')
-        worldObserverOri_euler_continuous = np.degrees(continuous_euler(worldObserverOri_euler))
         figPoseVel.add_trace(
             go.Scatter(
                     x=observer_data["t"],
-                    y=worldObserverOri_euler_continuous[:, 0],
+                    y=estimatorsPoses[observerName]["ori"][:, 0],
                     mode="lines",showlegend= False,
                     line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
             ),
             row=1,
             col=2,
             )
+
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_yaw_200:index_t_yaw_240],
+                y=estimatorsPoses[observerName]["pos"][index_t_yaw_200:index_t_yaw_240, 0],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x10', 
+                yaxis='y10'
+            )
+        )
+
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x1",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y1",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["pos_x"][0],  # Start of x-range
+            x1=rect_lims["pos_x"][1],  # End of x-range
+            y0=rect_lims["pos_x"][2],  # Start of y-range
+            y1=rect_lims["pos_x"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+        
+        
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_yaw_200:index_t_yaw_240],
+                y=estimatorsPoses[observerName]["pos"][index_t_yaw_200:index_t_yaw_240, 1],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x11', 
+                yaxis='y11'
+            )
+        )
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x4",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y4",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["pos_y"][0],  # Start of x-range
+            x1=rect_lims["pos_y"][1],  # End of x-range
+            y0=rect_lims["pos_y"][2],  # Start of y-range
+            y1=rect_lims["pos_y"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_z_138:index_t_z_160],
+                y=estimatorsPoses[observerName]["pos"][index_t_z_138:index_t_z_160, 2],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x12', 
+                yaxis='y12'
+            )
+        )
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x7",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y7",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["pos_z"][0],  # Start of x-range
+            x1=rect_lims["pos_z"][1],  # End of x-range
+            y0=rect_lims["pos_z"][2],  # Start of y-range
+            y1=rect_lims["pos_z"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+        
+        
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_z_138:index_t_z_160],
+                y=estimatorsPoses[observerName]["ori"][index_t_z_138:index_t_z_160, 1],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x17', 
+                yaxis='y17'
+            )
+        )
+
+        print(f"{np.mean(estimatorsPoses['Hartley']['ori'][index_t_yaw_200:index_t_yaw_240, 1] - estimatorsPoses['Mocap']['ori'][index_t_yaw_200:index_t_yaw_240, 1])}")
+        
+
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_yaw_200:index_t_yaw_240],
+                y=estimatorsPoses[observerName]["ori"][index_t_yaw_200:index_t_yaw_240, 2],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x13', 
+                yaxis='y13'
+            )
+        )
+
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x5",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y5",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["pitch"][0],  # Start of x-range
+            x1=rect_lims["pitch"][1],  # End of x-range
+            y0=rect_lims["pitch"][2],  # Start of y-range
+            y1=rect_lims["pitch"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+        
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x8",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y8",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["yaw"][0],  # Start of x-range
+            x1=rect_lims["yaw"][1],  # End of x-range
+            y0=rect_lims["yaw"][2],  # Start of y-range
+            y1=rect_lims["yaw"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_vel_139_5:index_t_vel_141_5],
+                y=estimatorsPoses[observerName]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 0],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x14', 
+                yaxis='y14'
+            )
+        )
+        # Add a rectangle to subplot (7,7) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x3",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y3",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["vel_x"][0],  # Start of x-range
+            x1=rect_lims["vel_x"][1],  # End of x-range
+            y0=rect_lims["vel_x"][2],  # Start of y-range
+            y1=rect_lims["vel_x"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_vel_139_5:index_t_vel_141_5],
+                y=estimatorsPoses[observerName]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 1],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x15', 
+                yaxis='y15'
+            )
+        )
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x6",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y6",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["vel_y"][0],  # Start of x-range
+            x1=rect_lims["vel_y"][1],  # End of x-range
+            y0=rect_lims["vel_y"][2],  # Start of y-range
+            y1=rect_lims["vel_y"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+
+        # Add the inset plot as an additional trace
+        figPoseVel.add_trace(
+            go.Scatter(
+                x=observer_data["t"][index_t_vel_139_5:index_t_vel_141_5],
+                y=estimatorsPoses[observerName]["linVel"][index_t_vel_139_5:index_t_vel_141_5, 2],
+                mode='lines',
+                showlegend= False,
+                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                xaxis='x16', 
+                yaxis='y16'
+            )
+        )
+        # Add a rectangle to subplot (1,1) surrounding the inset plot
+        figPoseVel.add_shape(
+            type="rect",
+            xref="x9",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y9",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["vel_z"][0],  # Start of x-range
+            x1=rect_lims["vel_z"][1],  # End of x-range
+            y0=rect_lims["vel_z"][2],  # Start of y-range
+            y1=rect_lims["vel_z"][3],  # End of y-range
+            line=dict(color="grey", width=1),
+            layer="above"  # Ensures the rectangle appears above the plot
+        )
+
+        
+        
+        figPoseVel.update_layout(
+                xaxis10=dict(
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis10=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                )
+        
+        figPoseVel.update_layout(
+                xaxis11=dict(
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis11=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                )
+        
+        figPoseVel.update_layout(
+                xaxis12=dict(
+                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis12=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+        
+        figPoseVel.update_layout(
+                xaxis13=dict(
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis13=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+        
+        figPoseVel.update_layout(
+                xaxis14=dict(
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis14=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+        
+        figPoseVel.update_layout(
+                xaxis15=dict(
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis15=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+        
+        figPoseVel.update_layout(
+                xaxis16=dict(
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis16=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+        
+        figPoseVel.update_layout(
+                xaxis17=dict(
+                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                yaxis17=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                )
+
         figPoseVel.add_trace(
             go.Scatter(
                     x=observer_data["t"],
-                    y=worldObserverOri_euler_continuous[:, 1],
+                    y=estimatorsPoses[observerName]["ori"][:, 1],
                     mode="lines",showlegend= False,
                     line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
             ),
             row=2,
             col=2,
             )
+        
         figPoseVel.add_trace(
             go.Scatter(
                     x=observer_data["t"],
-                    y=worldObserverOri_euler_continuous[:, 2],
+                    y=estimatorsPoses[observerName]["ori"][:, 2],
                     mode="lines",showlegend= False,
                     line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
             ),
@@ -288,23 +683,6 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     figPoseVel.update_xaxes(title_text="Time (s)", row=3, col=2)
     figPoseVel.update_xaxes(title_text="Time (s)", row=3, col=3)
 
-                 
-
-    figPoseVel.update_layout(
-            template="plotly_white",
-            legend=dict(
-                    yanchor="bottom",
-                    y=1.06,
-                    xanchor="left",
-                    x=0.01,
-                    orientation="h",
-                    bgcolor="rgba(0,0,0,0)",
-                    font=dict(family="Times New Roman"),
-            ),
-            font = dict(family = 'Times New Roman'),
-            margin=dict(l=0.0,r=0.0,b=0.0,t=0.0)
-            ,autosize=True  # Automatically adjusts the figure size
-    )
 
     
     # Show the plot
