@@ -7,6 +7,10 @@ To this end, the mocap's data must be acquired the following way:
 run the script "./routine.sh" that will propose you to work either on an existing project or a new project. Upon creation of a new project, the script will create a dedicated folder containing the necessary folders. Once created, please paste the mocap's csv and mc_rtc's log inside the folder "raw_data" and fill in the file "projectConfig.yaml" with the names of the robot used and the limb the mocap markers are placed on. These names must match the ones used in mc_rtc.
 Re-run the script "./routine.sh", which will ask you the timestep used by mc_rtc during the experiment.
 To generate the necessary data, the mc_rtc's log will be replayed, please make sure that the file mc_rtc.yaml is correctly set up.
+After changes, the script can be run with three options:
+* --compute-metrics: compute essentially the trajectory evaluation metrics of the observers for a desired projet / set of projects. Takes time if the logs are long.
+* --debug: run the routine with the possibility to re-run the steps one by one with more plots to debug the different steps.
+* --plot-metrics: plot the results of the computed metrics for the desired project/set of projects, without recomputing these metrics. Calls generate_metrics_plots.py, which calls the individual codes for the plots. The latter can be commented in or out.
 
 
 # Description of the main scripts
