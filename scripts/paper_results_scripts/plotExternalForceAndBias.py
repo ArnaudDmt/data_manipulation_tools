@@ -758,5 +758,77 @@ def plotExtWrench(colors = None, path = default_path):
         figForces.write_image(f'/tmp/extForces.pdf')
 
 
+def computeExtWrenchError(expsToMerge):
+        meas_ForceX = []
+        est_ForceX = []
+        meas_ForceY = []
+        est_ForceY = []
+        meas_ForceZ = []
+        est_ForceZ = []
+        meas_TorqueX = []
+        est_TorqueX = []
+        meas_TorqueY = []
+        est_TorqueY = []
+        meas_TorqueZ = []
+        est_TorqueZ = []
+
+        
+        for exp in expsToMerge:
+                path = f'Projects/{exp}'
+                observer_data = pd.read_csv(f'{path}/output_data/logReplay.csv',  delimiter=';')
+
+                meas_ForceX.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_x"])
+                est_ForceX.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_x"])
+
+                meas_ForceY.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_y"])
+                est_ForceY.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_y"])
+                
+                meas_ForceZ.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_force_z"])
+                est_ForceZ.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extForceCentr_z"])
+                
+                meas_TorqueX.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_x"])
+                est_TorqueX.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_x"])
+                
+                meas_TorqueY.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_y"])
+                est_TorqueY.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_y"])
+
+                meas_TorqueZ.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_debug_wrenchesInCentroid_LeftHandForceSensor_torque_z"])
+                est_TorqueZ.append(observer_data["Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_extTorqueCentr_z"])
+
+
+        meas_ForceX = np.concatenate(meas_ForceX)
+        est_ForceX = np.concatenate(est_ForceX)
+        meas_ForceY = np.concatenate(meas_ForceY)
+        est_ForceY = np.concatenate(est_ForceY)
+        meas_ForceZ = np.concatenate(meas_ForceZ)
+        est_ForceZ = np.concatenate(est_ForceZ)
+        meas_TorqueX = np.concatenate(meas_TorqueX)
+        est_TorqueX = np.concatenate(est_TorqueX)
+        meas_TorqueY = np.concatenate(meas_TorqueY)
+        est_TorqueY = np.concatenate(est_TorqueY)
+        meas_TorqueZ = np.concatenate(meas_TorqueZ)
+        est_TorqueZ = np.concatenate(est_TorqueZ)
+
+        max_ForceX = np.max(np.abs(meas_ForceX - est_ForceX))
+        mean_ForceX = np.mean(np.abs(meas_ForceX - est_ForceX))
+        max_ForceY = np.max(np.abs(meas_ForceY - est_ForceY))
+        mean_ForceY = np.mean(np.abs(meas_ForceY - est_ForceY))
+        max_ForceZ = np.max(np.abs(meas_ForceZ - est_ForceZ))
+        mean_ForceZ = np.mean(np.abs(meas_ForceZ - est_ForceZ))
+        max_TorqueX = np.max(np.abs(meas_TorqueX - est_TorqueX))
+        mean_TorqueX = np.mean(np.abs(meas_TorqueX - est_TorqueX))
+        max_TorqueY = np.max(np.abs(meas_TorqueY - est_TorqueY))
+        mean_TorqueY = np.mean(np.abs(meas_TorqueY - est_TorqueY))
+        max_TorqueZ = np.max(np.abs(meas_TorqueZ - est_TorqueZ))
+        mean_TorqueZ = np.mean(np.abs(meas_TorqueZ - est_TorqueZ))
+
+        print(f"Force x: mean: {np.mean(np.abs(meas_ForceX - est_ForceX))} | std: {np.std(meas_ForceX - est_ForceX)} | MeanMaxRel: {(mean_ForceX)/max_ForceX*100}")
+        print(f"Force y: mean: {np.mean(np.abs(meas_ForceY - est_ForceY))} | std: {np.std(meas_ForceY - est_ForceY)} | MeanMaxRel: {(mean_ForceY)/max_ForceY*100}")
+        print(f"Force z: mean: {np.mean(np.abs(meas_ForceZ - est_ForceZ))} | std: {np.std(meas_ForceZ - est_ForceZ)} | MeanMaxRel: {(mean_ForceZ)/max_ForceZ*100}")
+        print(f"Torque x: mean: {np.mean(np.abs(meas_TorqueX - est_TorqueX))} | std: {np.std(meas_TorqueX - est_TorqueX)} | MeanMaxRel: {(mean_TorqueX)/max_TorqueX*100}")
+        print(f"Torque y: mean: {np.mean(np.abs(meas_TorqueY - est_TorqueY))} | std: {np.std(meas_TorqueY - est_TorqueY)} | MeanMaxRel: {(mean_TorqueY)/max_TorqueY*100}")
+        print(f"Torque z: mean: {np.mean(np.abs(meas_TorqueZ - est_TorqueZ))} | std: {np.std(meas_TorqueZ - est_TorqueZ)} | MeanMaxRel: {(mean_TorqueZ)/max_TorqueZ*100}")
+
+
 if __name__ == '__main__':
     plotExtWrench()

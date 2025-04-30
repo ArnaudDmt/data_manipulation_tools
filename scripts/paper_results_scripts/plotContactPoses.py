@@ -445,8 +445,11 @@ def plotContactRestPoses(colors = None, path = default_path):
         restContactPoses[contactName]["orientation"] = R.from_quat(ori_quat_KO_rest).inv()
         restContactOri_euler = restContactPoses[contactName]["orientation"].as_euler('xyz', degrees=True)
 
+        zeroRoll = np.zeros(len(restContactOri_euler))
+
         restContactPoses[contactName]["position"][~is_set_mask] = None
         restContactOri_euler[~is_set_mask] = None
+        zeroRoll[~is_set_mask] = None
 
         # Track previous state
         for i in range(1, len(is_set_mask)):
@@ -514,7 +517,11 @@ def plotContactRestPoses(colors = None, path = default_path):
                         line=dict(color="green", width = estimator_plot_args["Mocap"]['lineWidth']),
                         name='Actual Roll'
                     ))
-
+        figMain.add_trace(go.Scatter(
+                        x = observer_data["t"],
+                        y= zeroRoll, 
+                        line=dict(color="green", width = estimator_plot_args["Mocap"]['lineWidth'])
+                    ))
         figInset = go.Figure()
         figInset.add_trace(go.Scatter(
                         x=observer_data["t"][iter_start:iter_end], 
@@ -652,8 +659,8 @@ def plotContactRestPoses(colors = None, path = default_path):
 
         figMain.show()
         figInset.show()
-        figMain.write_image(f'/tmp/rightFoot_rest_roll_main.pdf')
-        figInset.write_image(f'/tmp/rightFoot_rest_roll_inset.pdf')
+        figMain.write_image(f'/tmp/rightFoot_rest_roll_main.svg')
+        figInset.write_image(f'/tmp/rightFoot_rest_roll_inset.svg')
         exit(0)
         fig.write_image(f'/tmp/rightFoot_rest_roll.pdf')
 

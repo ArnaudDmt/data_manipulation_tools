@@ -26,7 +26,7 @@ zeros_row = np.zeros((1, 3))
 estimator_plot_args = {
     'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 1},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 1},
-    'Mocap': {'name': 'Gound truth', 'lineWidth': 1}
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 1}
 }
 
 def continuous_euler(angles):
@@ -46,7 +46,7 @@ def continuous_euler(angles):
 def plotPoseVel(estimators, path = default_path, colors = None):
     estimators.reverse()
     figPoseVel = make_subplots(
-    rows=3, cols=3, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.09, insets=[dict(cell=(1,1), l=0.15, w= 0.30, b= 0.25, h= 0.35), dict(cell=(2,1), l=0.15, w= 0.30, b= 0.25, h= 0.35), dict(cell=(3,1), l=0.15, w= 0.30, b= 0.55, h= 0.35), dict(cell=(3,2), l=0.15, w= 0.35, b= 0.15, h= 0.45), dict(cell=(1,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(2,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(3,3), l=0.13, w= 0.18, b= 0.55, h= 0.45), dict(cell=(2,2), l=0.13, w= 0.25, b= 0.15, h= 0.45)]
+    rows=3, cols=3, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.09, insets=[dict(cell=(1,1), l=0.20, w= 0.30, b= 0.20, h= 0.35), dict(cell=(1,2), l=0.15, w= 0.70, b= 0.00, h= 0.35), dict(cell=(3,1), l=0.15, w= 0.35, b= 0.55, h= 0.30), dict(cell=(3,2), l=0.15, w= 0.30, b= 0.15, h= 0.30), dict(cell=(1,3), l=0.27, w= 0.25, b= 0.60, h= 0.40), dict(cell=(2,3), l=0.27, w= 0.25, b= 0.70, h= 0.40), dict(cell=(3,3), l=0.27, w= 0.25, b= 0.70, h= 0.45), dict(cell=(2,2), l=0.15, w= 0.70, b= 0.00, h= 0.40)]
     )
 
     figPoseVel.update_layout(
@@ -67,6 +67,15 @@ def plotPoseVel(estimators, path = default_path, colors = None):
 
     observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
     observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
+
+    observer_data["t"] = observer_data["t"] - 130
+
+    startIndex = 26000
+    observer_data = observer_data.truncate(before=startIndex)
+
+    # Reset the index to start from 0
+    observer_data.reset_index(drop=True, inplace=True)
+    print(observer_data.index)
 
     # Pose and vels of the imu in the floating base
     posImuFb_overlap = observer_data[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
@@ -128,16 +137,16 @@ def plotPoseVel(estimators, path = default_path, colors = None):
 
     
 
-    index_t_z_138 = 27400
-    index_t_z_160 = 35800 
+    index_t_z_138 = 27400 - startIndex
+    index_t_z_178 = 36000 - startIndex
 
-    index_t_yaw_200 = 40000
-    index_t_yaw_240 = 48001
+    index_t_yaw_200 = 40000 - startIndex
+    index_t_yaw_240 = 48001 - startIndex
 
-    index_t_vel_139_5 = 27900
-    index_t_vel_141_5 = 28300
+    index_t_vel_139_5 = 27900 - startIndex
+    index_t_vel_141_5 = 28300 - startIndex
 
-    positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_160 + 1]
+    positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_178 + 1]
 
     # Initialize cumulative distance
     cumulative_distance = 0.0
@@ -157,7 +166,7 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     print(f"Cumulative 2D Distance along x and y: {cumulative_distance}")
 
 
-    rect_lims = {"pos_x": [None, None, None, None], "pos_y": [None, None, None, None], "pos_z": [None, None, None, None], "pitch": [None, None, None, None], "yaw": [None, None, None, None], "vel_x": [None, None, None, None], "vel_y": [None, None, None, None], "vel_z": [None, None, None, None]}
+    rect_lims = {"pos_x": [None, None, None, None], "pos_y": [None, None, None, None], "pos_z": [None, None, None, None], "roll": [None, None, None, None], "pitch": [None, None, None, None], "yaw": [None, None, None, None], "vel_x": [None, None, None, None], "vel_y": [None, None, None, None], "vel_z": [None, None, None, None]}
     
     def computeObserverLocVel(observerName):
         linVelObserver_imu_overlap = estimatorsPoses[observerName]["linVel"] + np.cross(estimatorsPoses[observerName]["angVel"], estimatorsPoses[observerName]["ori"].apply(posFbImu_overlap)) + estimatorsPoses[observerName]["ori"].apply(linVelFbImu_overlap)
@@ -175,10 +184,10 @@ def plotPoseVel(estimators, path = default_path, colors = None):
                 computeObserverLocVel(estimator)
 
             x_min_z = observer_data["t"][index_t_z_138]
-            x_max_z = observer_data["t"][index_t_z_160]
+            x_max_z = observer_data["t"][index_t_z_178]
 
             x_min_pitch = observer_data["t"][index_t_z_138]
-            x_max_pitch = observer_data["t"][index_t_z_160]
+            x_max_pitch = observer_data["t"][index_t_z_178]
 
             x_min_yaw = observer_data["t"][index_t_yaw_200]
             x_max_yaw = observer_data["t"][index_t_yaw_240]
@@ -189,12 +198,16 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             y_min_pos_x = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
             y_max_pos_x = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
             y_min_pos_y = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
+            print("WESH")
+            print(y_min_pos_y)
             y_max_pos_y = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
-            y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_160, 2])
-            y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_160, 2])
+            y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_178, 2])
+            y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_178, 2])
             
-            y_min_pitch = np.min(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_160, 1])
-            y_max_pitch = np.max(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_160, 1])
+            y_min_roll = np.min(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_178, 0])
+            y_max_roll = np.max(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_178, 0])
+            y_min_pitch = np.min(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_178, 1])
+            y_max_pitch = np.max(estimatorsPoses[estimator]["ori"][index_t_z_138:index_t_z_178, 1])
             y_min_yaw = np.min(estimatorsPoses[estimator]["ori"][index_t_yaw_200:index_t_yaw_240, 2])
             y_max_yaw = np.max(estimatorsPoses[estimator]["ori"][index_t_yaw_200:index_t_yaw_240, 2])
 
@@ -220,6 +233,11 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             rect_lims["pos_z"][1] = x_max_z if rect_lims["pos_z"][1] is None else max(rect_lims["pos_z"][1], x_max_z)
             rect_lims["pos_z"][2] = y_min_pos_z if rect_lims["pos_z"][2] is None else min(rect_lims["pos_z"][2], y_min_pos_z)
             rect_lims["pos_z"][3] = y_max_pos_z if rect_lims["pos_z"][3] is None else max(rect_lims["pos_z"][3], y_max_pos_z)
+
+            rect_lims["roll"][0] = x_min_z if rect_lims["roll"][0] is None else min(rect_lims["pitch"][0], x_min_z)
+            rect_lims["roll"][1] = x_max_z if rect_lims["roll"][1] is None else max(rect_lims["pitch"][1], x_max_z)
+            rect_lims["roll"][2] = y_min_roll if rect_lims["roll"][2] is None else min(rect_lims["pitch"][2], y_min_roll)
+            rect_lims["roll"][3] = y_max_roll if rect_lims["roll"][3] is None else max(rect_lims["pitch"][3], y_max_roll) 
 
             rect_lims["pitch"][0] = x_min_pitch if rect_lims["pitch"][0] is None else min(rect_lims["pitch"][0], x_min_pitch)
             rect_lims["pitch"][1] = x_max_pitch if rect_lims["pitch"][1] is None else max(rect_lims["pitch"][1], x_max_pitch)
@@ -321,8 +339,8 @@ def plotPoseVel(estimators, path = default_path, colors = None):
         
         figPoseVel.add_trace(
             go.Scatter(
-                x=observer_data["t"][index_t_yaw_200:index_t_yaw_240],
-                y=estimatorsPoses[observerName]["pos"][index_t_yaw_200:index_t_yaw_240, 1],
+                x=observer_data["t"][index_t_z_138:index_t_z_178],
+                y=estimatorsPoses[observerName]["ori"][index_t_z_138:index_t_z_178, 0],
                 mode='lines',
                 showlegend= False,
                 line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
@@ -330,23 +348,36 @@ def plotPoseVel(estimators, path = default_path, colors = None):
                 yaxis='y11'
             )
         )
-        # Add a rectangle to subplot (1,1) surrounding the inset plot
+
         figPoseVel.add_shape(
             type="rect",
-            xref="x4",  # Absolute positioning on the x-axis of subplot (3,3)
-            yref="y4",  # Absolute positioning on the y-axis of subplot (3,3)
-            x0=rect_lims["pos_y"][0],  # Start of x-range
-            x1=rect_lims["pos_y"][1],  # End of x-range
-            y0=rect_lims["pos_y"][2],  # Start of y-range
-            y1=rect_lims["pos_y"][3],  # End of y-range
+            xref="x2",  # Absolute positioning on the x-axis of subplot (3,3)
+            yref="y2",  # Absolute positioning on the y-axis of subplot (3,3)
+            x0=rect_lims["roll"][0],  # Start of x-range
+            x1=rect_lims["roll"][1],  # End of x-range
+            y0=rect_lims["roll"][2],  # Start of y-range
+            y1=rect_lims["roll"][3],  # End of y-range
             line=dict(color="grey", width=1),
             layer="above"  # Ensures the rectangle appears above the plot
         )
 
+        # # Add a rectangle to subplot (1,1) surrounding the inset plot
+        # figPoseVel.add_shape(
+        #     type="rect",
+        #     xref="x4",  # Absolute positioning on the x-axis of subplot (3,3)
+        #     yref="y4",  # Absolute positioning on the y-axis of subplot (3,3)
+        #     x0=rect_lims["pos_y"][0],  # Start of x-range
+        #     x1=rect_lims["pos_y"][1],  # End of x-range
+        #     y0=rect_lims["pos_y"][2],  # Start of y-range
+        #     y1=rect_lims["pos_y"][3],  # End of y-range
+        #     line=dict(color="grey", width=1),
+        #     layer="above"  # Ensures the rectangle appears above the plot
+        # )
+
         figPoseVel.add_trace(
             go.Scatter(
-                x=observer_data["t"][index_t_z_138:index_t_z_160],
-                y=estimatorsPoses[observerName]["pos"][index_t_z_138:index_t_z_160, 2],
+                x=observer_data["t"][index_t_z_138:index_t_z_178],
+                y=estimatorsPoses[observerName]["pos"][index_t_z_138:index_t_z_178, 2],
                 mode='lines',
                 showlegend= False,
                 line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
@@ -371,8 +402,8 @@ def plotPoseVel(estimators, path = default_path, colors = None):
         # Add the inset plot as an additional trace
         figPoseVel.add_trace(
             go.Scatter(
-                x=observer_data["t"][index_t_z_138:index_t_z_160],
-                y=estimatorsPoses[observerName]["ori"][index_t_z_138:index_t_z_160, 1],
+                x=observer_data["t"][index_t_z_138:index_t_z_178],
+                y=estimatorsPoses[observerName]["ori"][index_t_z_138:index_t_z_178, 1],
                 mode='lines',
                 showlegend= False,
                 line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
@@ -381,7 +412,7 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             )
         )
 
-        print(f"{np.mean(estimatorsPoses['Hartley']['ori'][index_t_yaw_200:index_t_yaw_240, 1] - estimatorsPoses['Mocap']['ori'][index_t_yaw_200:index_t_yaw_240, 1])}")
+        print(f"Average pitch error: {np.mean(estimatorsPoses['Hartley']['ori'][index_t_z_138:index_t_z_178, 1] - estimatorsPoses['Mocap']['ori'][index_t_z_138:index_t_z_178, 1])}")
         
 
         # Add the inset plot as an additional trace
@@ -498,62 +529,103 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             layer="above"  # Ensures the rectangle appears above the plot
         )
 
-        
+        figPoseVel.update_layout(
+                xaxis=dict(
+                        dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis1=dict(
+                        dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis2=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis3=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis4=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis5=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis6=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis7=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis8=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                xaxis9=dict(
+                        dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis1=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis2=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis3=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis4=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis5=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis6=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis7=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis8=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                yaxis9=dict(
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                )
         
         figPoseVel.update_layout(
                 xaxis10=dict(
-                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'darkgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
                 yaxis10=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                        gridcolor= 'lightgrey', zerolinecolor= 'darkgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
                 )
         
         figPoseVel.update_layout(
                 xaxis11=dict(
-                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
                 yaxis11=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
                 )
         
         figPoseVel.update_layout(
                 xaxis12=dict(
-                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis12=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
         
         figPoseVel.update_layout(
                 xaxis13=dict(
-                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=20, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis13=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
         
         figPoseVel.update_layout(
                 xaxis14=dict(
-                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis14=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
         
         figPoseVel.update_layout(
                 xaxis15=dict(
-                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis15=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
         
         figPoseVel.update_layout(
                 xaxis16=dict(
-                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis16=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
         
         figPoseVel.update_layout(
                 xaxis17=dict(
-                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
+                        dtick=10, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                 yaxis17=dict(
-                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                        gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                 )
 
         figPoseVel.add_trace(
@@ -688,4 +760,4 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     # Show the plot
     figPoseVel.show()
 
-    figPoseVel.write_image(f'/tmp/poseAndVel.pdf')
+    figPoseVel.write_image(f'/tmp/poseAndVel.svg')
