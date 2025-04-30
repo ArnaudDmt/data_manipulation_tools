@@ -38,9 +38,13 @@ def to_camel_case_with_letters(snake_str):
 #     return formatted_value
 
 
-def format_value(value):
+def format_PosVel(value):
     return value
-
+    #return value.replace("-", "")
+    
+def format_Angle(value):
+    #return str(abs(round(float(value),2)))
+    return f"{abs(round(float(value),2)):.2f}"
 
 
 
@@ -79,14 +83,18 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
             for var_name, metrics in metrics.items():
                 if(var_name in velErrorsFilter.keys()):
                     for metric, value in metrics.items():
-                        if(metric == 'mean' or metric == 'std'):
+                        if(metric == 'meanAbs' or metric == 'std'):
                             # Construct the variable name
                             varName = f'{cat}_{velErrorsFilter[var_name]}'
                             snake_case_var = f"{scenarioName}_{estimator}_velError_{varName}_{metric}"
                             camel_case_var = to_camel_case_with_letters(snake_case_var)
                             
                             # Ensure the value is properly formatted as a float
-                            formatted_value = format_value(value)                            
+                            if("tilt" in var_name or "yaw" in var_name):
+                                formatted_value = format_Angle(value)
+                            else:
+                                formatted_value = format_PosVel(value)
+
                             # Write the LaTeX definition with CamelCase
                             latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
     for subdistance, estimators in relative_errors.items():
@@ -95,13 +103,16 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                 for var_name, metrics in variables.items():
                     if(var_name in relErrorsFilter.keys()):
                         for metric, value in metrics.items():
-                            if(metric == 'mean' or metric == 'std'):
+                            if(metric == 'meanAbs' or metric == 'std'):
                                 # Construct the variable name
                                 snake_case_var = f"{scenarioName}_{estimator}_relError_{relErrorsFilter[var_name]}_{metric}"
                                 camel_case_var = to_camel_case_with_letters(snake_case_var)
                                 
                                 # Ensure the value is properly formatted as a float
-                                formatted_value = format_value(value)
+                                if("tilt" in var_name or "yaw" in var_name):
+                                    formatted_value = format_Angle(value)
+                                else:
+                                    formatted_value = format_PosVel(value)
                                 
                                 # Write the LaTeX definition with CamelCase
                                 latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
@@ -112,13 +123,15 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
             for var_name, metrics in variables.items():
                 if(var_name in absErrorsFilter.keys()):
                     for metric, value in metrics.items():
-                        if(metric == 'mean' or metric == 'std'):
+                        if(metric == 'meanAbs' or metric == 'std'):
                             # Construct the variable name
                             snake_case_var = f"{scenarioName}_{estimator}_absError_{experiment}_{absErrorsFilter[var_name]}_{metric}"
                             camel_case_var = to_camel_case_with_letters(snake_case_var)
-                            
                             # Ensure the value is properly formatted as a float
-                            formatted_value = format_value(value)
+                            if("tilt" in var_name or "ypr_0" in var_name):
+                                formatted_value = format_Angle(value)
+                            else:
+                                formatted_value = format_PosVel(value)
                             
                             # Write the LaTeX definition with CamelCase
                             latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
