@@ -56,8 +56,8 @@ def float_representer(dumper, value):
             text = f"{value:.1e}"
 
         else:
-            # Standard float: round to 4 decimal places
-            text = f"{value:.4f}"
+            # Standard float: round to 3 decimal places
+            text = f"{value:.3f}"
             print("Case 3")
             print(f"value: {value}")
             print(f"text: {text}")
@@ -139,6 +139,7 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
             lower_fence = []
             q1 = []
             mean = []
+            meanAbs = []
             median = []
             q3 = []
             upper_fence = []
@@ -151,6 +152,7 @@ def plot_relative_error_statistics_as_boxplot(errorStats, colors):
                 lower_fence.append(stats['min'])
                 q1.append(stats['q1'])
                 mean.append(stats['mean'])
+                meanAbs.append(stats['meanAbs'])
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
@@ -245,11 +247,12 @@ def plot_relative_errors(exps_to_merge, estimatorsList, colors):
             errorStats[d_subTraj][estimator] = dict.fromkeys(cats)
             for cat in cats:
                 errorStats[d_subTraj][estimator][cat]  = {
-                                        'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                        'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
                                         'std': 0.0, 'min': 0.0, 'max': 0.0  }
                 data_vec = regroupedErrors[d_subTraj][estimator][cat]
                 errorStats[d_subTraj][estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
                 errorStats[d_subTraj][estimator][cat]['mean'] = float(np.mean(data_vec))
+                errorStats[d_subTraj][estimator][cat]['meanAbs'] = float(np.mean(np.abs(data_vec)))
                 errorStats[d_subTraj][estimator][cat]['median'] = float(np.median(data_vec))
                 errorStats[d_subTraj][estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
                 errorStats[d_subTraj][estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
@@ -280,6 +283,7 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
             lower_fence = []
             q1 = []
             mean = []
+            meanAbs = []
             median = []
             q3 = []
             upper_fence = []
@@ -292,6 +296,7 @@ def plot_absolute_error_statistics_as_boxplot(errorStats, colors):
                 lower_fence.append(stats['min'])
                 q1.append(stats['q1'])
                 mean.append(stats['mean'])
+                meanAbs.append(stats['meanAbs'])
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
@@ -424,11 +429,12 @@ def plot_absolute_errors(exps_to_merge, estimatorsList, colors):
             errorStats[expe][estimator] = dict.fromkeys(regroupedErrors[expe][estimator].keys())
             for cat in errorStats[expe][estimator].keys():
                 errorStats[expe][estimator][cat]  = {
-                                        'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                        'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
                                         'std': 0.0, 'min': 0.0, 'max': 0.0  }
                 data_vec = regroupedErrors[expe][estimator][cat]
                 errorStats[expe][estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
                 errorStats[expe][estimator][cat]['mean'] = float(np.mean(data_vec))
+                errorStats[expe][estimator][cat]['meanAbs'] = float(np.mean(np.abs(data_vec)))
                 errorStats[expe][estimator][cat]['median'] = float(np.median(data_vec))
                 errorStats[expe][estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
                 errorStats[expe][estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
@@ -482,6 +488,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
             lower_fence = []
             q1 = []
             mean = []
+            meanAbs = []
             median = []
             q3 = []
             upper_fence = []
@@ -495,6 +502,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 lower_fence.append(stats['min'])
                 q1.append(stats['q1'])
                 mean.append(stats['mean'])
+                meanAbs.append(stats['meanAbs'])
                 median.append(stats['median'])
                 q3.append(stats['q3'])
                 upper_fence.append(stats['max'])
@@ -631,11 +639,12 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
             errorStats[estimator][cat] = dict.fromkeys(regroupedErrors[estimator][cat].keys())
             for axis in errorStats[estimator][cat].keys():
                 errorStats[estimator][cat][axis]  = {
-                                        'rmse': 0.0, 'mean': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                        'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
                                         'std': 0.0, 'min': 0.0, 'max': 0.0  }
                 data_vec = regroupedErrors[estimator][cat][axis]
                 errorStats[estimator][cat][axis]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
                 errorStats[estimator][cat][axis]['mean'] = float(np.mean(data_vec))
+                errorStats[estimator][cat][axis]['meanAbs'] = float(np.mean(np.abs(data_vec)))
                 errorStats[estimator][cat][axis]['median'] = float(np.median(data_vec))
                 errorStats[estimator][cat][axis]['q1'] = float(np.quantile(data_vec, 0.25))
                 errorStats[estimator][cat][axis]['q3'] = float(np.quantile(data_vec, 0.75))
@@ -676,24 +685,26 @@ def main():
 
     estimators_to_plot.reverse()
 
-    #plot_llve(exps_to_merge, estimatorsList, colors)
+    plot_llve(exps_to_merge, estimatorsList, colors)
     #plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     #plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
-    #plot_absolute_errors(exps_to_merge, estimatorsList, colors)
-    #plot_relative_errors(exps_to_merge, estimatorsList, colors)
+    plot_absolute_errors(exps_to_merge, estimatorsList, colors)
+    plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
     
     colors_to_plot = colors
-    #colors_to_plot["Mocap"] = (0, 0, 0, 1)
 
-    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    #plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
+
+    #import plotExternalForceAndBias
+    #plotExternalForceAndBias.computeExtWrenchError(exps_to_merge)
     
     if(len(exps_to_merge) == 1):
         import plotPoseAndVelocity
-        #plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
+        plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses

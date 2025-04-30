@@ -48,7 +48,7 @@ compute_metrics() {
         trap cleanup SIGINT
         
         # Define an array of observer names
-        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_ZPC" "KOWithoutWrenchSensors"  "Tilt" "Controller" "Hartley")  #"Vanyte"
+        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_ZPC" "KOWithoutWrenchSensors"  "Tilt" "Controller" "Vanyte" "Hartley") 
 
         mv "$outputDataPath/mocap_x_y_z_traj.pickle" "$outputDataPath/evals/mocap_x_y_z_traj.pickle"
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
