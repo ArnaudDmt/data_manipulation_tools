@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 
 from pathlib import Path
 
-import plotly.io as pio   
+import plotly.io as pio
 import os
 
 # Tell webbrowser to use wslview
@@ -46,7 +46,8 @@ default_estimators = [
     'KO_ASC',
     'KO_ZPC',
     'KOWithoutWrenchSensors',
-    'Mocap'
+    'Mocap',
+    'Tilt'
 ]
 
 
@@ -60,7 +61,8 @@ estimator_plot_args_default = {
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
     'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
     #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
-    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']}
+    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']},
+    'Tilt': {'group': 0, 'lineWidth': 3, 'column_names': ['Tilt_pose_tx', 'Tilt_pose_ty']}
 }
 
 

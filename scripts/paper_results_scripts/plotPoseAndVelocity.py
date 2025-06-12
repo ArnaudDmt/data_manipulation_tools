@@ -22,9 +22,10 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 zeros_row = np.zeros((1, 3))
 
 estimator_plot_args = {
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 1},
+   # 'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 1},
+    'Tilt': {'name': 'Valinor', 'lineWidth': 1},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 1},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 1}
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 1},
 }
 
 def continuous_euler(angles):
@@ -73,7 +74,6 @@ def plotPoseVel(estimators, path = default_path, colors = None):
 
     # Reset the index to start from 0
     observer_data.reset_index(drop=True, inplace=True)
-    print(observer_data.index)
 
     # Pose and vels of the imu in the floating base
     posImuFb_overlap = observer_data[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
@@ -81,6 +81,7 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     rImuFb_overlap = R.from_quat(quaternions_rImuFb_overlap)
     linVelImuFb_overlap = observer_data[['HartleyIEKF_imuFbKine_linVel_x', 'HartleyIEKF_imuFbKine_linVel_y', 'HartleyIEKF_imuFbKine_linVel_z']].to_numpy()
     angVelImuFb_overlap = observer_data[['HartleyIEKF_imuFbKine_angVel_x', 'HartleyIEKF_imuFbKine_angVel_y', 'HartleyIEKF_imuFbKine_angVel_z']].to_numpy()
+
     posFbImu_overlap = - rImuFb_overlap.apply(posImuFb_overlap, inverse=True)
     linVelFbImu_overlap = rImuFb_overlap.apply(np.cross(angVelImuFb_overlap, posImuFb_overlap), inverse=True) - rImuFb_overlap.apply(linVelImuFb_overlap, inverse=True)
 
@@ -91,15 +92,19 @@ def plotPoseVel(estimators, path = default_path, colors = None):
                                     'angVel': None}, \
                         # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
                         #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
-                        'KineticsObserver': {  'pos': observer_data[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy(), \
-                                                'ori': R.from_quat(observer_data[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()), \
-                                                'linVel': observer_data[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy(), \
-                                                'angVel': observer_data[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy()}, \
-                        'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()), \
-                                    'linVel': observer_data[['KO_ZPC_velW_vx', 'KO_ZPC_velW_vy', 'KO_ZPC_velW_vz']].to_numpy(), \
-                                    'angVel': observer_data[['KO_ZPC_velW_wx', 'KO_ZPC_velW_wy', 'KO_ZPC_velW_wz']].to_numpy()}, \
-                                        
+                        # 'KineticsObserver': {  'pos': observer_data[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy(), \
+                        #                         'ori': R.from_quat(observer_data[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()), \
+                        #                         'linVel': observer_data[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy(), \
+                        #                         'angVel': observer_data[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy()}, \
+                        # 'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
+                        #             'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()), \
+                        #             'linVel': observer_data[['KO_ZPC_velW_vx', 'KO_ZPC_velW_vy', 'KO_ZPC_velW_vz']].to_numpy(), \
+                        #             'angVel': observer_data[['KO_ZPC_velW_wx', 'KO_ZPC_velW_wy', 'KO_ZPC_velW_wz']].to_numpy()}, \
+                        'Tilt': {'pos': observer_data[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy(), \
+                                    'ori': R.from_quat(observer_data[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()), \
+                                    'linVel': observer_data[['Tilt_vel_vx', 'Tilt_vel_vy', 'Tilt_vel_vz']].to_numpy(), \
+                                    'angVel': observer_data[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy()},
+
                         'Hartley': {'pos': observer_data[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy(), \
                                     'ori': R.from_quat(observer_data[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()), \
                                     'linVel': None, \
@@ -135,33 +140,33 @@ def plotPoseVel(estimators, path = default_path, colors = None):
 
     
 
-    index_t_z_138 = 27400 - startIndex
-    index_t_z_178 = 36000 - startIndex
+#     index_t_z_138 = 27400 - startIndex
+#     index_t_z_178 = 36000 - startIndex
 
-    index_t_yaw_200 = 40000 - startIndex
-    index_t_yaw_240 = 48001 - startIndex
+#     index_t_yaw_200 = 40000 - startIndex
+#     index_t_yaw_240 = 48001 - startIndex
 
-    index_t_vel_139_5 = 27900 - startIndex
-    index_t_vel_141_5 = 28300 - startIndex
+#     index_t_vel_139_5 = 27900 - startIndex
+#     index_t_vel_141_5 = 28300 - startIndex
 
-    positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_178 + 1]
+#     positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_178 + 1]
 
     # Initialize cumulative distance
-    cumulative_distance = 0.0
+#     cumulative_distance = 0.0
 
-    # Iterate over consecutive pairs of points
-    for i in range(len(positions) - 1):
-        # Get current and next position (only x and y components)
-        pos_current = positions[i][:2]  # Take x and y components
-        pos_next = positions[i + 1][:2]  # Take x and y components
+#     # Iterate over consecutive pairs of points
+#     for i in range(len(positions) - 1):
+#         # Get current and next position (only x and y components)
+#         pos_current = positions[i][:2]  # Take x and y components
+#         pos_next = positions[i + 1][:2]  # Take x and y components
         
-        # Compute the 2D distance between consecutive points
-        distance = np.sqrt((pos_next[0] - pos_current[0])**2 + (pos_next[1] - pos_current[1])**2)
+#         # Compute the 2D distance between consecutive points
+#         distance = np.sqrt((pos_next[0] - pos_current[0])**2 + (pos_next[1] - pos_current[1])**2)
         
-        # Add to cumulative distance
-        cumulative_distance += distance
+#         # Add to cumulative distance
+#         cumulative_distance += distance
 
-    print(f"Cumulative 2D Distance along x and y: {cumulative_distance}")
+#     print(f"Cumulative 2D Distance along x and y: {cumulative_distance}")
 
 
     rect_lims = {"pos_x": [None, None, None, None], "pos_y": [None, None, None, None], "pos_z": [None, None, None, None], "roll": [None, None, None, None], "pitch": [None, None, None, None], "yaw": [None, None, None, None], "vel_x": [None, None, None, None], "vel_y": [None, None, None, None], "vel_z": [None, None, None, None]}

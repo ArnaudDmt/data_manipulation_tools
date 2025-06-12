@@ -34,7 +34,7 @@ def continuous_euler(angles):
     return continuous_angles
 
 
-def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None, colors = None, scriptName = "finalResults", timeStep_s = 0.005):
+def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None, colors = None, scriptName = "finalResults"):
 
     # Read the CSV file into a DataFrame
 
