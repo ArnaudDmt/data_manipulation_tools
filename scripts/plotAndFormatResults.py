@@ -4,6 +4,7 @@ import signal
 import sys
 import numpy as np
 import pandas as pd
+import yaml
 import plotly.graph_objects as go
 from scipy.spatial.transform import Rotation as R
 
@@ -13,10 +14,6 @@ from scipy.signal import butter,filtfilt
 
 
 ###############################  Main variables initialization  ###############################
-
-
-
-
 
 
 def continuous_euler(angles):
@@ -41,28 +38,13 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
     dfObservers = pd.read_csv(f'{path_to_project}/output_data/observerResultsCSV.csv', delimiter=';')
 
     if(estimatorsList == None):
-        estimatorsList = set()
-
-        if 'KO_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KineticsObserver")
-        if 'KO_APC_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KO_APC")
-        if 'KO_ASC_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KO_ASC")
-        if 'KO_ZPC_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KO_ZPC")
-        if 'KOWithoutWrenchSensors_posW_tx' in dfObservers.columns:
-            estimatorsList.add("KOWithoutWrenchSensors")
-        if 'Vanyte_pose_tx' in dfObservers.columns:
-            estimatorsList.add("Vanyte")
-        if 'Tilt_pose_tx' in dfObservers.columns:
-            estimatorsList.add("Tilt")
-        if 'Mocap_pos_x' in dfObservers.columns:
-            estimatorsList.add("Mocap")
-        if 'Controller_tx' in dfObservers.columns:
-            estimatorsList.add("Controller")
-        if 'Hartley_Position_x' in dfObservers.columns:
-            estimatorsList.add("Hartley")
+        with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
+            try:
+                observers_infos_str = file.read()
+                observers_infos_yaml = yaml.safe_load(observers_infos_str)
+                estimatorsList = set(observers_infos_yaml.get('observers'))
+            except yaml.YAMLError as exc:
+                print(exc)
 
     if (colors == None):
         colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
@@ -78,136 +60,154 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
 
     ###############################  Computations  ###############################
-
-
+    
+    kinematics = dict()
 
     if("Mocap" in estimatorsList):
         dfObservers_overlap = dfObservers[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
         df_mocap_toIgnore = dfObservers[dfObservers["Mocap_datasOverlapping"] != "Datas overlap"]
 
-        posMocap_overlap = dfObservers_overlap[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
-        quaternionsMocap_overlap = dfObservers_overlap[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
-        rMocap_overlap = R.from_quat(quaternionsMocap_overlap)
-        euler_angles_Mocap_overlap = rMocap_overlap.as_euler('xyz')
-        euler_angles_Mocap_overlap = continuous_euler(euler_angles_Mocap_overlap)
+        kinematics["Mocap"] = dict()
+        kinematics["Mocap"]["position_overlap"] = dfObservers_overlap[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy()
+        kinematics["Mocap"]["quaternions_overlap"] = dfObservers_overlap[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()
+        kinematics["Mocap"]["R_overlap"] = R.from_quat(kinematics["Mocap"]["quaternions_overlap"])
+        euler_angles_Mocap_overlap = kinematics["Mocap"]["R_overlap"].as_euler('xyz')
+        kinematics["Mocap"]["euler_angles_overlap"] = continuous_euler(euler_angles_Mocap_overlap)
 
         if(len(df_mocap_toIgnore) > 0):
-            posMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
-            quaternionsMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
+            posMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy()
+            quaternionsMocap_mocap_toIgnore = df_mocap_toIgnore[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()
             rMocap_mocap_toIgnore = R.from_quat(quaternionsMocap_mocap_toIgnore)
             euler_angles_Mocap_mocap_toIgnore = rMocap_mocap_toIgnore.as_euler('xyz')
             euler_angles_Mocap_mocap_toIgnore = continuous_euler(euler_angles_Mocap_mocap_toIgnore)
-            
-    if("KineticsObserver" in estimatorsList):
-        posKO = dfObservers[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
-        quaternionsKO = dfObservers[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
-        rKO = R.from_quat(quaternionsKO)
-        euler_angles_KO = rKO.as_euler('xyz')
-        euler_angles_KO = continuous_euler(euler_angles_KO)
 
-        if("Mocap" in estimatorsList):
-            posKO_overlap = dfObservers_overlap[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
-            quaternionsKO_overlap = dfObservers_overlap[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
-            rKO_overlap = R.from_quat(quaternionsKO_overlap)
+    
+    for estimator in estimatorsList:
+        if estimator != "RI-EKF" and estimator != "Mocap":
+            kinematics[estimator] = dict()
+            kinematics[estimator]["position"] = dfObservers[[estimator + '_position_x', estimator + '_position_y', estimator + '_position_z']].to_numpy()
+            kinematics[estimator]["quaternions"] = dfObservers[[estimator + '_orientation_x', estimator + '_orientation_y', estimator + '_orientation_z', estimator + '_orientation_w']].to_numpy()
+            rot = R.from_quat(kinematics[estimator]["quaternions"])
+            kinematics[estimator]["R"] = rot
+            euler_angles = rot.as_euler('xyz')
+            euler_angles = continuous_euler(euler_angles)
+            kinematics[estimator]["euler_angles"] = euler_angles
+
+            if("Mocap" in estimatorsList):
+                kinematics[estimator]["position_overlap"] = dfObservers_overlap[[estimator + '_position_x', estimator + '_position_y', estimator + '_position_z']].to_numpy()
+                kinematics[estimator]["quaternions_overlap"] = dfObservers_overlap[[estimator + '_orientation_x', estimator + '_orientation_y', estimator + '_orientation_z', estimator + '_orientation_w']].to_numpy()
+                kinematics[estimator]["R_overlap"] = R.from_quat(kinematics[estimator]["quaternions_overlap"])
+                euler_angles_overlap = kinematics[estimator]["R_overlap"].as_euler('xyz')
+                kinematics[estimator]["euler_angles_overlap"] = continuous_euler(euler_angles_overlap)
+
+    # if("KineticsObserver" in estimatorsList):
+    #     posKO = dfObservers[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
+    #     quaternionsKO = dfObservers[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
+    #     rKO = R.from_quat(quaternionsKO)
+    #     euler_angles_KO = rKO.as_euler('xyz')
+    #     euler_angles_KO = continuous_euler(euler_angles_KO)
+
+    #     if("Mocap" in estimatorsList):
+    #         posKO_overlap = dfObservers_overlap[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy()
+    #         quaternionsKO_overlap = dfObservers_overlap[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()
+    #         rKO_overlap = R.from_quat(quaternionsKO_overlap)
 
         
-    if("KO_APC" in estimatorsList):
-        posKO_APC = dfObservers[['KO_APC_posW_tx', 'KO_APC_posW_ty', 'KO_APC_posW_tz']].to_numpy()
-        quaternionsKO_APC = dfObservers[['KO_APC_posW_qx', 'KO_APC_posW_qy', 'KO_APC_posW_qz', 'KO_APC_posW_qw']].to_numpy()
-        rKO_APC = R.from_quat(quaternionsKO_APC)
-        euler_angles_KO_APC = rKO_APC.as_euler('xyz')
-        euler_angles_KO_APC = continuous_euler(euler_angles_KO_APC)
+    # if("KO_APC" in estimatorsList):
+    #     posKO_APC = dfObservers[['KO_APC_posW_tx', 'KO_APC_posW_ty', 'KO_APC_posW_tz']].to_numpy()
+    #     quaternionsKO_APC = dfObservers[['KO_APC_posW_qx', 'KO_APC_posW_qy', 'KO_APC_posW_qz', 'KO_APC_posW_qw']].to_numpy()
+    #     rKO_APC = R.from_quat(quaternionsKO_APC)
+    #     euler_angles_KO_APC = rKO_APC.as_euler('xyz')
+    #     euler_angles_KO_APC = continuous_euler(euler_angles_KO_APC)
 
-        if("Mocap" in estimatorsList):
-            posKO_APC_overlap = dfObservers_overlap[['KO_APC_posW_tx', 'KO_APC_posW_ty', 'KO_APC_posW_tz']].to_numpy()
-            quaternionsKO_APC_overlap = dfObservers_overlap[['KO_APC_posW_qx', 'KO_APC_posW_qy', 'KO_APC_posW_qz', 'KO_APC_posW_qw']].to_numpy()
-            rKO_APC_overlap = R.from_quat(quaternionsKO_APC_overlap)
+    #     if("Mocap" in estimatorsList):
+    #         posKO_APC_overlap = dfObservers_overlap[['KO_APC_posW_tx', 'KO_APC_posW_ty', 'KO_APC_posW_tz']].to_numpy()
+    #         quaternionsKO_APC_overlap = dfObservers_overlap[['KO_APC_posW_qx', 'KO_APC_posW_qy', 'KO_APC_posW_qz', 'KO_APC_posW_qw']].to_numpy()
+    #         rKO_APC_overlap = R.from_quat(quaternionsKO_APC_overlap)
             
 
-    if("KO_ASC" in estimatorsList):
-        posKO_ASC = dfObservers[['KO_ASC_posW_tx', 'KO_ASC_posW_ty', 'KO_ASC_posW_tz']].to_numpy()
-        quaternionsKO_ASC = dfObservers[['KO_ASC_posW_qx', 'KO_ASC_posW_qy', 'KO_ASC_posW_qz', 'KO_ASC_posW_qw']].to_numpy()
-        rKO_ASC = R.from_quat(quaternionsKO_ASC)
-        euler_angles_KO_ASC = rKO_ASC.as_euler('xyz')
-        euler_angles_KO_ASC = continuous_euler(euler_angles_KO_ASC)
+    # if("KO_ASC" in estimatorsList):
+    #     posKO_ASC = dfObservers[['KO_ASC_posW_tx', 'KO_ASC_posW_ty', 'KO_ASC_posW_tz']].to_numpy()
+    #     quaternionsKO_ASC = dfObservers[['KO_ASC_posW_qx', 'KO_ASC_posW_qy', 'KO_ASC_posW_qz', 'KO_ASC_posW_qw']].to_numpy()
+    #     rKO_ASC = R.from_quat(quaternionsKO_ASC)
+    #     euler_angles_KO_ASC = rKO_ASC.as_euler('xyz')
+    #     euler_angles_KO_ASC = continuous_euler(euler_angles_KO_ASC)
 
-        if("Mocap" in estimatorsList):
-            posKO_ASC_overlap = dfObservers_overlap[['KO_ASC_posW_tx', 'KO_ASC_posW_ty', 'KO_ASC_posW_tz']].to_numpy()
-            quaternionsKO_ASC_overlap = dfObservers_overlap[['KO_ASC_posW_qx', 'KO_ASC_posW_qy', 'KO_ASC_posW_qz', 'KO_ASC_posW_qw']].to_numpy()
-            rKO_ASC_overlap = R.from_quat(quaternionsKO_ASC_overlap)
+    #     if("Mocap" in estimatorsList):
+    #         posKO_ASC_overlap = dfObservers_overlap[['KO_ASC_posW_tx', 'KO_ASC_posW_ty', 'KO_ASC_posW_tz']].to_numpy()
+    #         quaternionsKO_ASC_overlap = dfObservers_overlap[['KO_ASC_posW_qx', 'KO_ASC_posW_qy', 'KO_ASC_posW_qz', 'KO_ASC_posW_qw']].to_numpy()
+    #         rKO_ASC_overlap = R.from_quat(quaternionsKO_ASC_overlap)
 
-    if("KO_ZPC" in estimatorsList):
-        posKO_ZPC = dfObservers[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy()
-        quaternionsKO_ZPC = dfObservers[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()
-        rKO_ZPC = R.from_quat(quaternionsKO_ZPC)
-        euler_angles_KO_ZPC = rKO_ZPC.as_euler('xyz')
-        euler_angles_KO_ZPC = continuous_euler(euler_angles_KO_ZPC)
+    # if("KO_ZPC" in estimatorsList):
+    #     posKO_ZPC = dfObservers[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy()
+    #     quaternionsKO_ZPC = dfObservers[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()
+    #     rKO_ZPC = R.from_quat(quaternionsKO_ZPC)
+    #     euler_angles_KO_ZPC = rKO_ZPC.as_euler('xyz')
+    #     euler_angles_KO_ZPC = continuous_euler(euler_angles_KO_ZPC)
 
-        if("Mocap" in estimatorsList):
-            posKO_ZPC_overlap = dfObservers_overlap[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy()
-            quaternionsKO_ZPC_overlap = dfObservers_overlap[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()
-            rKO_ZPC_overlap = R.from_quat(quaternionsKO_ZPC_overlap)
-
-            
-
-    if("KOWithoutWrenchSensors" in estimatorsList):
-        posKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
-        quaternionsKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
-        rKOWithoutWrenchSensors = R.from_quat(quaternionsKOWithoutWrenchSensors)
-        euler_angles_KOWithoutWrenchSensors = rKOWithoutWrenchSensors.as_euler('xyz')
-        euler_angles_KOWithoutWrenchSensors = continuous_euler(euler_angles_KOWithoutWrenchSensors)
-
-        if("Mocap" in estimatorsList):
-            posKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
-            quaternionsKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
-            rKOWithoutWrenchSensors_overlap = R.from_quat(quaternionsKOWithoutWrenchSensors_overlap)
-            
-
-
-    if("Vanyte" in estimatorsList):
-        posVanyte = dfObservers[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
-        quaternionsVanyte = dfObservers[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
-        rVanyte = R.from_quat(quaternionsVanyte)
-        euler_angles_vanyte = rVanyte.as_euler('xyz')
-        euler_angles_vanyte = continuous_euler(euler_angles_vanyte)
-
-        if("Mocap" in estimatorsList):
-            posVanyte_overlap = dfObservers_overlap[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
-            quaternionsVanyte_overlap = dfObservers_overlap[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
-            rVanyte_overlap = R.from_quat(quaternionsVanyte_overlap)
+    #     if("Mocap" in estimatorsList):
+    #         posKO_ZPC_overlap = dfObservers_overlap[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy()
+    #         quaternionsKO_ZPC_overlap = dfObservers_overlap[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()
+    #         rKO_ZPC_overlap = R.from_quat(quaternionsKO_ZPC_overlap)
 
             
 
-    if("Tilt" in estimatorsList):
-        posTilt = dfObservers[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
-        quaternionsTilt = dfObservers[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
-        rTilt = R.from_quat(quaternionsTilt)
-        euler_angles_Tilt = rTilt.as_euler('xyz')
-        euler_angles_Tilt = continuous_euler(euler_angles_Tilt)
+    # if("KOWithoutWrenchSensors" in estimatorsList):
+    #     posKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
+    #     quaternionsKOWithoutWrenchSensors = dfObservers[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
+    #     rKOWithoutWrenchSensors = R.from_quat(quaternionsKOWithoutWrenchSensors)
+    #     euler_angles_KOWithoutWrenchSensors = rKOWithoutWrenchSensors.as_euler('xyz')
+    #     euler_angles_KOWithoutWrenchSensors = continuous_euler(euler_angles_KOWithoutWrenchSensors)
 
-        if("Mocap" in estimatorsList):
-            posTilt_overlap = dfObservers_overlap[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
-            quaternionsTilt_overlap = dfObservers_overlap[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
-            rTilt_overlap = R.from_quat(quaternionsTilt_overlap)
+    #     if("Mocap" in estimatorsList):
+    #         posKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty', 'KOWithoutWrenchSensors_posW_tz']].to_numpy()
+    #         quaternionsKOWithoutWrenchSensors_overlap = dfObservers_overlap[['KOWithoutWrenchSensors_posW_qx', 'KOWithoutWrenchSensors_posW_qy', 'KOWithoutWrenchSensors_posW_qz', 'KOWithoutWrenchSensors_posW_qw']].to_numpy()
+    #         rKOWithoutWrenchSensors_overlap = R.from_quat(quaternionsKOWithoutWrenchSensors_overlap)
+            
+
+
+    # if("Vanyte" in estimatorsList):
+    #     posVanyte = dfObservers[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
+    #     quaternionsVanyte = dfObservers[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
+    #     rVanyte = R.from_quat(quaternionsVanyte)
+    #     euler_angles_vanyte = rVanyte.as_euler('xyz')
+    #     euler_angles_vanyte = continuous_euler(euler_angles_vanyte)
+
+    #     if("Mocap" in estimatorsList):
+    #         posVanyte_overlap = dfObservers_overlap[['Vanyte_pose_tx', 'Vanyte_pose_ty', 'Vanyte_pose_tz']].to_numpy()
+    #         quaternionsVanyte_overlap = dfObservers_overlap[['Vanyte_pose_qx', 'Vanyte_pose_qy', 'Vanyte_pose_qz', 'Vanyte_pose_qw']].to_numpy()
+    #         rVanyte_overlap = R.from_quat(quaternionsVanyte_overlap)
 
             
 
-    if("Controller" in estimatorsList):
-        posController = dfObservers[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
-        quaternionsController = dfObservers[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
-        rController = R.from_quat(quaternionsController)
-        euler_angles_Controller = rController.as_euler('xyz')
-        euler_angles_Controller = continuous_euler(euler_angles_Controller)
+    # if("Tilt" in estimatorsList):
+    #     posTilt = dfObservers[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
+    #     quaternionsTilt = dfObservers[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
+    #     rTilt = R.from_quat(quaternionsTilt)
+    #     euler_angles_Tilt = rTilt.as_euler('xyz')
+    #     euler_angles_Tilt = continuous_euler(euler_angles_Tilt)
 
-        if("Mocap" in estimatorsList):
-            posController_overlap = dfObservers_overlap[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
-            quaternionsController_overlap = dfObservers_overlap[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
-            rController_overlap = R.from_quat(quaternionsController_overlap)
+    #     if("Mocap" in estimatorsList):
+    #         posTilt_overlap = dfObservers_overlap[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy()
+    #         quaternionsTilt_overlap = dfObservers_overlap[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()
+    #         rTilt_overlap = R.from_quat(quaternionsTilt_overlap)
+
+            
+
+    # if("Controller" in estimatorsList):
+    #     posController = dfObservers[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
+    #     quaternionsController = dfObservers[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
+    #     rController = R.from_quat(quaternionsController)
+    #     euler_angles_Controller = rController.as_euler('xyz')
+    #     euler_angles_Controller = continuous_euler(euler_angles_Controller)
+
+    #     if("Mocap" in estimatorsList):
+    #         posController_overlap = dfObservers_overlap[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy()
+    #         quaternionsController_overlap = dfObservers_overlap[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy()
+    #         rController_overlap = R.from_quat(quaternionsController_overlap)
 
 
-
-
-    if("Hartley" in estimatorsList):
+    if("RI-EKF" in estimatorsList and "Mocap" in estimatorsList):
         # Convert quaternion to Euler angles (roll, pitch, yaw)
         posHartley_fb = dfObservers[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy()
         quaternionsHartley_fb = dfObservers[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
@@ -217,9 +217,12 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         euler_angles_Hartley = continuous_euler(euler_angles_Hartley)
 
         if("Mocap" in estimatorsList):
-            posHartley_fb_overlap = dfObservers_overlap[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy()
-            quaternionsHartley_fb_overlap = dfObservers_overlap[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
-            rHartley_fb_overlap = R.from_quat(quaternionsHartley_fb_overlap)
+            kinematics["RI-EKF"]["position_overlap"] = dfObservers_overlap[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy()
+            kinematics["RI-EKF"]["quaternions_overlap"] = dfObservers_overlap[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
+            kinematics["RI-EKF"]["R_overlap"] = R.from_quat(kinematics["RI-EKF"]["quaternions_overlap"])
+            euler_angles_Hartley_overlap = kinematics["RI-EKF"]["R_overlap"].as_euler('xyz')
+            kinematics["RI-EKF"]["euler_angles_overlap"] = continuous_euler(euler_angles_Hartley_overlap)
+            
 
             posImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
             quaternions_rImuFb_overlap = dfObservers_overlap[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
@@ -261,44 +264,19 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             with open(f'{path_to_project}/output_data/mocap_x_y_z_traj.pickle', 'wb') as f:
                 pickle.dump(d, f)
 
+            for estimator in estimatorsList:
+                dfPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+                dfPose_overlap['timestamp'] = dfObservers_overlap['t']
+                dfPose_overlap['tx'] = kinematics[estimator]["position_overlap"][:,0]
+                dfPose_overlap['ty'] = kinematics[estimator]["position_overlap"][:,1]
+                dfPose_overlap['tz'] = kinematics[estimator]["position_overlap"][:,2]
+                dfPose_overlap['qx'] = kinematics[estimator]["quaternions_overlap"][:,0]
+                dfPose_overlap['qy'] = kinematics[estimator]["quaternions_overlap"][:,1]
+                dfPose_overlap['qz'] = kinematics[estimator]["quaternions_overlap"][:,2]
+                dfPose_overlap['qw'] = kinematics[estimator]["quaternions_overlap"][:,3]
 
-            if("KineticsObserver" in estimatorsList):
-                dfKoPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKoPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKoPose_overlap['tx'] = posKO_overlap[:,0]
-                dfKoPose_overlap['ty'] = posKO_overlap[:,1]
-                dfKoPose_overlap['tz'] = posKO_overlap[:,2]
-                dfKoPose_overlap['qx'] = quaternionsKO_overlap[:,0]
-                dfKoPose_overlap['qy'] = quaternionsKO_overlap[:,1]
-                dfKoPose_overlap['qz'] = quaternionsKO_overlap[:,2]
-                dfKoPose_overlap['qw'] = quaternionsKO_overlap[:,3]
-
-                txtOutput = f'{path_to_project}/output_data/formattedKineticsObserver_Traj.txt'
-                dfKoPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
-
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
-
-                d = {'x': posKO_overlap[:, 0], 'y': posKO_overlap[:, 1], 'z': posKO_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KineticsObserver_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
-
-            if("KO_APC" in estimatorsList):
-                dfKO_APCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKO_APCPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKO_APCPose_overlap['tx'] = posKO_APC_overlap[:,0]
-                dfKO_APCPose_overlap['ty'] = posKO_APC_overlap[:,1]
-                dfKO_APCPose_overlap['tz'] = posKO_APC_overlap[:,2]
-                dfKO_APCPose_overlap['qx'] = quaternionsKO_APC_overlap[:,0]
-                dfKO_APCPose_overlap['qy'] = quaternionsKO_APC_overlap[:,1]
-                dfKO_APCPose_overlap['qz'] = quaternionsKO_APC_overlap[:,2]
-                dfKO_APCPose_overlap['qw'] = quaternionsKO_APC_overlap[:,3]
-
-                txtOutput = f'{path_to_project}/output_data/formattedKO_APC_Traj.txt'
-                dfKO_APCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+                txtOutput = f'{path_to_project}/output_data/formatted_{estimator}_Traj.txt'
+                dfPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
                 line = '# timestamp tx ty tz qx qy qz qw' 
                 with open(txtOutput, 'r+') as file: 
@@ -306,179 +284,203 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     file.seek(0, 0) 
                     file.write(line + '\n' + file_data) 
 
-                d = {'x': posKO_APC_overlap[:, 0], 'y': posKO_APC_overlap[:, 1], 'z': posKO_APC_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KO_APC_x_y_z_traj.pickle', 'wb') as f:
+                d = {'x': dfPose_overlap['tx'], 'y': dfPose_overlap['ty'], 'z': dfPose_overlap['tz']}
+                with open(f'{path_to_project}/output_data/{estimator}_x_y_z_traj.pickle', 'wb') as f:
                     pickle.dump(d, f)
 
-            if("KO_ASC" in estimatorsList):
-                dfKO_ASCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKO_ASCPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKO_ASCPose_overlap['tx'] = posKO_ASC_overlap[:,0]
-                dfKO_ASCPose_overlap['ty'] = posKO_ASC_overlap[:,1]
-                dfKO_ASCPose_overlap['tz'] = posKO_ASC_overlap[:,2]
-                dfKO_ASCPose_overlap['qx'] = quaternionsKO_ASC_overlap[:,0]
-                dfKO_ASCPose_overlap['qy'] = quaternionsKO_ASC_overlap[:,1]
-                dfKO_ASCPose_overlap['qz'] = quaternionsKO_ASC_overlap[:,2]
-                dfKO_ASCPose_overlap['qw'] = quaternionsKO_ASC_overlap[:,3]
+            # if("KO_APC" in estimatorsList):
+            #     dfKO_APCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfKO_APCPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfKO_APCPose_overlap['tx'] = posKO_APC_overlap[:,0]
+            #     dfKO_APCPose_overlap['ty'] = posKO_APC_overlap[:,1]
+            #     dfKO_APCPose_overlap['tz'] = posKO_APC_overlap[:,2]
+            #     dfKO_APCPose_overlap['qx'] = quaternionsKO_APC_overlap[:,0]
+            #     dfKO_APCPose_overlap['qy'] = quaternionsKO_APC_overlap[:,1]
+            #     dfKO_APCPose_overlap['qz'] = quaternionsKO_APC_overlap[:,2]
+            #     dfKO_APCPose_overlap['qw'] = quaternionsKO_APC_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedKO_ASC_Traj.txt'
-                dfKO_ASCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedKO_APC_Traj.txt'
+            #     dfKO_APCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
 
-                d = {'x': posKO_ASC_overlap[:, 0], 'y': posKO_ASC_overlap[:, 1], 'z': posKO_ASC_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KO_ASC_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posKO_APC_overlap[:, 0], 'y': posKO_APC_overlap[:, 1], 'z': posKO_APC_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/KO_APC_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
-            if("KO_ZPC" in estimatorsList):
-                dfKO_ZPCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKO_ZPCPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKO_ZPCPose_overlap['tx'] = posKO_ZPC_overlap[:,0]
-                dfKO_ZPCPose_overlap['ty'] = posKO_ZPC_overlap[:,1]
-                dfKO_ZPCPose_overlap['tz'] = posKO_ZPC_overlap[:,2]
-                dfKO_ZPCPose_overlap['qx'] = quaternionsKO_ZPC_overlap[:,0]
-                dfKO_ZPCPose_overlap['qy'] = quaternionsKO_ZPC_overlap[:,1]
-                dfKO_ZPCPose_overlap['qz'] = quaternionsKO_ZPC_overlap[:,2]
-                dfKO_ZPCPose_overlap['qw'] = quaternionsKO_ZPC_overlap[:,3]
+            # if("KO_ASC" in estimatorsList):
+            #     dfKO_ASCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfKO_ASCPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfKO_ASCPose_overlap['tx'] = posKO_ASC_overlap[:,0]
+            #     dfKO_ASCPose_overlap['ty'] = posKO_ASC_overlap[:,1]
+            #     dfKO_ASCPose_overlap['tz'] = posKO_ASC_overlap[:,2]
+            #     dfKO_ASCPose_overlap['qx'] = quaternionsKO_ASC_overlap[:,0]
+            #     dfKO_ASCPose_overlap['qy'] = quaternionsKO_ASC_overlap[:,1]
+            #     dfKO_ASCPose_overlap['qz'] = quaternionsKO_ASC_overlap[:,2]
+            #     dfKO_ASCPose_overlap['qw'] = quaternionsKO_ASC_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedKO_ZPC_Traj.txt'
-                dfKO_ZPCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedKO_ASC_Traj.txt'
+            #     dfKO_ASCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
 
-                d = {'x': posKO_ZPC_overlap[:, 0], 'y': posKO_ZPC_overlap[:, 1], 'z': posKO_ZPC_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KO_ZPC_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posKO_ASC_overlap[:, 0], 'y': posKO_ASC_overlap[:, 1], 'z': posKO_ASC_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/KO_ASC_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
-            if("KOWithoutWrenchSensors" in estimatorsList):
-                dfKOWithoutWrenchSensorsPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfKOWithoutWrenchSensorsPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfKOWithoutWrenchSensorsPose_overlap['tx'] = posKOWithoutWrenchSensors_overlap[:,0]
-                dfKOWithoutWrenchSensorsPose_overlap['ty'] = posKOWithoutWrenchSensors_overlap[:,1]
-                dfKOWithoutWrenchSensorsPose_overlap['tz'] = posKOWithoutWrenchSensors_overlap[:,2]
-                dfKOWithoutWrenchSensorsPose_overlap['qx'] = quaternionsKOWithoutWrenchSensors_overlap[:,0]
-                dfKOWithoutWrenchSensorsPose_overlap['qy'] = quaternionsKOWithoutWrenchSensors_overlap[:,1]
-                dfKOWithoutWrenchSensorsPose_overlap['qz'] = quaternionsKOWithoutWrenchSensors_overlap[:,2]
-                dfKOWithoutWrenchSensorsPose_overlap['qw'] = quaternionsKOWithoutWrenchSensors_overlap[:,3]
+            # if("KO_ZPC" in estimatorsList):
+            #     dfKO_ZPCPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfKO_ZPCPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfKO_ZPCPose_overlap['tx'] = posKO_ZPC_overlap[:,0]
+            #     dfKO_ZPCPose_overlap['ty'] = posKO_ZPC_overlap[:,1]
+            #     dfKO_ZPCPose_overlap['tz'] = posKO_ZPC_overlap[:,2]
+            #     dfKO_ZPCPose_overlap['qx'] = quaternionsKO_ZPC_overlap[:,0]
+            #     dfKO_ZPCPose_overlap['qy'] = quaternionsKO_ZPC_overlap[:,1]
+            #     dfKO_ZPCPose_overlap['qz'] = quaternionsKO_ZPC_overlap[:,2]
+            #     dfKO_ZPCPose_overlap['qw'] = quaternionsKO_ZPC_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedKOWithoutWrenchSensors_Traj.txt'
-                dfKOWithoutWrenchSensorsPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedKO_ZPC_Traj.txt'
+            #     dfKO_ZPCPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
 
-                d = {'x': posKOWithoutWrenchSensors_overlap[:, 0], 'y': posKOWithoutWrenchSensors_overlap[:, 1], 'z': posKOWithoutWrenchSensors_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/KOWithoutWrenchSensors_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posKO_ZPC_overlap[:, 0], 'y': posKO_ZPC_overlap[:, 1], 'z': posKO_ZPC_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/KO_ZPC_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
-            if("Vanyte" in estimatorsList):
-                dfVanytePose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfVanytePose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfVanytePose_overlap['tx'] = posVanyte_overlap[:,0]
-                dfVanytePose_overlap['ty'] = posVanyte_overlap[:,1]
-                dfVanytePose_overlap['tz'] = posVanyte_overlap[:,2]
-                dfVanytePose_overlap['qx'] = quaternionsVanyte_overlap[:,0]
-                dfVanytePose_overlap['qy'] = quaternionsVanyte_overlap[:,1]
-                dfVanytePose_overlap['qz'] = quaternionsVanyte_overlap[:,2]
-                dfVanytePose_overlap['qw'] = quaternionsVanyte_overlap[:,3]
+            # if("KOWithoutWrenchSensors" in estimatorsList):
+            #     dfKOWithoutWrenchSensorsPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfKOWithoutWrenchSensorsPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfKOWithoutWrenchSensorsPose_overlap['tx'] = posKOWithoutWrenchSensors_overlap[:,0]
+            #     dfKOWithoutWrenchSensorsPose_overlap['ty'] = posKOWithoutWrenchSensors_overlap[:,1]
+            #     dfKOWithoutWrenchSensorsPose_overlap['tz'] = posKOWithoutWrenchSensors_overlap[:,2]
+            #     dfKOWithoutWrenchSensorsPose_overlap['qx'] = quaternionsKOWithoutWrenchSensors_overlap[:,0]
+            #     dfKOWithoutWrenchSensorsPose_overlap['qy'] = quaternionsKOWithoutWrenchSensors_overlap[:,1]
+            #     dfKOWithoutWrenchSensorsPose_overlap['qz'] = quaternionsKOWithoutWrenchSensors_overlap[:,2]
+            #     dfKOWithoutWrenchSensorsPose_overlap['qw'] = quaternionsKOWithoutWrenchSensors_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedVanyte_Traj.txt'
-                dfVanytePose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedKOWithoutWrenchSensors_Traj.txt'
+            #     dfKOWithoutWrenchSensorsPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data)
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
 
-                d = {'x': posVanyte_overlap[:, 0], 'y': posVanyte_overlap[:, 1], 'z': posVanyte_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/Vanyte_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posKOWithoutWrenchSensors_overlap[:, 0], 'y': posKOWithoutWrenchSensors_overlap[:, 1], 'z': posKOWithoutWrenchSensors_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/KOWithoutWrenchSensors_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
-            if("Tilt" in estimatorsList):
-                dfTiltPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfTiltPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfTiltPose_overlap['tx'] = posTilt_overlap[:,0]
-                dfTiltPose_overlap['ty'] = posTilt_overlap[:,1]
-                dfTiltPose_overlap['tz'] = posTilt_overlap[:,2]
-                dfTiltPose_overlap['qx'] = quaternionsTilt_overlap[:,0]
-                dfTiltPose_overlap['qy'] = quaternionsTilt_overlap[:,1]
-                dfTiltPose_overlap['qz'] = quaternionsTilt_overlap[:,2]
-                dfTiltPose_overlap['qw'] = quaternionsTilt_overlap[:,3]
+            # if("Vanyte" in estimatorsList):
+            #     dfVanytePose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfVanytePose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfVanytePose_overlap['tx'] = posVanyte_overlap[:,0]
+            #     dfVanytePose_overlap['ty'] = posVanyte_overlap[:,1]
+            #     dfVanytePose_overlap['tz'] = posVanyte_overlap[:,2]
+            #     dfVanytePose_overlap['qx'] = quaternionsVanyte_overlap[:,0]
+            #     dfVanytePose_overlap['qy'] = quaternionsVanyte_overlap[:,1]
+            #     dfVanytePose_overlap['qz'] = quaternionsVanyte_overlap[:,2]
+            #     dfVanytePose_overlap['qw'] = quaternionsVanyte_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedTilt_Traj.txt'
-                dfTiltPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedVanyte_Traj.txt'
+            #     dfVanytePose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data)
+
+            #     d = {'x': posVanyte_overlap[:, 0], 'y': posVanyte_overlap[:, 1], 'z': posVanyte_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/Vanyte_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
+
+            # if("Tilt" in estimatorsList):
+            #     dfTiltPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfTiltPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfTiltPose_overlap['tx'] = posTilt_overlap[:,0]
+            #     dfTiltPose_overlap['ty'] = posTilt_overlap[:,1]
+            #     dfTiltPose_overlap['tz'] = posTilt_overlap[:,2]
+            #     dfTiltPose_overlap['qx'] = quaternionsTilt_overlap[:,0]
+            #     dfTiltPose_overlap['qy'] = quaternionsTilt_overlap[:,1]
+            #     dfTiltPose_overlap['qz'] = quaternionsTilt_overlap[:,2]
+            #     dfTiltPose_overlap['qw'] = quaternionsTilt_overlap[:,3]
+
+            #     txtOutput = f'{path_to_project}/output_data/formattedTilt_Traj.txt'
+            #     dfTiltPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
                 
-                d = {'x': posTilt_overlap[:, 0], 'y': posTilt_overlap[:, 1], 'z': posTilt_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/Tilt_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posTilt_overlap[:, 0], 'y': posTilt_overlap[:, 1], 'z': posTilt_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/Tilt_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
 
-            if("Controller" in estimatorsList):
-                dfControllerPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfControllerPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfControllerPose_overlap['tx'] = posController_overlap[:,0]
-                dfControllerPose_overlap['ty'] = posController_overlap[:,1]
-                dfControllerPose_overlap['tz'] = posController_overlap[:,2]
-                dfControllerPose_overlap['qx'] = quaternionsController_overlap[:,0]
-                dfControllerPose_overlap['qy'] = quaternionsController_overlap[:,1]
-                dfControllerPose_overlap['qz'] = quaternionsController_overlap[:,2]
-                dfControllerPose_overlap['qw'] = quaternionsController_overlap[:,3]
+            # if("Controller" in estimatorsList):
+            #     dfControllerPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfControllerPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfControllerPose_overlap['tx'] = posController_overlap[:,0]
+            #     dfControllerPose_overlap['ty'] = posController_overlap[:,1]
+            #     dfControllerPose_overlap['tz'] = posController_overlap[:,2]
+            #     dfControllerPose_overlap['qx'] = quaternionsController_overlap[:,0]
+            #     dfControllerPose_overlap['qy'] = quaternionsController_overlap[:,1]
+            #     dfControllerPose_overlap['qz'] = quaternionsController_overlap[:,2]
+            #     dfControllerPose_overlap['qw'] = quaternionsController_overlap[:,3]
 
-                txtOutput = f'{path_to_project}/output_data/formattedController_Traj.txt'
-                dfControllerPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
+            #     txtOutput = f'{path_to_project}/output_data/formattedController_Traj.txt'
+            #     dfControllerPose_overlap.to_csv(txtOutput, header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(txtOutput, 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(txtOutput, 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
 
-                d = {'x': posController_overlap[:, 0], 'y': posController_overlap[:, 1], 'z': posController_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/Controller_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posController_overlap[:, 0], 'y': posController_overlap[:, 1], 'z': posController_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/Controller_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
-            if("Hartley" in estimatorsList):
-                rHartley_fb_quat_overlap = rHartley_fb_overlap.as_quat()
+            # if("Hartley" in estimatorsList):
+            #     rHartley_fb_quat_overlap = rHartley_fb_overlap.as_quat()
 
-                dfHartleyPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
-                dfHartleyPose_overlap['timestamp'] = dfObservers_overlap['t']
-                dfHartleyPose_overlap['tx'] = posHartley_fb_overlap[:,0]
-                dfHartleyPose_overlap['ty'] = posHartley_fb_overlap[:,1]
-                dfHartleyPose_overlap['tz'] = posHartley_fb_overlap[:,2]
-                dfHartleyPose_overlap['qx'] = rHartley_fb_quat_overlap[:,0]
-                dfHartleyPose_overlap['qy'] = rHartley_fb_quat_overlap[:,1]
-                dfHartleyPose_overlap['qz'] = rHartley_fb_quat_overlap[:,2]
-                dfHartleyPose_overlap['qw'] = rHartley_fb_quat_overlap[:,3]
+            #     dfHartleyPose_overlap = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
+            #     dfHartleyPose_overlap['timestamp'] = dfObservers_overlap['t']
+            #     dfHartleyPose_overlap['tx'] = posHartley_fb_overlap[:,0]
+            #     dfHartleyPose_overlap['ty'] = posHartley_fb_overlap[:,1]
+            #     dfHartleyPose_overlap['tz'] = posHartley_fb_overlap[:,2]
+            #     dfHartleyPose_overlap['qx'] = rHartley_fb_quat_overlap[:,0]
+            #     dfHartleyPose_overlap['qy'] = rHartley_fb_quat_overlap[:,1]
+            #     dfHartleyPose_overlap['qz'] = rHartley_fb_quat_overlap[:,2]
+            #     dfHartleyPose_overlap['qw'] = rHartley_fb_quat_overlap[:,3]
 
-                dfHartleyPose_overlap.to_csv(f'{path_to_project}/output_data/formattedHartley_Traj.txt', header=None, index=None, sep=' ')
+            #     dfHartleyPose_overlap.to_csv(f'{path_to_project}/output_data/formatted_RI-EKF_Traj', header=None, index=None, sep=' ')
 
-                line = '# timestamp tx ty tz qx qy qz qw' 
-                with open(f'{path_to_project}/output_data/formattedHartley_Traj.txt', 'r+') as file: 
-                    file_data = file.read() 
-                    file.seek(0, 0) 
-                    file.write(line + '\n' + file_data) 
+            #     line = '# timestamp tx ty tz qx qy qz qw' 
+            #     with open(f'{path_to_project}/output_data/formatted_RI-EKF_Traj.txt', 'r+') as file: 
+            #         file_data = file.read() 
+            #         file.seek(0, 0) 
+            #         file.write(line + '\n' + file_data) 
                 
-                d = {'x': posHartley_fb_overlap[:, 0], 'y': posHartley_fb_overlap[:, 1], 'z': posHartley_fb_overlap[:, 2]}
-                with open(f'{path_to_project}/output_data/Hartley_x_y_z_traj.pickle', 'wb') as f:
-                    pickle.dump(d, f)
+            #     d = {'x': posHartley_fb_overlap[:, 0], 'y': posHartley_fb_overlap[:, 1], 'z': posHartley_fb_overlap[:, 2]}
+            #     with open(f'{path_to_project}/output_data/RI-EKF_x_y_z_traj.pickle', 'wb') as f:
+            #         pickle.dump(d, f)
 
 
 
@@ -490,149 +492,46 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
     if(displayLogs):
         # Create the figure
-        fig = go.Figure()
-
-        if("Hartley" in estimatorsList):
+        fig_pose = go.Figure()
+        for estimator in estimatorsList:
             # Add traces for each plot
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posHartley_fb[:, 0], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posHartley_fb[:, 1], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posHartley_fb[:, 2], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Hartley[:, 0], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Hartley[:, 1], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Hartley[:, 2], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_Yaw'))
-
-        if("Vanyte" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posVanyte[:, 0], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posVanyte[:, 1], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posVanyte[:, 2], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_vanyte[:, 0], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_vanyte[:, 1], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_vanyte[:, 2], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_Yaw'))
-
-        if("KineticsObserver" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO[:, 0], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO[:, 1], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO[:, 2], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO[:, 0], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO[:, 1], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO[:, 2], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_Yaw'))
-
-        if("KO_APC" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_APC[:, 0], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_APC[:, 1], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_APC[:, 2], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_APC[:, 0], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_APC[:, 1], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_APC[:, 2], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_Yaw'))
-
-        if("KO_ASC" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ASC[:, 0], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ASC[:, 1], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ASC[:, 2], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ASC[:, 0], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ASC[:, 1], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ASC[:, 2], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_Yaw'))
-
-        if("KO_ZPC" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ZPC[:, 0], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ZPC[:, 1], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKO_ZPC[:, 2], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ZPC[:, 0], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ZPC[:, 1], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KO_ZPC[:, 2], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_Yaw'))
-
-        if("KOWithoutWrenchSensors" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posKOWithoutWrenchSensors[:, 2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 0], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_KOWithoutWrenchSensors[:, 2], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_Yaw'))
-            
-        if("Tilt" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posTilt[:, 0], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posTilt[:, 1], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posTilt[:, 2], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Tilt[:, 0], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Tilt[:, 1], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Tilt[:, 2], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_Yaw'))
-
-        if("Mocap" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 0], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=posMocap_overlap[:, 2], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 0], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers_overlap['t'], y=euler_angles_Mocap_overlap[:, 2], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_Yaw'))
-
-            if(len(df_mocap_toIgnore) > 0):
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 0], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Position_x'))
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Position_y'))
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=posMocap_mocap_toIgnore[:, 2], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Position_z'))
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 0], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Roll'))
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Pitch'))
-                fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Mocap_mocap_toIgnore[:, 2], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_Yaw'))
-
-        if("Controller" in estimatorsList):
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posController[:, 0], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Position_x'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posController[:, 1], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Position_y'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=posController[:, 2], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Position_z'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Controller[:, 0], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Roll'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Controller[:, 1], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Pitch'))
-            fig.add_trace(go.Scatter(x=dfObservers['t'], y=euler_angles_Controller[:, 2], mode='lines', line=dict(color = colors["Controller"]), name='Controller_Yaw'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["position_overlap"][:, 0], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Position_x'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["position_overlap"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Position_y'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["position_overlap"][:, 2], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Position_z'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["euler_angles_overlap"][:, 0], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Roll'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["euler_angles_overlap"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Pitch'))
+            fig_pose.add_trace(go.Scatter(x=dfObservers['t'], y=kinematics[estimator]["euler_angles_overlap"][:, 2], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_Yaw'))
 
 
         # Update layout
-        fig.update_layout(
+        fig_pose.update_layout(
             title= f'{scriptName}: Pose over time',
             xaxis_title='Time',
             yaxis_title='Value',
             hovermode='x'
         )
         # Show the interactive plot
-        fig.show()
+        fig_pose.show()
 
+        fig_traj_2d = go.Figure()
 
-        fig2 = go.Figure()
+        for estimator in estimatorsList:
+            fig_traj_2d.add_trace(go.Scatter(x=kinematics[estimator]["position_overlap"][:, 0], y=kinematics[estimator]["position_overlap"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_2dMotion_xy'))
 
-        if("Vanyte" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posVanyte[:, 0], y=posVanyte[:, 1], mode='lines', line=dict(color = colors["Vanyte"]), name='Vanyte_2dMotion_xy'))
-        if("KineticsObserver" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKO[:, 0], y=posKO[:, 1], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KineticsObserver_2dMotion_xy'))
-        if("KO_APC" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKO_APC[:, 0], y=posKO_APC[:, 1], mode='lines', line=dict(color = colors["KO_APC"]), name='KO_APC_2dMotion_xy'))
-        if("KO_ASC" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKO_ASC[:, 0], y=posKO_ASC[:, 1], mode='lines', line=dict(color = colors["KO_ASC"]), name='KO_ASC_2dMotion_xy'))
-        if("KO_ZPC" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKO_ZPC[:, 0], y=posKO_ZPC[:, 1], mode='lines', line=dict(color = colors["KO_ZPC"]), name='KO_ZPC_2dMotion_xy'))
-        if("KOWithoutWrenchSensors" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posKOWithoutWrenchSensors[:, 0], y=posKOWithoutWrenchSensors[:, 1], mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]), name='KOWithoutWrenchSensors_2dMotion_xy'))
-
-        if("Tilt" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posTilt[:, 0], y=posTilt[:, 1], mode='lines', line=dict(color = colors["Tilt"]), name='Tilt_2dMotion_xy'))
-        if("Mocap" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posMocap_overlap[:, 0], y=posMocap_overlap[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_2dMotion_xy'))
-            if(len(df_mocap_toIgnore) > 0):
-                fig2.add_trace(go.Scatter(x=posMocap_mocap_toIgnore[:, 0], y=posMocap_mocap_toIgnore[:, 1], mode='lines', line=dict(color = colors["Mocap"]), name='Mocap_mocap_toIgnore_2dMotion_xy'))
-        if("Controller" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posController[:, 0], y=posController[:, 1], mode='lines', line=dict(color = colors["Controller"]), name='Controller_2dMotion_xy'))
-
-        if("Hartley" in estimatorsList):
-            fig2.add_trace(go.Scatter(x=posHartley_fb[:,0], y=posHartley_fb[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_2dMotion_xy'))
 
         # Update layout
-        fig2.update_layout(
+        fig_traj_2d.update_layout(
             xaxis_title='x',
             yaxis_title='y',
             hovermode='x',
             title=f"{scriptName}: 2D trajectories"
         )
-        fig2.update_yaxes(
+        fig_traj_2d.update_yaxes(
             scaleanchor="x",
             scaleratio=1,
         )
         # Show the interactive plot
-        fig2.show()
+        fig_traj_2d.show()
 
 
         fig3 = go.Figure()

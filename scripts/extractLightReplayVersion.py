@@ -1,6 +1,7 @@
 import os
 import sys
 import pandas as pd
+import yaml
 
 
 
@@ -10,13 +11,28 @@ if(len(sys.argv) > 1):
     path_to_project = sys.argv[1]
 
 
+with open('../observersInfos.yaml', 'r') as file:
+    try:
+        observersInfos_str = file.read()
+        observersInfos_yamlData = yaml.safe_load(observersInfos_str)
+    except yaml.YAMLError as exc:
+        print(exc)
 
-    
+def add_observers_columns():
+    # Iterate over the observers
+    for observer in observersInfos_yamlData['observers']:
+        for body in observer['kinematics']:
+            for kine in observer['kinematics'][body]:
+                for axis in observer['kinematics'][body][kine]:
+                    exact_patterns.append(axis)
+  
 # Define a list of patterns you want to match
-partial_pattern = ['MocapAligner', 'Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState', 'Observers_MainObserverPipeline_KOAPC_mcko_fb', 'Observers_MainObserverPipeline_KOASC_mcko_fb', 'Observers_MainObserverPipeline_KOZPC_mcko_fb', 'Observers_MainObserverPipeline_KOWithoutWrenchSensors_mcko_fb', 'Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'HartleyIEKF', 'Accelerometer', 'ff_']  # Add more patterns as needed
+partial_pattern = ['MocapAligner', 'HartleyIEKF', 'Accelerometer_linearAcceleration', 'Accelerometer_angularVelocity']  # Add more patterns as needed
 exact_patterns = ['t']  # Add more column names as needed
 input_csv_file_path = f'{path_to_project}/output_data/logReplay.csv'
 output_csv_file_path = f'{path_to_project}/output_data/lightData.csv'
+
+add_observers_columns()
 
 # Filter columns based on the predefined patterns
 def filterColumns(dataframe, partial_pattern, exact_patterns):
@@ -28,7 +44,7 @@ def filterColumns(dataframe, partial_pattern, exact_patterns):
     return filtered_columns
 
 # Load the CSV files into pandas dataframes
-replayData = pd.read_csv(f'{path_to_project}/output_data/logReplay.csv', delimiter=';')
+replayData = pd.read_csv(input_csv_file_path, delimiter=';')
 light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
 replayData_light = replayData[light_columns].copy()
 
@@ -38,15 +54,67 @@ if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'Ha
 
     replayData_light = pd.merge(replayData_light, dfHartley, on ='t')
 
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb', 'KO'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState', 'KoState'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOAPC_mcko_fb', 'KO_APC'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOASC_mcko_fb', 'KO_ASC'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOZPC_mcko_fb', 'KO_ZPC'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_KOWithoutWrenchSensors_mcko_fb', 'KOWithoutWrenchSensors'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world', 'Vanyte'), inplace=True)    
-replayData_light.rename(columns=lambda x: x.replace('Observers_MainObserverPipeline_Tilt_FloatingBase_world', 'Tilt'), inplace=True)
-replayData_light.rename(columns=lambda x: x.replace('ff', 'Controller'), inplace=True)
+
+def rename_observers_columns():
+    # fetching the name of the body the mocap is attached to
+    with open(f'{path_to_project}/projectConfig.yaml', 'r') as file:
+        try:
+            projConf_yaml_str = file.read()
+            projConf_yamlData = yaml.safe_load(projConf_yaml_str)
+            enabled_body = projConf_yamlData.get('EnabledBody')
+            robotName = projConf_yamlData.get('EnabledRobot')
+        except yaml.YAMLError as exc:
+            print(exc)
+            
+    with open('../markersPlacements.yaml', 'r') as file:
+        try:
+            markersPlacements_str = file.read()
+            markers_yamlData = yaml.safe_load(markersPlacements_str)
+            for robot in markers_yamlData['robots']:
+                # If the robot name matches
+                if robot['name'] == robotName:
+                    # Iterate over the bodies of the robot
+                    for body in robot['bodies']:
+                        # If the body name matches
+                        if body['name'] == enabled_body:
+                            mocapBody = body['standardized_name']
+
+        except yaml.YAMLError as exc:
+            print(exc)
+
+    for observer in observersInfos_yamlData['observers']:
+        prefix = observer['abbreviation']
+        for body in observer['kinematics']:
+            if body != mocapBody:
+                prefix += '_' + body
+            for kine in observer['kinematics'][body]:
+                if kine == "position":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_position_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_position_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_position_z'), inplace=True)
+                if kine == "orientation":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_orientation_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_orientation_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_orientation_z'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][3], prefix + '_orientation_w'), inplace=True)
+                if kine == "linVel":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_linVel_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_linVel_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_linVel_z'), inplace=True)
+                if kine == "angVel":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_angVel_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_angVel_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_angVel_z'), inplace=True)
+                if kine == "locLinVel":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_locLinVel_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_locLinVel_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_locLinVel_z'), inplace=True)
+                if kine == "gyroBias":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_gyroBias_x'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_gyroBias_y'), inplace=True)
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_gyroBias_z'), inplace=True)
+                    
+rename_observers_columns()
 
 replayData_light.to_csv(output_csv_file_path, index=False,  sep=';')
 print("Output CSV file has been saved to", output_csv_file_path)

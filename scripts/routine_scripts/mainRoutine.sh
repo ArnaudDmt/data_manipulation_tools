@@ -142,9 +142,14 @@ if [ -f "$logReplayCSV" ] && [[ "$runFromZero" == "false" ]]; then
     echo "The csv file of the replay with the observers has been found."
 else
     if [ -f "$logReplayBin" ] && [[ "$runFromZero" == "false" ]]; then
-        echo "The bin file of the replay with the observers has been found. Converting to csv."
+        cd $scriptsPath
+        echo "The bin file of the replay with the observers has been found. Removing useless columns."
+
+        eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+
         cd $outputDataPath
-        mc_bin_to_log "$outputDataPath/$logReplayBin"
+        echo " Converting to csv."
+        mc_bin_to_log logReplay.bin
     else
         mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
@@ -198,7 +203,14 @@ else
             LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
             echo "Copying the replay's bin file ($LOG) to the output_data folder as logReplay.bin"
             mv $LOG $logReplayBin
+
+            cd $scriptsPath
+            echo "Removing useless columns from the replayed log."
+
+            eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+
             cd $outputDataPath
+            
             mc_bin_to_log logReplay.bin
             cd $cwd
 
@@ -248,10 +260,11 @@ fi
 if [[ "$runFromZero" == "false" ]] && [[ -f "$lightData" ]]; then
     echo "The light version of the observer's data has already been extracted. Using the existing data."
 else
-    echo "Starting the extraction of the light version of the observer's data."
     cd $scriptsPath
+    echo "Starting the extraction of the light version of the observer's data."
     python extractLightReplayVersion.py "$projectPath"
     echo "Extraction of the light version of the observer's data completed."
+    python extractLightReplayVersion.py "$projectPath"
     runScript=true
 fi
 
