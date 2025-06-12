@@ -7,6 +7,12 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import numpy as np
 
+import plotly.io as pio
+
+# Tell webbrowser to use wslview
+os.environ["BROWSER"] = "wslview"
+pio.renderers.default = "browser"
+
 import pathlib
 cwd = pathlib.Path(__file__).parent.resolve()
 sys.path.append(f'{cwd.parent}')

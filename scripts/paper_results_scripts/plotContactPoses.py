@@ -5,9 +5,12 @@ import plotly.express as px  # For colorKinetics palette generation
 from scipy.spatial.transform import Rotation as R
 import matplotlib.pyplot as plt
 
-import plotly.io as pio   
-pio.kaleido.scope.mathjax = None
+import plotly.io as pio
+import os
 
+# Tell webbrowser to use wslview
+os.environ["BROWSER"] = "wslview"
+pio.renderers.default = "browser"
 
 # Load the CSV files into pandas dataframes
 

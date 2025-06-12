@@ -7,9 +7,11 @@ from plotly.subplots import make_subplots
 from pathlib import Path
 
 import plotly.io as pio   
-pio.kaleido.scope.mathjax = None
+import os
 
-
+# Tell webbrowser to use wslview
+os.environ["BROWSER"] = "wslview"
+pio.renderers.default = "browser"
 
 
 default_path = '.../Projects/'

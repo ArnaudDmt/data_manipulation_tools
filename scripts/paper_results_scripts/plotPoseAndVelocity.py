@@ -7,8 +7,6 @@ import plotly.express as px  # For color palette generation
 from scipy.spatial.transform import Rotation as R
 from scipy.signal import butter,filtfilt
 
-import plotly.io as pio   
-pio.kaleido.scope.mathjax = None
 
 
 default_path = '.../Projects/HRP5_MultiContact_1'
