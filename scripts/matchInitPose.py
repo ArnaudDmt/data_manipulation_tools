@@ -473,7 +473,7 @@ for observerName in observersList:
     df_Observers[observerName + '_orientation_w'] = new_world_ObsLimb_Ori_quat[:,3]
 
 if 'RI-EKF_IMU_position_x' in df_Observers.columns:
-    # observersList.append('RI-EKF')
+    observersList.append('RI-EKF')
     world_HartleyIMU_Pos = np.array([df_Observers['RI-EKF_IMU_position_x'], df_Observers['RI-EKF_IMU_position_y'], df_Observers['RI-EKF_IMU_position_z']]).T
     world_HartleyIMU_Ori_R = R.from_quat(df_Observers[["RI-EKF_IMU_orientation_x", "RI-EKF_IMU_orientation_y", "RI-EKF_IMU_orientation_z", "RI-EKF_IMU_orientation_w"]].values)
 
@@ -491,13 +491,13 @@ if 'RI-EKF_IMU_position_x' in df_Observers.columns:
     )
 
     new_world_Hartley_Ori_quat = alignedPoses["Hartley"]["aligned_orientation"].as_quat()
-    df_Observers['Hartley_position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
-    df_Observers['Hartley_position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
-    df_Observers['Hartley_position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
-    df_Observers['Hartley_orientation_x'] = new_world_Hartley_Ori_quat[:,0]
-    df_Observers['Hartley_orientation_y'] = new_world_Hartley_Ori_quat[:,1]
-    df_Observers['Hartley_orientation_z'] = new_world_Hartley_Ori_quat[:,2]
-    df_Observers['Hartley_orientation_w'] = new_world_Hartley_Ori_quat[:,3]
+    df_Observers['RI-EKF_position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
+    df_Observers['RI-EKF_position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
+    df_Observers['RI-EKF_position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
+    df_Observers['RI-EKF_orientation_x'] = new_world_Hartley_Ori_quat[:,0]
+    df_Observers['RI-EKF_orientation_y'] = new_world_Hartley_Ori_quat[:,1]
+    df_Observers['RI-EKF_orientation_z'] = new_world_Hartley_Ori_quat[:,2]
+    df_Observers['RI-EKF_orientation_w'] = new_world_Hartley_Ori_quat[:,3]
 
 
 observersList.append("Mocap")

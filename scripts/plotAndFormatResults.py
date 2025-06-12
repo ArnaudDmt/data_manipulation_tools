@@ -41,8 +41,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
             try:
                 observers_infos_str = file.read()
-                observers_infos_yaml = yaml.safe_load(observers_infos_str)
-                estimatorsList = set(observers_infos_yaml.get('observers'))
+                observers_infos_yamlData = yaml.safe_load(observers_infos_str)
+                estimatorsList = set(observers_infos_yamlData.get('observers'))
             except yaml.YAMLError as exc:
                 print(exc)
 
@@ -208,17 +208,17 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
 
     if("RI-EKF" in estimatorsList and "Mocap" in estimatorsList):
-        # Convert quaternion to Euler angles (roll, pitch, yaw)
-        posHartley_fb = dfObservers[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy()
-        quaternionsHartley_fb = dfObservers[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
-        rHartley_fb = R.from_quat(quaternionsHartley_fb)
+        kinematics["RI-EKF"] = dict()
+        kinematics["RI-EKF"]["position"] = dfObservers[['RI-EKF_position_x', 'RI-EKF_position_y', 'RI-EKF_position_z']].to_numpy()
+        kinematics["RI-EKF"]["quaternions"] = dfObservers[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z', 'RI-EKF_orientation_w']].to_numpy()
+        kinematics["RI-EKF"]["R"] = R.from_quat(kinematics["RI-EKF"]["quaternions"])
 
-        euler_angles_Hartley = rHartley_fb.as_euler('xyz')
-        euler_angles_Hartley = continuous_euler(euler_angles_Hartley)
+        euler_angles_Hartley = kinematics["RI-EKF"]["R"].as_euler('xyz')
+        kinematics["RI-EKF"]["euler-angles"] = continuous_euler(euler_angles_Hartley)
 
         if("Mocap" in estimatorsList):
-            kinematics["RI-EKF"]["position_overlap"] = dfObservers_overlap[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy()
-            kinematics["RI-EKF"]["quaternions_overlap"] = dfObservers_overlap[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
+            kinematics["RI-EKF"]["position_overlap"] = dfObservers_overlap[['RI-EKF_position_x', 'RI-EKF_position_y', 'RI-EKF_position_z']].to_numpy()
+            kinematics["RI-EKF"]["quaternions_overlap"] = dfObservers_overlap[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z']].to_numpy()
             kinematics["RI-EKF"]["R_overlap"] = R.from_quat(kinematics["RI-EKF"]["quaternions_overlap"])
             euler_angles_Hartley_overlap = kinematics["RI-EKF"]["R_overlap"].as_euler('xyz')
             kinematics["RI-EKF"]["euler_angles_overlap"] = continuous_euler(euler_angles_Hartley_overlap)
@@ -241,13 +241,13 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         if("Mocap" in estimatorsList):
             dfMocapPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
             dfMocapPose['timestamp'] = dfObservers_overlap['t']
-            dfMocapPose['tx'] = posMocap_overlap[:,0]
-            dfMocapPose['ty'] = posMocap_overlap[:,1]
-            dfMocapPose['tz'] = posMocap_overlap[:,2]
-            dfMocapPose['qx'] = quaternionsMocap_overlap[:,0]
-            dfMocapPose['qy'] = quaternionsMocap_overlap[:,1]
-            dfMocapPose['qz'] = quaternionsMocap_overlap[:,2]
-            dfMocapPose['qw'] = quaternionsMocap_overlap[:,3]
+            dfMocapPose['tx'] = kinematics["Mocap"]["position_overlap"][:,0]
+            dfMocapPose['ty'] = kinematics["Mocap"]["position_overlap"][:,1]
+            dfMocapPose['tz'] = kinematics["Mocap"]["position_overlap"][:,2]
+            dfMocapPose['qx'] = kinematics["Mocap"]["orientation_overlap"][:,0]
+            dfMocapPose['qy'] = kinematics["Mocap"]["orientation_overlap"][:,1]
+            dfMocapPose['qz'] = kinematics["Mocap"]["orientation_overlap"][:,2]
+            dfMocapPose['qw'] = kinematics["Mocap"]["orientation_overlap"][:,3]
 
             dfMocapPose = dfMocapPose[dfObservers["Mocap_datasOverlapping"] == "Datas overlap"]
 
@@ -260,7 +260,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 file.seek(0, 0) 
                 file.write(line + '\n' + file_data) 
 
-            d = {'x': posMocap_overlap[:, 0], 'y': posMocap_overlap[:, 1], 'z': posMocap_overlap[:, 2]}
+            d = {'x': kinematics["Mocap"]["position_overlap"][:, 0], 'y': kinematics["Mocap"]["position_overlap"][:, 1], 'z': kinematics["Mocap"]["position_overlap"][:, 2]}
             with open(f'{path_to_project}/output_data/mocap_x_y_z_traj.pickle', 'wb') as f:
                 pickle.dump(d, f)
 
@@ -511,13 +511,12 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             hovermode='x'
         )
         # Show the interactive plot
-        fig_pose.show()
+        # fig_pose.show()
 
         fig_traj_2d = go.Figure()
 
         for estimator in estimatorsList:
             fig_traj_2d.add_trace(go.Scatter(x=kinematics[estimator]["position_overlap"][:, 0], y=kinematics[estimator]["position_overlap"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_2dMotion_xy'))
-
 
         # Update layout
         fig_traj_2d.update_layout(
@@ -531,10 +530,59 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             scaleratio=1,
         )
         # Show the interactive plot
-        fig_traj_2d.show()
+        # fig_traj_2d.show()
+
+        fig_traj_3d = go.Figure()
+
+        for estimator in estimatorsList:
+            x_min = min((kinematics[estimator]["position_overlap"][:, 0]).min(), (kinematics[estimator]["position_overlap"][:, 0]).min(), (kinematics[estimator]["position_overlap"][:, 0]).min())
+            y_min = min((kinematics[estimator]["position_overlap"][:,1]).min(), (kinematics[estimator]["position_overlap"][:,1]).min(), (kinematics[estimator]["position_overlap"][:,1]).min())
+            z_min = min((kinematics[estimator]["position_overlap"][:,2]).min(), (kinematics[estimator]["position_overlap"][:,2]).min(), (kinematics[estimator]["position_overlap"][:,2]).min())
+
+            x_max = max((kinematics[estimator]["position_overlap"][:,0]).max(), (kinematics[estimator]["position_overlap"][:,0]).max(), (kinematics[estimator]["position_overlap"][:,0]).max())
+            y_max = max((kinematics[estimator]["position_overlap"][:,1]).max(), (kinematics[estimator]["position_overlap"][:,1]).max(), (kinematics[estimator]["position_overlap"][:,1]).max())
+            z_max = max((kinematics[estimator]["position_overlap"][:,2]).max(), (kinematics[estimator]["position_overlap"][:,2]).max(), (kinematics[estimator]["position_overlap"][:,2]).max())
+
+            # Add traces
+            fig_traj_3d.add_trace(go.Scatter3d(
+                x=kinematics[estimator]["position_overlap"][:,0], 
+                y=kinematics[estimator]["position_overlap"][:,1], 
+                z=kinematics[estimator]["position_overlap"][:,2],
+                mode='lines', line=dict(color = colors[estimator]),
+                name=f'{estimator}'
+            ))
+
+        x_min = x_min - np.abs(x_min*0.2)
+        y_min = y_min - np.abs(y_min*0.2)
+        z_min = z_min - np.abs(z_min*0.2)
+        x_max = x_max + np.abs(x_max*0.2)
+        y_max = y_max + np.abs(y_max*0.2)
+        z_max = z_max + np.abs(z_max*0.2)
 
 
-        fig3 = go.Figure()
+        # Update layout
+        fig_traj_3d.update_layout(
+            scene=dict(
+                xaxis_title='X',
+                yaxis_title='Y',
+                zaxis_title='Z',
+                xaxis=dict(range=[x_min, x_max]),
+                yaxis=dict(range=[y_min, y_max]),
+                zaxis=dict(range=[z_min, z_max]),
+                aspectmode='data'
+            ),
+            legend=dict(
+                x=0,
+                y=1
+            )
+            , title=f"{scriptName}: 3D trajectories"
+        )
+
+        # Show the plot
+        # fig_traj_3d.show()
+
+
+        fig_gyroBias = go.Figure()
 
         # Get the last time in dfObservers['t']
         last_time = dfObservers['t'].max()
@@ -562,28 +610,35 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         average_bias_z_tuple_last = tuple(average_bias_z_last for _ in range(len(dfObservers)))
 
         # Plotting the original data and the computed biases
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
-        fig3.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_last, mode='lines', name='measured_GyroBias_end_z'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=average_bias_z_tuple_last, mode='lines', name='measured_GyroBias_end_z'))
 
-        if("Hartley" in estimatorsList):
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Hartley_IMU_GyroBias_x'], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_GyroBias_x'))
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Hartley_IMU_GyroBias_y'], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_GyroBias_y'))
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['Hartley_IMU_GyroBias_z'], mode='lines', line=dict(color = colors["Hartley"]), name='Hartley_GyroBias_z'))
-        if("KineticsObserver" in estimatorsList):
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['KoState_gyroBias_Accelerometer_x'], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KO_GyroBias_x'))
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['KoState_gyroBias_Accelerometer_y'], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KO_GyroBias_y'))
-            fig3.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers['KoState_gyroBias_Accelerometer_z'], mode='lines', line=dict(color = colors["KineticsObserver"]), name='KO_GyroBias_z'))
+        obs = []
+        with open('../observersInfos.yaml', 'r') as file:
+            try:
+                observersInfos_str = file.read()
+                observersInfos_yamlData = yaml.safe_load(observersInfos_str)
+                for observer in observersInfos_yamlData['observers']:
+                    if 'IMU' in observer['kinematics'] and 'gyroBias' in observer['kinematics']['IMU']:
+                        obs.append(observer["abbreviation"])
+                            
+            except yaml.YAMLError as exc:
+                print(exc)
 
-
+        for estimator in estimatorsList:
+            if estimator in obs:
+                fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers[f'{estimator}_IMU_gyroBias_x'], mode='lines', name=f'{estimator}_gyroBias_x'))
+                fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers[f'{estimator}_IMU_gyroBias_y'], mode='lines', name=f'{estimator}_gyroBias_y'))
+                fig_gyroBias.add_trace(go.Scatter(x=dfObservers['t'], y=dfObservers[f'{estimator}_IMU_gyroBias_z'], mode='lines', name=f'{estimator}_gyroBias_z'))
         # Update layout
-        fig3.update_layout(
+        fig_gyroBias.update_layout(
             title='Gyrometer biases',
             xaxis_title='x',
             yaxis_title='y',
@@ -591,229 +646,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         )
 
         # Show the interactive plot
-        fig3.show()
-
-
-
-        if("Hartley" in estimatorsList):
-            x_min = min((posHartley_fb[:,0]).min(), (posHartley_fb[:,0]).min(), (posHartley_fb[:,0]).min())
-            y_min = min((posHartley_fb[:,1]).min(), (posHartley_fb[:,1]).min(), (posHartley_fb[:,1]).min())
-            z_min = min((posHartley_fb[:,2]).min(), (posHartley_fb[:,2]).min(), (posHartley_fb[:,2]).min())
-
-            x_max = max((posHartley_fb[:,0]).max(), (posHartley_fb[:,0]).max(), (posHartley_fb[:,0]).max())
-            y_max = max((posHartley_fb[:,1]).max(), (posHartley_fb[:,1]).max(), (posHartley_fb[:,1]).max())
-            z_max = max((posHartley_fb[:,2]).max(), (posHartley_fb[:,2]).max(), (posHartley_fb[:,2]).max())
-
-            fig3d = go.Figure()
-
-            # Add traces
-            fig3d.add_trace(go.Scatter3d(
-                x=posHartley_fb[:,0], 
-                y=posHartley_fb[:,1], 
-                z=posHartley_fb[:,2],
-                mode='lines', line=dict(color = colors["Hartley"]),
-                name='Hartley'
-            ))
-
-        if("Vanyte" in estimatorsList):
-            x_min = min(x_min, (posVanyte[:,0]).min())
-            y_min = min(y_min, (posVanyte[:,1]).min())
-            z_min = min(z_min, (posVanyte[:,2]).min())
-
-            x_max = max(x_max, (posVanyte[:,0]).max())
-            y_max = max(y_max, (posVanyte[:,1]).max())
-            z_max = max(z_max, (posVanyte[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posVanyte[:,0], 
-                y=posVanyte[:,1], 
-                z=posVanyte[:,2],
-                mode='lines', line=dict(color = colors["Vanyte"]),
-                name='Vanyt-e'
-            ))
-
-        if("KineticsObserver" in estimatorsList):
-            x_min = min(x_min, (posKO[:,0]).min())
-            y_min = min(y_min, (posKO[:,1]).min())
-            z_min = min(z_min, (posKO[:,2]).min())
-
-            x_max = max(x_max, (posKO[:,0]).max())
-            y_max = max(y_max, (posKO[:,1]).max())
-            z_max = max(z_max, (posKO[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posKO[:,0], 
-                y=posKO[:,1], 
-                z=posKO[:,2],
-                mode='lines', line=dict(color = colors["KineticsObserver"]),
-                name='Kinetics Observer'
-            ))
-        if("KO_APC" in estimatorsList):
-            x_min = min(x_min, (posKO_APC[:,0]).min())
-            y_min = min(y_min, (posKO_APC[:,1]).min())
-            z_min = min(z_min, (posKO_APC[:,2]).min())
-
-            x_max = max(x_max, (posKO_APC[:,0]).max())
-            y_max = max(y_max, (posKO_APC[:,1]).max())
-            z_max = max(z_max, (posKO_APC[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posKO_APC[:,0], 
-                y=posKO_APC[:,1], 
-                z=posKO_APC[:,2],
-                mode='lines', line=dict(color = colors["KO_APC"]),
-                name='Kinetics Observer APC'
-            ))
-            
-        if("KO_ASC" in estimatorsList):
-            x_min = min(x_min, (posKO_ASC[:,0]).min())
-            y_min = min(y_min, (posKO_ASC[:,1]).min())
-            z_min = min(z_min, (posKO_ASC[:,2]).min())
-
-            x_max = max(x_max, (posKO_ASC[:,0]).max())
-            y_max = max(y_max, (posKO_ASC[:,1]).max())
-            z_max = max(z_max, (posKO_ASC[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posKO_ASC[:,0], 
-                y=posKO_ASC[:,1], 
-                z=posKO_ASC[:,2],
-                mode='lines', line=dict(color = colors["KO_ASC"]),
-                name='Kinetics Observer ASC'
-            ))
-
-        if("KO_ZPC" in estimatorsList):
-            x_min = min(x_min, (posKO_ZPC[:,0]).min())
-            y_min = min(y_min, (posKO_ZPC[:,1]).min())
-            z_min = min(z_min, (posKO_ZPC[:,2]).min())
-
-            x_max = max(x_max, (posKO_ZPC[:,0]).max())
-            y_max = max(y_max, (posKO_ZPC[:,1]).max())
-            z_max = max(z_max, (posKO_ZPC[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posKO_ZPC[:,0], 
-                y=posKO_ZPC[:,1], 
-                z=posKO_ZPC[:,2],
-                mode='lines', line=dict(color = colors["KO_ZPC"]),
-                name='Kinetics Observer ASC'
-            ))
-
-        if("KOWithoutWrenchSensors" in estimatorsList):
-            x_min = min(x_min, (posKOWithoutWrenchSensors[:,0]).min())
-            y_min = min(y_min, (posKOWithoutWrenchSensors[:,1]).min())
-            z_min = min(z_min, (posKOWithoutWrenchSensors[:,2]).min())
-
-            x_max = max(x_max, (posKOWithoutWrenchSensors[:,0]).max())
-            y_max = max(y_max, (posKOWithoutWrenchSensors[:,1]).max())
-            z_max = max(z_max, (posKOWithoutWrenchSensors[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posKOWithoutWrenchSensors[:,0], 
-                y=posKOWithoutWrenchSensors[:,1], 
-                z=posKOWithoutWrenchSensors[:,2],
-                mode='lines', line=dict(color = colors["KOWithoutWrenchSensors"]),
-                name='Kinetics Observer Disabled'
-            ))
-
-        if("Tilt" in estimatorsList):
-            x_min = min(x_min, (posTilt[:,0]).min())
-            y_min = min(y_min, (posTilt[:,1]).min())
-            z_min = min(z_min, (posTilt[:,2]).min())
-
-            x_max = max(x_max, (posTilt[:,0]).max())
-            y_max = max(y_max, (posTilt[:,1]).max())
-            z_max = max(z_max, (posTilt[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posTilt[:,0], 
-                y=posTilt[:,1], 
-                z=posTilt[:,2],
-                mode='lines', line=dict(color = colors["Tilt"]),
-                name='Tilt Observer'
-            ))
-
-        if("Mocap" in estimatorsList):
-            x_min = min(x_min, (posMocap_overlap[:,0]).min())
-            y_min = min(y_min, (posMocap_overlap[:,1]).min())
-            z_min = min(z_min, (posMocap_overlap[:,2]).min())
-
-            x_max = max(x_max, (posMocap_overlap[:,0]).max())
-            y_max = max(y_max, (posMocap_overlap[:,1]).max())
-            z_max = max(z_max, (posMocap_overlap[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posMocap_overlap[:,0], 
-                y=posMocap_overlap[:,1], 
-                z=posMocap_overlap[:,2],
-                mode='lines', line=dict(color = colors["Mocap"]),
-                name='Motion capture'
-            ))
-            
-            if(len(df_mocap_toIgnore) > 0):
-                x_min = min(x_min, (posMocap_mocap_toIgnore[:,0]).min())
-                y_min = min(y_min, (posMocap_mocap_toIgnore[:,1]).min())
-                z_min = min(z_min, (posMocap_mocap_toIgnore[:,2]).min())
-
-                x_max = max(x_max, (posMocap_mocap_toIgnore[:,0]).max())
-                y_max = max(y_max, (posMocap_mocap_toIgnore[:,1]).max())
-                z_max = max(z_max, (posMocap_mocap_toIgnore[:,2]).max())
-
-                fig3d.add_trace(go.Scatter3d(
-                    x=posMocap_mocap_toIgnore[:,0], 
-                    y=posMocap_mocap_toIgnore[:,1], 
-                    z=posMocap_mocap_toIgnore[:,2],
-                    mode='lines', line=dict(color = colors["Mocap"]),
-                    name='Motion capture to ignore'
-                ))
-
-        if("Controller" in estimatorsList):
-            x_min = min(x_min, (posController[:,0]).min())
-            y_min = min(y_min, (posController[:,1]).min())
-            z_min = min(z_min, (posController[:,2]).min())
-
-            x_max = max(x_max, (posController[:,0]).max())
-            y_max = max(y_max, (posController[:,1]).max())
-            z_max = max(z_max, (posController[:,2]).max())
-
-            fig3d.add_trace(go.Scatter3d(
-                x=posController[:,0], 
-                y=posController[:,1], 
-                z=posController[:,2],
-                mode='lines', line=dict(color = colors["Controller"]),
-                name='Controller'
-            ))
-
-
-        x_min = x_min - np.abs(x_min*0.2)
-        y_min = y_min - np.abs(y_min*0.2)
-        z_min = z_min - np.abs(z_min*0.2)
-        x_max = x_max + np.abs(x_max*0.2)
-        y_max = y_max + np.abs(y_max*0.2)
-        z_max = z_max + np.abs(z_max*0.2)
-
-
-        # Update layout
-        fig3d.update_layout(
-            scene=dict(
-                xaxis_title='X',
-                yaxis_title='Y',
-                zaxis_title='Z',
-                xaxis=dict(range=[x_min, x_max]),
-                yaxis=dict(range=[y_min, y_max]),
-                zaxis=dict(range=[z_min, z_max]),
-                aspectmode='data'
-            ),
-            legend=dict(
-                x=0,
-                y=1
-            )
-            , title=f"{scriptName}: 3D trajectories"
-        )
-
-        # Show the plot
-        fig3d.show()
-
+        # fig_gyroBias.show()
 
 
 
