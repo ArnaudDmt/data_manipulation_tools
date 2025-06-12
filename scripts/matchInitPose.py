@@ -22,13 +22,28 @@ scriptName = "matchInitPose"
 
 
 if(len(sys.argv) > 1):
-    matchTime = int(sys.argv[1])
+    timeStepInput = sys.argv[1]
     if(len(sys.argv) > 2):
-        displayLogs = sys.argv[2].lower() == 'true'
-    if(len(sys.argv) > 4):
-        path_to_project = sys.argv[4]
+        matchTime = int(sys.argv[2])
+    if(len(sys.argv) > 3):
+        displayLogs = sys.argv[3].lower() == 'true'
+    if(len(sys.argv) > 5):
+        path_to_project = sys.argv[5]
 else:
     matchTime = float(input("When do you want the mocap pose to match the observer's one? "))
+
+try:
+    # Check if the timestep was given in milliseconds
+    if(timeStepInput.isdigit()):
+        timeStep_ms = int(timeStepInput)
+        timeStep_s = float(timeStep_ms)/1000.0
+    else:
+        timeStep_s = float(timeStepInput)
+        timeStep_ms = int(timeStep_s*1000.0)
+    resample_str = f'{timeStep_ms}ms'
+except ValueError:
+    print(f"The input timestep is not valid: {timeStepInput}")
+    sys.exit(1)
 
 
 # Load the CSV files into pandas dataframes
@@ -219,9 +234,34 @@ def get_mocap_pitch_offset_from_accelero():
     ya = np.array(df_Observers[['Accelerometer_linearAcceleration_x', 'Accelerometer_linearAcceleration_y', 'Accelerometer_linearAcceleration_z']])
 
     avg_interval = 10
-    Rt_ez_accelero = ya / np.linalg.norm(ya, axis = 1, keepdims=True)
-    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[:avg_interval], axis=0)
-    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[:avg_interval], axis=0)
+
+    # We look for the consecutive iterations during which the velocity of the body remains zero
+    # to be sure there is no acceleration and we can use the accelero to correct the tilt.
+    zeros_row = np.zeros((1, 3))
+    velMocap = np.diff(world_MocapLimb_Pos, axis=0)/timeStep_s
+    velMocap = np.vstack((zeros_row,velMocap))
+    locVelMocap = world_MocapLimb_Ori_R.apply(velMocap, inverse=True)
+    vel_norm = np.linalg.norm(locVelMocap, axis=1)
+
+    start_idx = None
+    min_avg_vel = float('inf') 
+
+    for i in range(len(vel_norm) - avg_interval + 1):
+        avg_vel = np.mean(vel_norm[i:i + avg_interval])
+        if avg_vel < min_avg_vel:
+            min_avg_vel = avg_vel
+            min_idx = i
+
+    # Use the interval with minimum average velocity
+    start_idx = min_idx
+    Rt_ez_accelero = ya / np.linalg.norm(ya, axis=1, keepdims=True)
+    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[start_idx:start_idx + avg_interval], axis=0)
+
+    start_time = start_idx * timeStep_s
+    end_time = (start_idx + avg_interval - 1) * timeStep_s
+    print(f"Minimum velocity average segment from t = {start_time:.3f}s to t = {end_time:.3f}s: Avg velocity = {min_avg_vel:.6f} m/s")
+    
+    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[start_idx:start_idx + avg_interval], axis=0)
 
     true_R_init_avg_quat = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero_avg, R.from_quat(init_mocap_avg_R_quat).as_matrix()))
     mocap_pitch_offset = R.from_quat(init_mocap_avg_R_quat).inv() * true_R_init_avg_quat
@@ -512,6 +552,28 @@ if 'Tilt_pose_tx' in df_Observers.columns:
     df_Observers['Tilt_pose_qy'] = new_world_TiltLimb_Ori_quat[:,1]
     df_Observers['Tilt_pose_qz'] = new_world_TiltLimb_Ori_quat[:,2]
     df_Observers['Tilt_pose_qw'] = new_world_TiltLimb_Ori_quat[:,3]
+
+if 'TiltWoRatio_pose_tx' in df_Observers.columns:
+    world_TiltWoRatioLimb_Pos = np.array([df_Observers['TiltWoRatio_pose_tx'], df_Observers['TiltWoRatio_pose_ty'], df_Observers['TiltWoRatio_pose_tz']]).T
+    world_TiltWoRatioLimb_Ori_R = R.from_quat(df_Observers[["TiltWoRatio_pose_qx", "TiltWoRatio_pose_qy", "TiltWoRatio_pose_qz", "TiltWoRatio_pose_qw"]].values)
+    # We get the inverse of the orientation as the inverse quaternion was stored
+    world_TiltWoRatioLimb_Ori_R = world_TiltWoRatioLimb_Ori_R.inv()
+    alignedPoses["TiltWoRatio"] =  compute_aligned_pose(
+        world_TiltWoRatioLimb_Pos, 
+        world_TiltWoRatioLimb_Ori_R, 
+        matchIndex,
+        averageInterval
+    )
+
+    new_world_TiltWoRatioLimb_Ori_quat = alignedPoses["TiltWoRatio"]["aligned_orientation"].as_quat()
+    df_Observers['TiltWoRatio_pose_tx'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,0]
+    df_Observers['TiltWoRatio_pose_ty'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,1]
+    df_Observers['TiltWoRatio_pose_tz'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,2]
+    df_Observers['TiltWoRatio_pose_qx'] = new_world_TiltWoRatioLimb_Ori_quat[:,0]
+    df_Observers['TiltWoRatio_pose_qy'] = new_world_TiltWoRatioLimb_Ori_quat[:,1]
+    df_Observers['TiltWoRatio_pose_qz'] = new_world_TiltWoRatioLimb_Ori_quat[:,2]
+    df_Observers['TiltWoRatio_pose_qw'] = new_world_TiltWoRatioLimb_Ori_quat[:,3]
+
 if 'Controller_tx' in df_Observers.columns:
     world_ControllerLimb_Pos = np.array([df_Observers['Controller_tx'], df_Observers['Controller_ty'], df_Observers['Controller_tz']]).T
     world_ControllerLimb_Ori_R = R.from_quat(df_Observers[["Controller_qx", "Controller_qy", "Controller_qz", "Controller_qw"]].values)
@@ -755,8 +817,8 @@ if(displayLogs):
 
 
 # Save the DataFrame to a new CSV file
-if(len(sys.argv) > 3):
-    save_csv = sys.argv[3].lower()
+if(len(sys.argv) > 4):
+    save_csv = sys.argv[4].lower()
 else:
     save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
     save_csv = save_csv.lower()
