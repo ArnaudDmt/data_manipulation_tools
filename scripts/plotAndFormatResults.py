@@ -979,14 +979,6 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 # estimated velocity
                 linVelImu_Hartley_overlap = dfObservers_overlap[['Hartley_IMU_Velocity_x', 'Hartley_IMU_Velocity_y', 'Hartley_IMU_Velocity_z']].to_numpy()
                 
-                if(displayLogs):
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,0], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,2], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_z'))
-
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,0], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,2], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_z'))
                 rmse_values['Hartley'] = computeRMSE(locVelMocap_overlap, locVelHartley_overlap, "Hartley")
                 arrays = [
                     ['RMSE', 'RMSE', 'RMSE', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)', 'Relative Error to Hartley (%)'],
@@ -998,6 +990,20 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
 
                 locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
+
+                if(displayLogs):
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,0], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_overlap[:,2], mode='lines', line=dict(color = colors["Hartley"]), name='locVelHartley_z'))
+
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,0], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelImu_Hartley_overlap[:,2], mode='lines', line=dict(color = colors["Hartley"]), name='linVel_IMU_Hartley_z'))
+
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_imu_estim[:,0], mode='lines', line=dict(color = colors["Hartley"]), name='locVelImuHartley_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_imu_estim[:,1], mode='lines', line=dict(color = colors["Hartley"]), name='locVelImuHartley_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelHartley_imu_estim[:,2], mode='lines', line=dict(color = colors["Hartley"]), name='locVelImuHartley_z')) 
+
                 d = {'llve': {}, 'estimate': {}}
                 d['llve'] = {'x': locVelHartley_overlap[:, 0], 'y': locVelHartley_overlap[:, 1], 'z': locVelHartley_overlap[:, 2]}
                 d['estimate'] = {'x': locVelHartley_imu_estim[:, 0], 'y': locVelHartley_imu_estim[:, 1], 'z': locVelHartley_imu_estim[:, 2]}
@@ -1224,14 +1230,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 linVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_vx', 'Tilt_vel_vy', 'Tilt_vel_vz']].to_numpy() # estimated linear velocity
                 angVelTilt_fb_overlap = dfObservers_overlap[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy() # estimated angular velocity
                 linVelTilt_imu_overlap = linVelTilt_fb_overlap + np.cross(angVelTilt_fb_overlap, rTilt_overlap.apply(posFbImu_overlap)) + rTilt_overlap.apply(linVelFbImu_overlap)
-                if(displayLogs):
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,0], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,1], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,2], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_z'))
 
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,0], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU__Tilt_x'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,1], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU_Tilt_y'))
-                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,2], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU_Tilt_z'))
                 rmse_values['Tilt'] = computeRMSE(locVelMocap_overlap, locVelTilt_overlap, "Tilt")
                 index_labels.append('Tilt')
                 if("Hartley" in estimatorsList):
@@ -1242,6 +1241,19 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
                 rWorldImuTilt_overlap = rTilt_overlap * rImuFb_overlap.inv()
                 locVelTilt_imu_estim = rWorldImuTilt_overlap.apply(linVelTilt_imu_overlap, inverse=True)
+
+                if(displayLogs):
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,0], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_fd_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,1], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_fd_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_overlap[:,2], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_fd_z'))
+
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_imu_estim[:,0], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_IMU_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_imu_estim[:,1], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_IMU_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=locVelTilt_imu_estim[:,2], mode='lines', line=dict(color = colors["Tilt"]), name='locVelTilt_IMU_z'))
+
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,0], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU__Tilt_x'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,1], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU_Tilt_y'))
+                    figLocLinVels.add_trace(go.Scatter(x=dfObservers_overlap["t"], y=linVelTilt_imu_overlap[:,2], mode='lines', line=dict(color = colors["Tilt"]), name='linVel_IMU_Tilt_z'))
                 d = {'llve': {}, 'estimate': {}}
                 d['llve'] = {'x': locVelTilt_overlap[:, 0], 'y': locVelTilt_overlap[:, 1], 'z': locVelTilt_overlap[:, 2]}
                 d['estimate'] = {'x': locVelTilt_imu_estim[:, 0], 'y': locVelTilt_imu_estim[:, 1], 'z': locVelTilt_imu_estim[:, 2]}
