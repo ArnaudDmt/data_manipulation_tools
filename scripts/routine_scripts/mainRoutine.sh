@@ -341,7 +341,7 @@ if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" 
             Yes )   echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
                     read matchTime
                     cd $scriptsPath
-                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "$projectPath"; break;;
+                    python matchInitPose.py "$timeStep" "$matchTime" "$displayLogs" "y" "$projectPath" ; break;;
             No ) break;;
         esac
         done
@@ -350,7 +350,7 @@ else
     # Prompt the user for input
     echo "Matching the initial pose of the mocap with the one of the observer."
     cd $scriptsPath
-    python matchInitPose.py 0 "$displayLogs" "y" "$projectPath"
+    python matchInitPose.py "$timeStep" 0 "$displayLogs" "y" "$projectPath"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 
