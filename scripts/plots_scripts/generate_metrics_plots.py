@@ -19,34 +19,6 @@ sys.path.append(f'{cwd.parent}')
 sys.path.append(f'{cwd.parent}/paper_results_scripts')
 
 
-# def float_representer(dumper, value):
-#     # Convert the float to a string with high precision for analysis
-#     precise_str = f"{value:.8f}"  # Use a higher precision to detect significant digits
-#     non_zero_index = next((i for i, char in enumerate(precise_str) if char not in {'0', '.'}), None)
-#     if non_zero_index is not None and non_zero_index > 5:
-#         # If the first non-zero digit is after the fourth decimal place, use scientific notation
-#         text = f"{value:.1e}"
-#         print("Case 1")
-#         print(f"precise_str: {precise_str}")
-#         print(f"non_zero_index: {non_zero_index}")
-#         print(f"value: {value}")
-#         print(f"text: {text}")
-#     elif "e" in f"{value:.1e}" or "E" in f"{value:.1e}":
-#         # If the number is already in scientific notation
-#         print("Case 2")
-#         text = f"{value:.1e}"
-#         print(f"value: {value}")
-#         print(f"text: {text}")
-#     else:
-#         print("Case 3")
-#         # Standard float: round to 4 decimal places
-#         text = f"{value:.4f}"
-#         print(f"value: {value}")
-#         print(f"text: {text}")
-    
-#     return dumper.represent_scalar(u'tag:yaml.org,2002:float', text)
-
-
 def float_representer(dumper, value):
     # Check if the value is already in scientific notation
     if "e" in f"{value}":
@@ -79,18 +51,30 @@ from copy import deepcopy
 
 import argparse
 
-estimator_plot_args = {
-    # 'KineticsObserver': {'name': 'KO', 'lineWidth': 3},
-    # 'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-    # 'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
-    # 'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
-    # 'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
-    # 'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
-    'Tilt': {'name': 'VALINOR', 'lineWidth': 2},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
-    # 'Controller': {'name': 'Control', 'lineWidth': 2},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 2},
-}
+estimator_plot_args = dict()
+with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
+    try:
+        observersInfos_str = file.read()
+        observersInfos_yamlData = yaml.safe_load(observersInfos_str)
+        for observer in observersInfos_yamlData['observers']:
+            estimator_plot_args[observer["abbreviation"]] = dict()
+            estimator_plot_args[observer["abbreviation"]]['name'] = observer["abbreviation"]
+            estimator_plot_args[observer["abbreviation"]]['lineWidth'] = observer["lineWidth"]
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# estimator_plot_args = {
+#     # 'KineticsObserver': {'name': 'KO', 'lineWidth': 3},
+#     # 'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
+#     # 'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
+#     # 'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
+#     # 'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
+#     # 'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
+#     'Tilt': {'name': 'VALINOR', 'lineWidth': 2},
+#     'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
+#     # 'Controller': {'name': 'Control', 'lineWidth': 2},
+#     'Mocap': {'name': 'Ground truth', 'lineWidth': 2},
+# }
 
 
 def reduce_intensity(color, amount=0.7):
@@ -459,7 +443,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}", line_color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"))
+                        name=f"{expe}_{estimator_plot_args['Ground truth']['name']}", line_color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"))
         
     fig.show()
 
@@ -480,11 +464,14 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
                 line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=color_rgba)
             ))
 
+            print(type(data['x']))   # Should be <class 'numpy.ndarray'>
+            print(data['x'].shape)   # Should show something like (11151,)
+
             # Add Start and End markers
             fig.add_trace(go.Scatter3d(
-                x=[data['x'][0], data['x'][-1]],
-                y=[data['y'][0], data['y'][-1]],
-                z=[data['z'][0], data['z'][-1]],
+                x=[data['x'][0], data['x'].iloc[-1]],
+                y=[data['y'][0], data['y'].iloc[-1]],
+                z=[data['z'][0], data['z'].iloc[-1]],
                 mode='markers+text',
                 text=['Start', 'End'],
                 textposition='top center',
@@ -500,7 +487,7 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
         fig.add_trace(go.Scatter3d(
             x=mocapData['x'], y=mocapData['y'], z=mocapData['z'],
             mode='lines',
-            name=f"{estimator_plot_args['Mocap']['name']}",
+            name=f"{estimator_plot_args['Ground truth']['name']}",
             line=dict(color=color_rgba)
         ))
 
@@ -556,6 +543,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     # Create traces for boxplots and velocity plots
     for estimator in errorStats.keys():
         for category in all_categories:
+            if category not in errorStats[estimator]:
+                continue
             x_vals = []  # Collect x values (d_subTraj)
             lower_fence = []
             q1 = []
@@ -628,8 +617,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 x=list(range(len(values))),  # Assuming the values are ordered by time
                 y=values,
                 mode='lines',
-                name=f"{estimator_plot_args['Mocap']['name']} ({axis})",  # Include the axis name in the legend
-                line=dict(width=estimator_plot_args['Mocap']['lineWidth'], color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"),
+                name=f"{estimator_plot_args['Ground truth']['name']} ({axis})",  # Include the axis name in the legend
+                line=dict(width=estimator_plot_args['Ground truth']['lineWidth'], color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"),
                 visible=False  # Initially not visible
             )
 
@@ -764,18 +753,18 @@ def main():
     estimators_to_plot.reverse()
 
     # plot_llve(exps_to_merge, estimatorsList, colors)
-    # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
-    # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
+    plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
+    plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
-    # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
-    # plot_relative_errors(exps_to_merge, estimatorsList, colors)
+    plot_absolute_errors(exps_to_merge, estimatorsList, colors)
+    plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
     
     colors_to_plot = colors
 
-    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    # plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
 
     #import plotExternalForceAndBias

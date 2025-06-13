@@ -10,7 +10,17 @@ observers:
       IMU:
         gyroBias: [Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_x, Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_y, Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_z]
     lineWidth: 2
-
+  - name: MCVanytEstimator
+    abbreviation: Vanyte
+    kinematics:
+      FloatingBase:
+        position: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tz]
+        orientation: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_qx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_qy, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_qz, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_qw]
+        linVel: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_vx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_vy, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_vz]
+        angVel: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_wx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_wy, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_vel_wz]
+      IMU:
+        locLinVel: [Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_x, Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_y, Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_z]
+    lineWidth: 2
   - name: MCWaiko
     abbreviation: WAIKO
     kinematics:
@@ -33,7 +43,6 @@ observers:
       IMU:
         locLinVel: [Observers_MainObserverPipeline_Tilt_estimatedState_x1_x, Observers_MainObserverPipeline_Tilt_estimatedState_x1_y, Observers_MainObserverPipeline_Tilt_estimatedState_x1_z]
     lineWidth: 2
-
   - name: Hartley
     abbreviation: RI-EKF
     kinematics:

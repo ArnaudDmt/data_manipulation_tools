@@ -120,6 +120,23 @@ fi
 bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBody://' | sed 's: ::g');
 
 
+if grep -v '^#' $projectConfig | grep -q "Body_vel_eval"; then
+    if [[ ! $(grep 'Body_vel_eval:' $projectConfig | grep -v '^#' | sed 's/Body_vel_eval://' | sed 's: ::g') ]]; then
+        echo "No body for the linear velocity evaluation was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+        read body;
+
+        sed -i "s/Body_vel_eval:/& $body/" $projectConfig
+    fi
+else
+    echo "No body for the linear velocity evaluation was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+    read body;
+    if [ -s $projectConfig ]; then
+        awk -i inplace -v body="$body" 'FNR==1 {print "Body_vel_eval:", body}1' $projectConfig;
+    else
+        echo -e "\Body_vel_eval: $body" >> $projectConfig
+    fi
+fi
+
 
 # Changing the name of the project in the replay's configuration
 sed -i "/^\([[:space:]]*projectName: \).*/s//\1"$projectName"/" $replay_yaml

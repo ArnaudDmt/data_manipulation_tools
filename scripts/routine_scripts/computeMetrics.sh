@@ -48,13 +48,13 @@ compute_metrics() {
         trap cleanup SIGINT
         
         # Define an array of observer names
-        observers=("KineticsObserver" "KO_APC" "KO_ASC" "KO_ZPC" "KOWithoutWrenchSensors"  "Tilt" "Controller" "Vanyte" "Hartley") 
+        observers=("KO" "KO_APC" "KO_ASC" "KO_ZPC" "KOWithoutWrenchSensors"  "Tilt" "Control" "Vanyte" "RI-EKF") 
 
         mv "$outputDataPath/mocap_x_y_z_traj.pickle" "$outputDataPath/evals/mocap_x_y_z_traj.pickle"
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
 
         for observer in "${observers[@]}"; do
-            formattedTrajVar="formatted${observer}_Traj.txt"
+            formattedTrajVar="formatted_${observer}_Traj.txt"
             if [ -f "$outputDataPath/$formattedTrajVar" ]; then
                 mkdir -p "$outputDataPath/evals/$observer/saved_results/traj_est/cached"
                 if ! [ -f "$outputDataPath/evals/$observer/eval_cfg.yaml" ]; then
