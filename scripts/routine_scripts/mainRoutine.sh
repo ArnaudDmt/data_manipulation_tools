@@ -151,6 +151,22 @@ else
     exit
 fi
 
+mcrtcLog="$rawDataPath/controllerLog.bin"
+
+if [[ -f "$mcrtcLog" ]]; then
+  fileSize=$(stat -c%s "$mcrtcLog")
+  if (( fileSize > 8589934592 )); then
+    echo -e "${YELLOW}The log is larger than 8 GB. Keeping only the necessary data.${RESET}"
+
+    cd $rawDataPath
+
+    mv $mcrtcLog originalLog.bin
+    mc_bin_utils originalLog.bin controllerLog --keys "t" "qIn" "JointSensor*" "ground_Default*" "qOut*" "FloatingBase_*" "Accelerometer_*" "tauIn*" "RightFootForceSensor*" "LeftFootForceSensor*" "LeftHandForceSensor*" "RightHandForceSensor*" "alphaIn*" "ff*" "perf_GlobalRun"
+
+    heavy_log=true
+  fi
+fi
+
 
 ############################ Handling mc_rtc's log ############################
 
@@ -168,7 +184,6 @@ else
         echo " Converting to csv."
         mc_bin_to_log logReplay.bin
     else
-        mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found. Replaying the log with the observer."
             if ! grep -q -E "^\s*update: true\s*$" "$replay_yaml"; then
@@ -293,6 +308,7 @@ if [ ! -f "$outputDataPath/perf_GlobalRun_log.csv" ]; then
     rm perf_GlobalRun_log.bin
 fi
 
+
 if [ -f "$outputDataPath/repairedSkipped_mc_rtc_iters.csv" ] && [[ "$runFromZero" == "false" ]] ; then
     if $debug; then
         echo "Do you want to correct again the skipped iterations in the mc_rtc log?"
@@ -313,14 +329,18 @@ else
     runScript=true
 fi
 
-cd $cwd
+cd $scriptsPath
+
+heavy_log=true
+python initialize_datas.py "$timeStep" "$projectPath" "$heavy_log"
+
 
 if [ -f "$resampledMocapData" ]; then
     if $debug; then
         echo "Do you want to run again the mocap data's resampling with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
         case $rerunResample in
-            Yes ) cd $scriptsPath; python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
+            Yes ) cd $scriptsPath; python resampleMocapAndExtractPose.py "$displayLogs" "y" "$projectPath"; break;;
             No ) break;;
         esac
         done
@@ -328,15 +348,15 @@ if [ -f "$resampledMocapData" ]; then
         echo "The mocap's data has already been resampled. Using the existing data."
     fi
 else
-    echo "Starting the resampling of the mocap's signal."
     cd $scriptsPath
-    python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"
+
+    echo "Starting the resampling of the mocap's signal."
+    python resampleMocapAndExtractPose.py "$displayLogs" "y" "$projectPath"
     echo "Resampling of the mocap's signal completed."
     runScript=true
 fi
 
 cd $cwd
-
 
 if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
     if $debug; then
@@ -344,7 +364,7 @@ if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "
         select rerunResample in "No" "Yes"; do
             case $rerunResample in
                 Yes )   cd $scriptsPath;
-                        python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
+                        python crossCorrelation.py "$displayLogs" "y" "$projectPath"; break;;
                 No ) break;;
             esac
         done
@@ -354,7 +374,7 @@ if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "
 else
     echo "Starting the cross correlation for temporal data alignement."
     cd $scriptsPath
-    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"
+    python crossCorrelation.py "$displayLogs" "y" "$projectPath"
     echo "Temporal alignement of the mocap's data with the observer's data completed."
     runScript=true
 fi
@@ -371,7 +391,7 @@ if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" 
             Yes )   echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
                     read matchTime
                     cd $scriptsPath
-                    python matchInitPose.py "$timeStep" "$matchTime" "$displayLogs" "y" "$projectPath" ; break;;
+                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "$projectPath" ; break;;
             No ) break;;
         esac
         done
@@ -380,7 +400,7 @@ else
     # Prompt the user for input
     echo "Matching the initial pose of the mocap with the one of the observer."
     cd $scriptsPath
-    python matchInitPose.py "$timeStep" 0 "$displayLogs" "y" "$projectPath"
+    python matchInitPose.py 0 "$displayLogs" "y" "$projectPath"
     echo "Matching of the pose of the mocap with the pose of the observer completed."
 fi
 
@@ -418,7 +438,7 @@ if [[ "$computeMetrics" == "true" ]]; then
         select recomputeMetrics in "No" "Yes"; do
             case "$recomputeMetrics" in
                 No )    cd "$scriptsPath"
-                        python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
+                        python plotAndFormatResults.py "$plotResults" "$projectPath" "False"; 
                         break;;
                 Yes )   cd "$scriptsPath"; source routine_scripts/computeMetrics.sh;
                         break;;
@@ -434,7 +454,7 @@ if [[ "$computeMetrics" == "true" ]]; then
 elif $plotResults; then
     echo "Plotting the observer results."; 
     cd "$scriptsPath"
-    python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
+    python plotAndFormatResults.py "$plotResults" "$projectPath" "False"; 
 fi
 
 

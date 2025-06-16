@@ -89,7 +89,7 @@ compute_metrics() {
 
 cd $cwd/scripts
 echo "Starting the formatting for $projectName."; 
-python plotAndFormatResults.py "$timeStep" $plotResults "$projectPath" "True"; 
+python plotAndFormatResults.py $plotResults "$projectPath" "True"; 
 echo "Formatting for $projectName finished."; 
 compute_metrics
 echo "Computation of the metrics for $projectName finished."; 

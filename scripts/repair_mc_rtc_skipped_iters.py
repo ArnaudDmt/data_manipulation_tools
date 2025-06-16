@@ -82,5 +82,5 @@ combined_data = removeSkippedIndexes(observer_data, perf_GlobalRun_log)
 
 combined_data.to_csv(output_csv_file_path_observers, index=False,  sep=';')
 
-sys.exit(1)
+
 print("Corrected observer data has been saved to ", output_csv_file_path_observers)

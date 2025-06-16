@@ -116,5 +116,11 @@ def rename_observers_columns():
                     
 rename_observers_columns()
 
+cols = replayData_light.columns.tolist()
+cols.insert(0, cols.pop(cols.index('t')))
+df_Observers = replayData_light[cols]
+
+replayData_light.insert(0, 't', replayData_light.pop('t'))
+
 replayData_light.to_csv(output_csv_file_path, index=False,  sep=';')
 print("Output CSV file has been saved to", output_csv_file_path)

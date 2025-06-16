@@ -22,30 +22,22 @@ scriptName = "matchInitPose"
 
 
 if(len(sys.argv) > 1):
-    timeStepInput = sys.argv[1]
+    matchTime = int(sys.argv[1])
     if(len(sys.argv) > 2):
-        matchTime = int(sys.argv[2])
-    if(len(sys.argv) > 3):
-        displayLogs = sys.argv[3].lower() == 'true'
-    if(len(sys.argv) > 5):
-        path_to_project = sys.argv[5]
+        displayLogs = sys.argv[2].lower() == 'true'
+    if(len(sys.argv) > 4):
+        path_to_project = sys.argv[4]
 else:
     matchTime = float(input("When do you want the mocap pose to match the observer's one? "))
 
-try:
-    # Check if the timestep was given in milliseconds
-    if(timeStepInput.isdigit()):
-        timeStep_ms = int(timeStepInput)
-        timeStep_s = float(timeStep_ms)/1000.0
-    else:
-        timeStep_s = float(timeStepInput)
-        timeStep_ms = int(timeStep_s*1000.0)
-    resample_str = f'{timeStep_ms}ms'
-except ValueError:
-    print(f"The input timestep is not valid: {timeStepInput}")
-    sys.exit(1)
-
-
+with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
+    try:
+        infos_yaml_str = file.read()
+        infos_yamlData = yaml.safe_load(infos_yaml_str)
+        timeStep_s = float(infos_yamlData.get("timeStep_s"))
+    except yaml.YAMLError as exc:
+        print(exc)
+        
 # Load the CSV files into pandas dataframes
 df_Observers = pd.read_csv(f'{path_to_project}/output_data/lightData.csv', delimiter=';')
 mocapData = pd.read_csv(f'{path_to_project}/output_data/synchronizedMocapLimbData.csv', delimiter=';')
@@ -509,224 +501,12 @@ class InlineListDumper(yaml.SafeDumper):
 data = dict(
     observers = observersList,
     robot = robotName,
-    mocapBody = mocapBody
+    mocapBody = mocapBody,
+    timeStep_s = timeStep_s
 )
 
 with open(f'{path_to_project}/output_data/observers_infos.yaml', 'w') as outfile:
     yaml.dump(data, outfile, Dumper=InlineListDumper, sort_keys=False)
-
-# if 'KO_posW_tx' in df_Observers.columns:
-#     world_KOLimb_Pos = np.array([df_Observers['KO_posW_tx'], df_Observers['KO_posW_ty'], df_Observers['KO_posW_tz']]).T
-#     world_KOLimb_Ori_R = R.from_quat(df_Observers[["KO_posW_qx", "KO_posW_qy", "KO_posW_qz", "KO_posW_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_KOLimb_Ori_R = world_KOLimb_Ori_R.inv()
-#     alignedPoses["KO"] =  compute_aligned_pose(
-#         world_KOLimb_Pos, 
-#         world_KOLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_KOLimb_Ori_quat = alignedPoses["KO"]["aligned_orientation"].as_quat()
-#     df_Observers['KO_posW_tx'] = alignedPoses["KO"]["aligned_position"][:,0]
-#     df_Observers['KO_posW_ty'] = alignedPoses["KO"]["aligned_position"][:,1]
-#     df_Observers['KO_posW_tz'] = alignedPoses["KO"]["aligned_position"][:,2]
-#     df_Observers['KO_posW_qx'] = new_world_KOLimb_Ori_quat[:,0]
-#     df_Observers['KO_posW_qy'] = new_world_KOLimb_Ori_quat[:,1]
-#     df_Observers['KO_posW_qz'] = new_world_KOLimb_Ori_quat[:,2]
-#     df_Observers['KO_posW_qw'] = new_world_KOLimb_Ori_quat[:,3]
-# if 'KO_APC_posW_tx' in df_Observers.columns:
-#     world_KO_APCLimb_Pos = np.array([df_Observers['KO_APC_posW_tx'], df_Observers['KO_APC_posW_ty'], df_Observers['KO_APC_posW_tz']]).T
-#     world_KO_APCLimb_Ori_R = R.from_quat(df_Observers[["KO_APC_posW_qx", "KO_APC_posW_qy", "KO_APC_posW_qz", "KO_APC_posW_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_KO_APCLimb_Ori_R = world_KO_APCLimb_Ori_R.inv()
-#     alignedPoses["KO_APC"] =  compute_aligned_pose(
-#         world_KO_APCLimb_Pos, 
-#         world_KO_APCLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_KO_APCLimb_Ori_quat = alignedPoses["KO_APC"]["aligned_orientation"].as_quat()
-#     df_Observers['KO_APC_posW_tx'] = alignedPoses["KO_APC"]["aligned_position"][:,0]
-#     df_Observers['KO_APC_posW_ty'] = alignedPoses["KO_APC"]["aligned_position"][:,1]
-#     df_Observers['KO_APC_posW_tz'] = alignedPoses["KO_APC"]["aligned_position"][:,2]
-#     df_Observers['KO_APC_posW_qx'] = new_world_KO_APCLimb_Ori_quat[:,0]
-#     df_Observers['KO_APC_posW_qy'] = new_world_KO_APCLimb_Ori_quat[:,1]
-#     df_Observers['KO_APC_posW_qz'] = new_world_KO_APCLimb_Ori_quat[:,2]
-#     df_Observers['KO_APC_posW_qw'] = new_world_KO_APCLimb_Ori_quat[:,3]
-# if 'KO_ASC_posW_tx' in df_Observers.columns:
-#     world_KO_ASCLimb_Pos = np.array([df_Observers['KO_ASC_posW_tx'], df_Observers['KO_ASC_posW_ty'], df_Observers['KO_ASC_posW_tz']]).T
-#     world_KO_ASCLimb_Ori_R = R.from_quat(df_Observers[["KO_ASC_posW_qx", "KO_ASC_posW_qy", "KO_ASC_posW_qz", "KO_ASC_posW_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_KO_ASCLimb_Ori_R = world_KO_ASCLimb_Ori_R.inv()
-#     alignedPoses["KO_ASC"] =  compute_aligned_pose(
-#         world_KO_ASCLimb_Pos, 
-#         world_KO_ASCLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-    
-#     new_world_KO_ASCLimb_Ori_quat = alignedPoses["KO_ASC"]["aligned_orientation"].as_quat()
-#     df_Observers['KO_ASC_posW_tx'] = alignedPoses["KO_ASC"]["aligned_position"][:,0]
-#     df_Observers['KO_ASC_posW_ty'] = alignedPoses["KO_ASC"]["aligned_position"][:,1]
-#     df_Observers['KO_ASC_posW_tz'] = alignedPoses["KO_ASC"]["aligned_position"][:,2]
-#     df_Observers['KO_ASC_posW_qx'] = new_world_KO_ASCLimb_Ori_quat[:,0]
-#     df_Observers['KO_ASC_posW_qy'] = new_world_KO_ASCLimb_Ori_quat[:,1]
-#     df_Observers['KO_ASC_posW_qz'] = new_world_KO_ASCLimb_Ori_quat[:,2]
-#     df_Observers['KO_ASC_posW_qw'] = new_world_KO_ASCLimb_Ori_quat[:,3]
-# if 'KO_ZPC_posW_tx' in df_Observers.columns:
-#     world_KO_ZPCLimb_Pos = np.array([df_Observers['KO_ZPC_posW_tx'], df_Observers['KO_ZPC_posW_ty'], df_Observers['KO_ZPC_posW_tz']]).T
-#     world_KO_ZPCLimb_Ori_R = R.from_quat(df_Observers[["KO_ZPC_posW_qx", "KO_ZPC_posW_qy", "KO_ZPC_posW_qz", "KO_ZPC_posW_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_KO_ZPCLimb_Ori_R = world_KO_ZPCLimb_Ori_R.inv()
-#     alignedPoses["KO_ZPC"] =  compute_aligned_pose(
-#         world_KO_ZPCLimb_Pos, 
-#         world_KO_ZPCLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_KO_ZPCLimb_Ori_quat = alignedPoses["KO_ZPC"]["aligned_orientation"].as_quat()
-#     df_Observers['KO_ZPC_posW_tx'] = alignedPoses["KO_ZPC"]["aligned_position"][:,0]
-#     df_Observers['KO_ZPC_posW_ty'] = alignedPoses["KO_ZPC"]["aligned_position"][:,1]
-#     df_Observers['KO_ZPC_posW_tz'] = alignedPoses["KO_ZPC"]["aligned_position"][:,2]
-#     df_Observers['KO_ZPC_posW_qx'] = new_world_KO_ZPCLimb_Ori_quat[:,0]
-#     df_Observers['KO_ZPC_posW_qy'] = new_world_KO_ZPCLimb_Ori_quat[:,1]
-#     df_Observers['KO_ZPC_posW_qz'] = new_world_KO_ZPCLimb_Ori_quat[:,2]
-#     df_Observers['KO_ZPC_posW_qw'] = new_world_KO_ZPCLimb_Ori_quat[:,3]
-
-# if 'KOWithoutWrenchSensors_posW_tx' in df_Observers.columns:
-#     world_KOWithoutWrenchSensorsLimb_Pos = np.array([df_Observers['KOWithoutWrenchSensors_posW_tx'], df_Observers['KOWithoutWrenchSensors_posW_ty'], df_Observers['KOWithoutWrenchSensors_posW_tz']]).T
-#     world_KOWithoutWrenchSensorsLimb_Ori_R = R.from_quat(df_Observers[["KOWithoutWrenchSensors_posW_qx", "KOWithoutWrenchSensors_posW_qy", "KOWithoutWrenchSensors_posW_qz", "KOWithoutWrenchSensors_posW_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_KOWithoutWrenchSensorsLimb_Ori_R = world_KOWithoutWrenchSensorsLimb_Ori_R.inv()
-#     alignedPoses["KOWithoutWrenchSensors"] =  compute_aligned_pose(
-#         world_KOWithoutWrenchSensorsLimb_Pos, 
-#         world_KOWithoutWrenchSensorsLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_KOWithoutWrenchSensorsLimb_Ori_quat = alignedPoses["KOWithoutWrenchSensors"]["aligned_orientation"].as_quat()
-#     df_Observers['KOWithoutWrenchSensors_posW_tx'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,0]
-#     df_Observers['KOWithoutWrenchSensors_posW_ty'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,1]
-#     df_Observers['KOWithoutWrenchSensors_posW_tz'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,2]
-#     df_Observers['KOWithoutWrenchSensors_posW_qx'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,0]
-#     df_Observers['KOWithoutWrenchSensors_posW_qy'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,1]
-#     df_Observers['KOWithoutWrenchSensors_posW_qz'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,2]
-#     df_Observers['KOWithoutWrenchSensors_posW_qw'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,3]
-
-# if 'Vanyte_pose_tx' in df_Observers.columns:
-#     world_VanyteLimb_Pos = np.array([df_Observers['Vanyte_pose_tx'], df_Observers['Vanyte_pose_ty'], df_Observers['Vanyte_pose_tz']]).T
-#     world_VanyteLimb_Ori_R = R.from_quat(df_Observers[["Vanyte_pose_qx", "Vanyte_pose_qy", "Vanyte_pose_qz", "Vanyte_pose_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_VanyteLimb_Ori_R = world_VanyteLimb_Ori_R.inv()
-#     alignedPoses["Vanyte"] =  compute_aligned_pose(
-#         world_VanyteLimb_Pos, 
-#         world_VanyteLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_VanyteLimb_Ori_quat = alignedPoses["Vanyte"]["aligned_orientation"].as_quat()
-#     df_Observers['Vanyte_pose_tx'] = alignedPoses["Vanyte"]["aligned_position"][:,0]
-#     df_Observers['Vanyte_pose_ty'] = alignedPoses["Vanyte"]["aligned_position"][:,1]
-#     df_Observers['Vanyte_pose_tz'] = alignedPoses["Vanyte"]["aligned_position"][:,2]
-#     df_Observers['Vanyte_pose_qx'] = new_world_VanyteLimb_Ori_quat[:,0]
-#     df_Observers['Vanyte_pose_qy'] = new_world_VanyteLimb_Ori_quat[:,1]
-#     df_Observers['Vanyte_pose_qz'] = new_world_VanyteLimb_Ori_quat[:,2]
-#     df_Observers['Vanyte_pose_qw'] = new_world_VanyteLimb_Ori_quat[:,3]
-# if 'Tilt_pose_tx' in df_Observers.columns:
-#     world_TiltLimb_Pos = np.array([df_Observers['Tilt_pose_tx'], df_Observers['Tilt_pose_ty'], df_Observers['Tilt_pose_tz']]).T
-#     world_TiltLimb_Ori_R = R.from_quat(df_Observers[["Tilt_pose_qx", "Tilt_pose_qy", "Tilt_pose_qz", "Tilt_pose_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_TiltLimb_Ori_R = world_TiltLimb_Ori_R.inv()
-#     alignedPoses["Tilt"] =  compute_aligned_pose(
-#         world_TiltLimb_Pos, 
-#         world_TiltLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_TiltLimb_Ori_quat = alignedPoses["Tilt"]["aligned_orientation"].as_quat()
-#     df_Observers['Tilt_pose_tx'] = alignedPoses["Tilt"]["aligned_position"][:,0]
-#     df_Observers['Tilt_pose_ty'] = alignedPoses["Tilt"]["aligned_position"][:,1]
-#     df_Observers['Tilt_pose_tz'] = alignedPoses["Tilt"]["aligned_position"][:,2]
-#     df_Observers['Tilt_pose_qx'] = new_world_TiltLimb_Ori_quat[:,0]
-#     df_Observers['Tilt_pose_qy'] = new_world_TiltLimb_Ori_quat[:,1]
-#     df_Observers['Tilt_pose_qz'] = new_world_TiltLimb_Ori_quat[:,2]
-#     df_Observers['Tilt_pose_qw'] = new_world_TiltLimb_Ori_quat[:,3]
-
-# if 'TiltWoRatio_pose_tx' in df_Observers.columns:
-#     world_TiltWoRatioLimb_Pos = np.array([df_Observers['TiltWoRatio_pose_tx'], df_Observers['TiltWoRatio_pose_ty'], df_Observers['TiltWoRatio_pose_tz']]).T
-#     world_TiltWoRatioLimb_Ori_R = R.from_quat(df_Observers[["TiltWoRatio_pose_qx", "TiltWoRatio_pose_qy", "TiltWoRatio_pose_qz", "TiltWoRatio_pose_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_TiltWoRatioLimb_Ori_R = world_TiltWoRatioLimb_Ori_R.inv()
-#     alignedPoses["TiltWoRatio"] =  compute_aligned_pose(
-#         world_TiltWoRatioLimb_Pos, 
-#         world_TiltWoRatioLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_TiltWoRatioLimb_Ori_quat = alignedPoses["TiltWoRatio"]["aligned_orientation"].as_quat()
-#     df_Observers['TiltWoRatio_pose_tx'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,0]
-#     df_Observers['TiltWoRatio_pose_ty'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,1]
-#     df_Observers['TiltWoRatio_pose_tz'] = alignedPoses["TiltWoRatio"]["aligned_position"][:,2]
-#     df_Observers['TiltWoRatio_pose_qx'] = new_world_TiltWoRatioLimb_Ori_quat[:,0]
-#     df_Observers['TiltWoRatio_pose_qy'] = new_world_TiltWoRatioLimb_Ori_quat[:,1]
-#     df_Observers['TiltWoRatio_pose_qz'] = new_world_TiltWoRatioLimb_Ori_quat[:,2]
-#     df_Observers['TiltWoRatio_pose_qw'] = new_world_TiltWoRatioLimb_Ori_quat[:,3]
-
-# if 'Controller_tx' in df_Observers.columns:
-#     world_ControllerLimb_Pos = np.array([df_Observers['Controller_tx'], df_Observers['Controller_ty'], df_Observers['Controller_tz']]).T
-#     world_ControllerLimb_Ori_R = R.from_quat(df_Observers[["Controller_qx", "Controller_qy", "Controller_qz", "Controller_qw"]].values)
-#     # We get the inverse of the orientation as the inverse quaternion was stored
-#     world_ControllerLimb_Ori_R = world_ControllerLimb_Ori_R.inv()
-#     alignedPoses["Controller"] =  compute_aligned_pose(
-#         world_ControllerLimb_Pos, 
-#         world_ControllerLimb_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-#     new_world_ControllerLimb_Ori_quat = alignedPoses["Controller"]["aligned_orientation"].as_quat()
-#     df_Observers['Controller_tx'] = alignedPoses["Controller"]["aligned_position"][:,0]
-#     df_Observers['Controller_ty'] = alignedPoses["Controller"]["aligned_position"][:,1]
-#     df_Observers['Controller_tz'] = alignedPoses["Controller"]["aligned_position"][:,2]
-#     df_Observers['Controller_qx'] = new_world_ControllerLimb_Ori_quat[:,0]
-#     df_Observers['Controller_qy'] = new_world_ControllerLimb_Ori_quat[:,1]
-#     df_Observers['Controller_qz'] = new_world_ControllerLimb_Ori_quat[:,2]
-#     df_Observers['Controller_qw'] = new_world_ControllerLimb_Ori_quat[:,3]
-# if 'Hartley_IMU_Position_x' in df_Observers.columns:
-#     world_HartleyIMU_Pos = np.array([df_Observers['Hartley_IMU_Position_x'], df_Observers['Hartley_IMU_Position_y'], df_Observers['Hartley_IMU_Position_z']]).T
-#     world_HartleyIMU_Ori_R = R.from_quat(df_Observers[["Hartley_IMU_Orientation_x", "Hartley_IMU_Orientation_y", "Hartley_IMU_Orientation_z", "Hartley_IMU_Orientation_w"]].values)
-
-#     posImuFb = df_Observers[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
-#     quaternions_rImuFb = df_Observers[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
-#     rImuFb = R.from_quat(quaternions_rImuFb)
-
-#     world_Hartley_Pos = world_HartleyIMU_Pos + world_HartleyIMU_Ori_R.apply(posImuFb)
-#     world_Hartley_Ori_R = world_HartleyIMU_Ori_R * rImuFb
-#     alignedPoses["Hartley"] =  compute_aligned_pose(
-#         world_Hartley_Pos, 
-#         world_Hartley_Ori_R, 
-#         matchIndex,
-#         averageInterval
-#     )
-
-    
-#     new_world_Hartley_Ori_quat = alignedPoses["Hartley"]["aligned_orientation"].as_quat()
-#     df_Observers['Hartley_Position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
-#     df_Observers['Hartley_Position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
-#     df_Observers['Hartley_Position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
-#     df_Observers['Hartley_Orientation_x'] = new_world_Hartley_Ori_quat[:,0]
-#     df_Observers['Hartley_Orientation_y'] = new_world_Hartley_Ori_quat[:,1]
-#     df_Observers['Hartley_Orientation_z'] = new_world_Hartley_Ori_quat[:,2]
-#     df_Observers['Hartley_Orientation_w'] = new_world_Hartley_Ori_quat[:,3]
-
-
 
 
 
@@ -922,8 +702,8 @@ if(displayLogs):
 
 
 # Save the DataFrame to a new CSV file
-if(len(sys.argv) > 4):
-    save_csv = sys.argv[4].lower()
+if(len(sys.argv) > 3):
+    save_csv = sys.argv[3].lower()
 else:
     save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
     save_csv = save_csv.lower()

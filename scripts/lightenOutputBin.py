@@ -27,7 +27,7 @@ def add_observers_columns():
 
 # Define a list of patterns you want to match
 partial_pattern = ['MocapAligner*', 'HartleyIEKF*', 'Accelerometer_linearAcceleration*', 'Accelerometer_angularVelocity*']  # Add more patterns as needed
-exact_patterns = ['t']  # Add more column names as needed
+exact_patterns = ['t', 'perf_GlobalRun']  # Add more column names as needed
 
 keys_set = keys_set.union(partial_pattern)
 add_observers_columns()

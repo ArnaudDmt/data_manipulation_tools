@@ -2,6 +2,7 @@ import sys
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import yaml
 
 from scipy.spatial.transform import Rotation as R
 from scipy.signal import butter,filtfilt
@@ -21,27 +22,17 @@ scriptName = "crossCorrelation"
 
 
 if(len(sys.argv) > 1):
-    timeStepInput = sys.argv[1]
-    if(len(sys.argv) > 2):
-        displayLogs = sys.argv[2].lower() == 'true'
-    if(len(sys.argv) > 4):
-        path_to_project = sys.argv[4]
-else:
-    timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
+    displayLogs = sys.argv[1].lower() == 'true'
+    if(len(sys.argv) > 3):
+        path_to_project = sys.argv[3]
 
-try:
-    # Check if the timestep was given in milliseconds
-    if(timeStepInput.isdigit()):
-        timeStep_ms = int(timeStepInput)
-        timeStep_s = float(timeStep_ms)/1000.0
-    else:
-        timeStep_s = float(timeStepInput)
-        timeStep_ms = int(timeStep_s*1000.0)
-    resample_str = f'{timeStep_ms}ms'
-except ValueError:
-    print(f"The input timestep is not valid: {timeStepInput}")
-    sys.exit(1)
-
+with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
+    try:
+        infos_yaml_str = file.read()
+        infos_yamlData = yaml.safe_load(infos_yaml_str)
+        timeStep_s = float(infos_yamlData.get("timeStep_s"))
+    except yaml.YAMLError as exc:
+        print(exc)
 
 output_csv_file_path = f'{path_to_project}/output_data/synchronizedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
@@ -152,6 +143,7 @@ if(displayLogs):
 
 ###############################  Local linear velocity of the mocapLimb in the world  ###############################
 
+
 # We compute the velocity of the mocapLimb in the world
 world_mocapLimb_Vel_x = np.diff(world_mocapLimb_Pos[:,0])/timeStep_s
 world_mocapLimb_Vel_y = np.diff(world_mocapLimb_Pos[:,1])/timeStep_s
@@ -179,7 +171,6 @@ world_ObserverLimb_Vel_y = np.insert(world_ObserverLimb_Vel_y, 0, 0.0, axis=0)
 world_ObserverLimb_Vel_z = np.insert(world_ObserverLimb_Vel_z, 0, 0.0, axis=0)
 world_ObserverLimb_Vel = np.stack((world_ObserverLimb_Vel_x, world_ObserverLimb_Vel_y, world_ObserverLimb_Vel_z), axis = 1)
 
-
 # Now we get the local linear velocity
 world_mocapLimb_LocVel = world_mocapLimb_Ori_R.apply(world_mocapLimb_Vel, inverse=True)
 world_RigidBody_LocVel = world_RigidBody_Ori_R.apply(world_RigidBody_Vel, inverse=True)
@@ -189,6 +180,16 @@ world_ObserverLimb_LocVel = world_ObserverLimb_Ori_R.apply(world_ObserverLimb_Ve
 if(displayLogs):
     # Plot of the resulting poses
     fig2 = go.Figure()
+
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,0], mode='lines', name='world_mocapLimb_Vel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,1], mode='lines', name='world_mocapLimb_Vel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,2], mode='lines', name='world_mocapLimb_Vel_z'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,0], mode='lines', name='world_RigidBody_Vel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,1], mode='lines', name='world_RigidBody_Vel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,2], mode='lines', name='world_RigidBody_Vel_z'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,0], mode='lines', name='world_ObserverLimb_Vel_x'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,1], mode='lines', name='world_ObserverLimb_Vel_y'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,2], mode='lines', name='world_ObserverLimb_Vel_z'))
 
     fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,0], mode='lines', name='world_mocapLimb_LocVel_x'))
     fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,1], mode='lines', name='world_mocapLimb_LocVel_y'))
@@ -203,8 +204,6 @@ if(displayLogs):
     fig2.update_layout(title=f"{scriptName}: Local linear velocity before alignment")
     # Show the plotly figures
     fig2.show()
-
-
 
 
 ###############################  Cross correlation  ###############################
@@ -515,8 +514,8 @@ output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_
 
 
 # Save the DataFrame to a new CSV file
-if(len(sys.argv) > 3):
-    save_csv = sys.argv[3].lower()
+if(len(sys.argv) > 2):
+    save_csv = sys.argv[2].lower()
 else:
     save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
     save_csv = save_csv.lower()
