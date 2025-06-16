@@ -1,5 +1,7 @@
 import pandas as pd
-
+import plotly.graph_objects as go
+import numpy as np
+from scipy.spatial.transform import Rotation as R
 import sys
 
 ###############################  User inputs  ###############################
@@ -34,6 +36,8 @@ observer_data = pd.read_csv(f'{path_to_project}/output_data/lightData.csv',  del
 perf_GlobalRun_log = pd.read_csv(f'{path_to_project}/output_data/perf_GlobalRun_log.csv',  delimiter=';')
 
 def removeSkippedIndexes(observer_data, perf_GlobalRun_log):
+    observer_data = observer_data.copy()
+
     # Make a copy of the 't' column to modify
     corrected_t = observer_data['t'].copy()
 
@@ -42,25 +46,19 @@ def removeSkippedIndexes(observer_data, perf_GlobalRun_log):
 
     # Iterate over the rows to fix the `t` column
     for i in range(1, len(observer_data)):
-        # Detect skipped iteration
-        if perf_GlobalRun_log.loc[i, 'perf_GlobalRun'] > timeStep_ms:
-            nb_skipped = int(perf_GlobalRun_log.loc[i, 'perf_GlobalRun'] / timeStep_ms)
-            for j in range(1,nb_skipped+1):
-                # Calculate the time of the skipped iteration
-                skipped_t = corrected_t.iloc[i-1] + timeStep_s * j
-                
-                interpolated_values = dict.fromkeys(observer_data.columns)
-                for col in observer_data.columns:
-                    interpolated_values[col] = observer_data.loc[i-1, col]
+        delay = perf_GlobalRun_log.loc[i, 'perf_GlobalRun']
+        if delay > timeStep_ms:
+            nb_skipped = int(delay / timeStep_ms) - 1  # minus one because this step already exists
+            print(f'Found {nb_skipped + 1} skipped iterations at index {i}.')
 
-                interpolated_values['t'] = skipped_t
-                interpolated_values['is_virtual'] = True  # Mark as a virtual row
+            for j in range(1, nb_skipped + 1):
+                skipped_t = corrected_t.iloc[i - 1] + timeStep_s * j
+                new_row = observer_data.iloc[i - 1].copy()
+                new_row['t'] = skipped_t
+                new_row['is_virtual'] = True
+                virtual_rows.append(new_row)
 
-                # Add the virtual row to the list
-                virtual_rows.append(interpolated_values)
-
-                # Adjust the subsequent timestamps
-                corrected_t.iloc[i:] += timeStep_s
+            corrected_t.iloc[i:] += timeStep_s * nb_skipped
 
     # Update the corrected 't' column in the DataFrame
     observer_data['t'] = corrected_t
@@ -72,12 +70,17 @@ def removeSkippedIndexes(observer_data, perf_GlobalRun_log):
     # Combine the original data with the virtual rows
     combined_data = pd.concat([observer_data, virtual_data], ignore_index=True)
 
+    
     # Sort by time to ensure proper order
-    combined_data = combined_data.sort_values(by='t').reset_index(drop=True)
+    combined_data = combined_data.sort_values('t', kind='mergesort').reset_index(drop=True)
+
     return combined_data
 
 
 combined_data = removeSkippedIndexes(observer_data, perf_GlobalRun_log)
 
+
 combined_data.to_csv(output_csv_file_path_observers, index=False,  sep=';')
+
+sys.exit(1)
 print("Corrected observer data has been saved to ", output_csv_file_path_observers)
