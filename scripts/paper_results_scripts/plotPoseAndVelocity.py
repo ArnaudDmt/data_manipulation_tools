@@ -12,8 +12,6 @@ from scipy.signal import butter,filtfilt
 default_path = '.../Projects/HRP5_MultiContact_1'
 
 
-timeStep_s = 0.005
-
 contactNames = ["RightFootForceSensor"] #, "LeftFootForceSensor", "LeftHandForceSensor"] # ["RightFootForceSensor", "LeftFootForceSensor", "LeftHandForceSensor"]
 contacts_area_when_set = [] # ["LeftHandForceSensor"]
 

@@ -464,9 +464,6 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
                 line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=color_rgba)
             ))
 
-            print(type(data['x']))   # Should be <class 'numpy.ndarray'>
-            print(data['x'].shape)   # Should show something like (11151,)
-
             # Add Start and End markers
             fig.add_trace(go.Scatter3d(
                 x=[data['x'][0], data['x'].iloc[-1]],
@@ -753,8 +750,8 @@ def main():
     estimators_to_plot.reverse()
 
     # plot_llve(exps_to_merge, estimatorsList, colors)
-    plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
-    plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
+    # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
+    # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
     plot_absolute_errors(exps_to_merge, estimatorsList, colors)
@@ -786,7 +783,7 @@ def main():
     
     import plotAndFormatResults
     # for expe in exps_to_merge:
-    #     plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
+        # plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
     
     
     

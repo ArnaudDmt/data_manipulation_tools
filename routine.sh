@@ -86,7 +86,7 @@ select_folders() {
 
     if $compute_metrics_only; then
         # Get folders containing the specific file, remove './' prefix, and sort them alphabetically
-        folders=($(find . -type d -exec test -e '{}/output_data/observerResultsCSV.csv' \; -print | sed 's|^\./||' | grep -v '^$' | sort))
+        folders=($(find . -type d -exec test -e '{}/output_data/finalData.csv' \; -print | sed 's|^\./||' | grep -v '^$' | sort))
     elif $plot_results_only; then
         folders=($(find . -type d -exec test -e '{}/output_data/evals/mocap_loc_vel.pickle' \; -print | sed 's|^\./||' | grep -v '^$' | sort))
     else
@@ -263,8 +263,7 @@ for projectName in "${selected_folders[@]}"; do
     # files of the resulting data after each step
     resampledMocapData="$outputDataPath/resampledMocapData.csv"
     lightData="$outputDataPath/lightData.csv"
-    synchronizedMocapLimbData="$outputDataPath/synchronizedMocapLimbData.csv"
-    resultMocapLimbData="$outputDataPath/resultMocapLimbData.csv"
+    synchronizedObserversMocapData="$outputDataPath/synchronizedObserversMocapData.csv"
 
     # files of the replay
     logReplayCSV="$outputDataPath/logReplay.csv"

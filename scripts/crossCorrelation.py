@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import yaml
+from alive_progress import alive_bar
 
 from scipy.spatial.transform import Rotation as R
 from scipy.signal import butter,filtfilt
@@ -284,10 +285,13 @@ def realignData(data1, data2, data1_name, data2_name):
 
     # Find the index of the maximum value in the cross-correlation of the two signals
     max_cross_corr = 0
-    for i in range(data1.shape[1]):
-        crosscorr = np.correlate(data1[:,i], data2[:,i], mode='full')
-        if(np.argmax(crosscorr) > max_cross_corr):
-            max_index = np.argmax(crosscorr)
+    print("Computing the cross-correlation between mocap and observer data for each local linear velocit axis.")
+    with alive_bar(data1.shape[1]) as bar:
+        for i in range(data1.shape[1]):
+            crosscorr = np.correlate(data1[:,i], data2[:,i], mode='full')
+            if(np.argmax(crosscorr) > max_cross_corr):
+                max_index = np.argmax(crosscorr)
+            bar()
 
 
     # Shift the second observer_data file by the calculated index
@@ -321,9 +325,9 @@ def realignData(data1, data2, data1_name, data2_name):
 
     return data2, shift
 
-b, a = butter(2, 0.1, analog=False)
-world_mocapLimb_LocVel_filtered = filtfilt(b, a, world_mocapLimb_LocVel, axis=0)
-world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel_filtered, "world_ObserverLimb_LocVel", "world_mocapLimb_LocVel")
+# b, a = butter(2, 0.1, analog=False)
+# world_mocapLimb_LocVel_filtered = filtfilt(b, a, world_mocapLimb_LocVel, axis=0)
+world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel, "world_ObserverLimb_LocVel", "world_mocapLimb_LocVel")
 
 
 # Version which receives the shift to apply as an input
@@ -384,6 +388,14 @@ observer_data = observer_data[observer_data["is_virtual"] == False]
 
 observer_data = observer_data.drop(['is_virtual'], axis=1)
 
+
+
+overlap_mask = realignedMocapData['overlapTime'] == 1
+observer_data = observer_data[overlap_mask]
+realignedMocapData = realignedMocapData[overlap_mask]
+
+observer_data['t'] = observer_data['t'] - observer_data['t'].iloc[0]
+realignedMocapData["Time(Seconds)"] = realignedMocapData["Time(Seconds)"] - realignedMocapData["Time(Seconds)"].iloc[0]
 
 ###############################  Shifted poses retrieval  ###############################
 
@@ -450,9 +462,6 @@ if(displayLogs):
 
 
 
-
-
-
 #####################  Orientation and position difference wrt the initial frame  #####################
 
 
@@ -508,9 +517,17 @@ if(displayLogs):
     figTransfo.show()
 
 
-
 world_mocapLimb_Ori_quat = world_mocapLimb_Ori_R.as_quat()
-output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'worldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'worldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'worldMocapLimbOri_qx': world_mocapLimb_Ori_quat[:,0], 'worldMocapLimbOri_qy': world_mocapLimb_Ori_quat[:,1], 'worldMocapLimbOri_qz': world_mocapLimb_Ori_quat[:,2], 'worldMocapLimbOri_qw': world_mocapLimb_Ori_quat[:,3], 'overlapTime': realignedMocapData['overlapTime']})
+
+observer_data['worldMocapLimbPos_x'] = world_mocapLimb_Pos[:, 0]
+observer_data['worldMocapLimbPos_y'] = world_mocapLimb_Pos[:, 1]
+observer_data['worldMocapLimbPos_z'] = world_mocapLimb_Pos[:, 2]
+observer_data['worldMocapLimbOri_qx'] = world_mocapLimb_Ori_quat[:, 0]
+observer_data['worldMocapLimbOri_qy'] = world_mocapLimb_Ori_quat[:, 1]
+observer_data['worldMocapLimbOri_qz'] = world_mocapLimb_Ori_quat[:, 2]
+observer_data['worldMocapLimbOri_qw'] = world_mocapLimb_Ori_quat[:, 3]
+
+
 
 
 # Save the DataFrame to a new CSV file
@@ -522,7 +539,7 @@ else:
 
 
 if save_csv == 'y':
-    output_df.to_csv(output_csv_file_path, index=False, sep=';')
+    observer_data.to_csv(f'{path_to_project}/output_data/synchronizedObserversMocapData.csv', index=False, sep=';')
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
     print("Data not saved.")

@@ -358,7 +358,7 @@ fi
 
 cd $cwd
 
-if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
+if [ -f "$synchronizedObserversMocapData" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
     if $debug; then
         echo "Do you want to run again the temporal data alignement with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
@@ -381,9 +381,9 @@ fi
 
 cd $cwd
 
-observerResultsCSV="$outputDataPath/observerResultsCSV.csv"
+finalDataCSV="$outputDataPath/finalDataCSV.csv"
 
-if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
+if [ -f "$finalDataCSV" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
     if $debug; then
         echo "Do you want to run again the spatial data alignement with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
