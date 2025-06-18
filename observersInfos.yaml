@@ -9,6 +9,14 @@ observers:
         angVel: [Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_velW_wx, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_velW_wy, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_velW_wz]
       IMU:
         gyroBias: [Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_x, Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_y, Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_gyroBias_Accelerometer_z]
+      LeftFoot:
+        contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_LeftFootForceSensor
+      RightFoot:
+        contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_RightFootForceSensor
+      LeftHand:
+        contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_LeftHandForceSensor
+      RightHand:
+        contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_RightHandForceSensor
     lineWidth: 2
   - name: MCVanytEstimator
     abbreviation: Vanyte
