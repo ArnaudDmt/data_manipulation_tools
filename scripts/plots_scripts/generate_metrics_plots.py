@@ -754,7 +754,7 @@ def main():
     # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
-    plot_absolute_errors(exps_to_merge, estimatorsList, colors)
+    # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
     plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs

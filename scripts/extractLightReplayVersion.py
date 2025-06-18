@@ -23,8 +23,11 @@ def add_observers_columns():
     for observer in observersInfos_yamlData['observers']:
         for body in observer['kinematics']:
             for kine in observer['kinematics'][body]:
-                for axis in observer['kinematics'][body][kine]:
-                    exact_patterns.append(axis)
+                if type(observer['kinematics'][body][kine]) is list:
+                    for axis in observer['kinematics'][body][kine]:
+                        exact_patterns.append(axis)
+                else:
+                    exact_patterns.append(observer['kinematics'][body][kine])
   
 # Define a list of patterns you want to match
 partial_pattern = ['MocapAligner', 'HartleyIEKF', 'Accelerometer_linearAcceleration', 'Accelerometer_angularVelocity']  # Add more patterns as needed
@@ -45,6 +48,7 @@ def filterColumns(dataframe, partial_pattern, exact_patterns):
 
 # Load the CSV files into pandas dataframes
 replayData = pd.read_csv(input_csv_file_path, delimiter=';')
+
 light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
 replayData_light = replayData[light_columns].copy()
 
@@ -83,8 +87,8 @@ def rename_observers_columns():
             print(exc)
 
     for observer in observersInfos_yamlData['observers']:
-        prefix = observer['abbreviation']
         for body in observer['kinematics']:
+            prefix = observer['abbreviation']
             if body != mocapBody:
                 prefix += '_' + body
             for kine in observer['kinematics'][body]:
@@ -113,6 +117,8 @@ def rename_observers_columns():
                     replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][0], prefix + '_gyroBias_x'), inplace=True)
                     replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][1], prefix + '_gyroBias_y'), inplace=True)
                     replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine][2], prefix + '_gyroBias_z'), inplace=True)
+                if kine == "contact_isSet":
+                    replayData_light.rename(columns=lambda x: x.replace(observer['kinematics'][body][kine], prefix + '_isSet'), inplace=True)
                     
 rename_observers_columns()
 
@@ -123,4 +129,5 @@ df_Observers = replayData_light[cols]
 replayData_light.insert(0, 't', replayData_light.pop('t'))
 
 replayData_light.to_csv(output_csv_file_path, index=False,  sep=';')
+
 print("Output CSV file has been saved to", output_csv_file_path)

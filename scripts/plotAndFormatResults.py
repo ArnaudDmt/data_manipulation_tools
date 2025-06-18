@@ -7,7 +7,7 @@ import pandas as pd
 import yaml
 import plotly.graph_objects as go
 from scipy.spatial.transform import Rotation as R
-from rdp import rdp
+from collections import deque
 
 import plotly.express as px  # For color palette generation
 from scipy.signal import butter,filtfilt
@@ -84,51 +84,6 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         kinematics["Mocap"] = dict()
         kinematics["Mocap"][mocapBody] = dict()
         kinematics["Mocap"][mocapBody]["position"] = data_df[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy()
-
-        # Original 2D trajectory
-        positions_xy = kinematics["Mocap"][mocapBody]["position"][:, :2]
-
-        # Apply RDP simplification
-        simplified_xy = rdp(positions_xy, epsilon=0.1)
-
-        total_distance = np.sum(np.linalg.norm(np.diff(simplified_xy, axis=0), axis=1))
-
-        print(f"total_distance: {total_distance}")
-
-        # Create plot
-        fig = go.Figure()
-
-        fig.add_trace(go.Scatter(
-            x=positions_xy[:, 0],
-            y=positions_xy[:, 1],
-            mode='lines',
-            name='Original Trajectory',
-            line=dict(color='blue', width=2),
-            opacity=0.4
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=simplified_xy[:, 0],
-            y=simplified_xy[:, 1],
-            mode='lines+markers',
-            name='Simplified Trajectory (RDP)',
-            line=dict(color='red', width=3, dash='dash'),
-            marker=dict(size=6, color='red')
-        ))
-
-        fig.update_layout(
-            title='Original vs Simplified Trajectory (XY Plane)',
-            xaxis_title='X [m]',
-            yaxis_title='Y [m]',
-            legend=dict(x=0.02, y=0.98),
-            width=800,
-            height=600
-        )
-
-        fig.show()
-
-        sys.exit(1)
-
         kinematics["Mocap"][mocapBody]["quaternions"] = data_df[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()
         kinematics["Mocap"][mocapBody]["R"] = R.from_quat(kinematics["Mocap"][mocapBody]["quaternions"])
         euler_angles_Mocap = kinematics["Mocap"][mocapBody]["R"].as_euler('xyz')
@@ -404,8 +359,184 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         fig_gyroBias.show()
 
 
+    ###############################  Criteria based on the step sequence  ###############################
 
-    ###############################  Criterias based on the local linear velocity  ###############################
+    # contact_columns = [col for col in data_df.columns if col.endswith('_isSet')]
+
+   
+    contact_columns = {
+    col.split('_')[-2]: col
+    for col in data_df.columns
+    if col.endswith('_isSet')
+    }
+
+    contact_transitions_init = {}
+
+    for contact, col in contact_columns.items():
+        series = data_df[col].fillna("").astype(str)
+        prev = series.shift(1).fillna("").astype(str)
+        transitions = (prev == "Set") & (series != "Set")
+        contact_transitions_init[contact] = deque(series.index[transitions].tolist())
+
+    contacts = list(contact_transitions_init.keys())
+    intervals = []
+    
+    contact_transitions = contact_transitions_init.copy()
+
+    # First phase: find when all contacts have been removed once
+    removalIndex_contact_map = dict()
+    for c in contacts:
+        if not contact_transitions[c]:
+            break  # if any contact has no transition, we can't proceed
+        removalIndex_contact_map[contact_transitions[c][0]] = c
+
+    if len(removalIndex_contact_map) < len(contacts):
+        raise ValueError("Not all contacts have at least one transition.")
+
+    end_time = max(removalIndex_contact_map.keys())
+    intervals.append({
+        'start_time': 0,
+        'end_time': end_time,
+        'reference': None
+    })
+
+    reference = removalIndex_contact_map[end_time]
+    
+    for c in contacts:
+        while  contact_transitions[c][0] < end_time:
+            contact_transitions[c].popleft()
+
+    currently_set_contacts = [
+            c for c in contacts
+            if data_df[contact_columns[c]].iloc[0] == "Set"
+        ]
+
+    print(contact_transitions)
+    while True:
+        start_time = end_time
+        # removalIndex_contact_map = {end_time: removalIndex_contact_map[end_time]}
+
+        removalIndex_contact_map = dict()
+        success = False
+        if reference is not None and contact_transitions[reference]:
+            index_found = None
+            success = False
+
+            other_contacts = [c for c in currently_set_contacts if c != reference]
+            if other_contacts:
+                for i, t in enumerate(contact_transitions[reference]):
+                    if t <= start_time:
+                        continue  # Skip transitions before or at start_time
+
+                    all_removed = True
+                    for c in other_contacts:
+                        transitions = contact_transitions.get(c, [])
+                        # Check if there is any transition for contact c strictly after start_time and at or before t
+                        if not any(start_time < tc <= t for tc in transitions):
+                            all_removed = False
+                            break
+
+                    if all_removed:
+                        success = True
+                        index_found = i
+                        break  # Found a valid time for the reference contact
+
+            if success:
+                end_time = contact_transitions[reference][index_found]
+
+
+        skipIter = False
+        if reference == None or success == False:
+            for c in currently_set_contacts:
+                if len(contact_transitions[c]) > 2:
+                    removalIndex_contact_map[contact_transitions[c][0]] = c
+                else:
+                    break
+            if removalIndex_contact_map:
+                start_time = min(removalIndex_contact_map.keys())
+                end_time = start_time
+                reference = removalIndex_contact_map[start_time]
+                success = True
+                skipIter = True
+
+        currently_set_contacts = [
+            c for c in contacts
+            if data_df[contact_columns[c]].iloc[end_time] == "Set"
+        ]
+
+        if skipIter:
+            continue
+
+        if not success and not skipIter:
+            break
+        
+
+        intervals.append({
+            'start_time': start_time,
+            'end_time': end_time,
+            'reference': reference
+        })
+
+        nbRemaining = 0
+        
+        for c in contacts:
+            while contact_transitions[c] and contact_transitions[c][0] < end_time:
+                contact_transitions[c].popleft()
+            if not contact_transitions[c]:
+                reference = None
+            nbRemaining += len(contact_transitions[c])
+        if nbRemaining == 0:
+            break
+
+    fig = go.Figure()
+
+    band_height = 1.0
+    num_contacts = len(contact_columns)
+
+    # 1. Plot each contact's state in its own vertical band
+    for i, (name, col) in enumerate(contact_columns.items()):
+        raw_state = (data_df[col] != 'Set').astype(float)  # 0 if set, 1 if not
+        y_min = i * 0.1
+        y_max = band_height - i * 0.1
+        # Scale to band
+        scaled_state = raw_state * (y_max - y_min) + y_min
+
+        fig.add_trace(go.Scatter(
+            x=data_df.index,
+            y=scaled_state,
+            mode='lines',
+            name=name
+        ))
+
+    import plotly.colors as pc
+    # 2. Shaded intervals (full height)
+    colors = pc.qualitative.Pastel
+    for i, interval in enumerate(intervals):
+        fig.add_shape(
+            type='rect',
+            x0=interval['start_time'],
+            x1=interval['end_time'],
+            y0=0,
+            y1=1,
+            fillcolor=colors[i % len(colors)],
+            opacity=0.3,
+            layer='below',
+            line=dict(width=0),
+        )
+
+    fig.update_layout(
+        title='Contact States with Shaded Intervals. 1=lifted',
+        yaxis=dict(title='Contact Bands', range=[-0.05, 1.05], showticklabels=False),
+        xaxis=dict(title='Time Index'),
+        legend=dict(title='Contacts'),
+        height=300 + 100 * num_contacts  # Adjust plot height dynamically
+    )
+
+    fig.show()
+
+    sys.exit(1)
+
+    ###############################  Criteria based on the local linear velocity  ###############################
 
     with open(f'{path_to_project}/projectConfig.yaml', 'r') as file:
         try:

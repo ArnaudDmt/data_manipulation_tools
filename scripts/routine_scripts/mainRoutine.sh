@@ -296,7 +296,6 @@ else
     echo "Starting the extraction of the light version of the observer's data."
     python extractLightReplayVersion.py "$projectPath"
     echo "Extraction of the light version of the observer's data completed."
-    python extractLightReplayVersion.py "$projectPath"
     runScript=true
 fi
 
