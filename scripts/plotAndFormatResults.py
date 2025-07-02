@@ -490,16 +490,187 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
     fig = go.Figure()
 
-    band_height = 1.0
+    def get_invariant_orthogonal_vector(Rhat: np.ndarray, Rtez: np.ndarray):
+            epsilon = 2.2204460492503131e-16
+            Rhat_Rtez = np.dot(Rhat, Rtez)
+            if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
+                return np.array([1, 0, 0])
+            else:
+                return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
+            
+    def merge_tilt_with_yaw_axis_agnostic(Rtez: np.ndarray, R2: np.ndarray):
+        ez = np.array([0, 0, 1])
+        v1 = Rtez
+    
+        m = get_invariant_orthogonal_vector(R2, Rtez)
+        m = m / np.linalg.norm(m)
+
+        ml = np.dot(R2.T, m)
+
+        R_temp1 = np.column_stack((np.cross(m, ez), m, ez))
+
+        R_temp2 = np.vstack((np.cross(ml, v1).T, ml.T, v1.T))
+
+        return np.dot(R_temp1, R_temp2)
+    
+    final_position_errors = {estimator: [] for estimator in estimatorsList}
+
+    min_y = float('inf')
+    max_y = -float('inf')
+    
+    d = {1: {}} 
+    poses = {}
+    for estimator in estimatorsList:
+        poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
+        if(estimator != "Mocap"):
+            d[1][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
+
+    print(intervals)
+
+    idx_range = []
+    
+    for i, interval in enumerate(intervals):
+        idx_range.extend(range(interval["start_time"], interval["end_time"]))
+
+        start_time = interval["start_time"]
+        end_time = interval["end_time"]
+
+        R_mocap = kinematics["Mocap"][mocapBody]["R"][start_time:end_time]
+        pos_mocap = kinematics["Mocap"][mocapBody]["position"][start_time:end_time]
+                
+        aligned_init_ori_mat_mocap = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                R_mocap[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+            ))
+        
+        R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
+        p_aligned_mocap = np.array([0, 0, 0]) + \
+        (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(
+            pos_mocap - pos_mocap[0]
+        )
+
+        poses["Mocap"]["tx"].extend(p_aligned_mocap[:,0])
+        poses["Mocap"]["ty"].extend(p_aligned_mocap[:,1])
+        poses["Mocap"]["tz"].extend(p_aligned_mocap[:,2])
+        euler = R_aligned_mocap.as_euler('zxy')
+        poses["Mocap"]["rz"].extend(euler[:,0])
+        poses["Mocap"]["rx"].extend(euler[:,1])
+        poses["Mocap"]["ry"].extend(euler[:,2])
+
+        min_y = min(min_y, np.min(p_aligned_mocap))
+        max_y = max(max_y, np.max(p_aligned_mocap))
+       
+        for estimator in estimatorsList:
+            if(estimator == "Mocap"):
+                continue
+            
+            R_est = kinematics[estimator][mocapBody]["R"][start_time:end_time]
+            pos_est = kinematics[estimator][mocapBody]["position"][start_time:end_time]
+          
+            aligned_init_ori_mat_est = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                R_est[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+            ))
+            
+            R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
+            p_aligned_est = np.array([0, 0, 0]) + \
+            (aligned_init_ori_mat_est * R_est[0].inv()).apply(
+                pos_est - pos_est[0]
+            )
+
+            
+
+            poses[estimator]["tx"].extend(p_aligned_est[:,0])
+            poses[estimator]["ty"].extend(p_aligned_est[:,1])
+            poses[estimator]["tz"].extend(p_aligned_est[:,2])
+            euler = R_aligned_est.as_euler('zxy')
+            poses[estimator]["rz"].extend(euler[:,0])
+            poses[estimator]["rx"].extend(euler[:,1])
+            poses[estimator]["ry"].extend(euler[:,2])
+
+
+            error_pos = p_aligned_est[-1] - p_aligned_mocap[-1]
+            final_position_errors[estimator].append(error_pos)
+
+            scalar_product = np.dot(R_aligned_mocap[-1].apply([0, 0, 1], inverse=True), R_aligned_est[-1].apply([0, 0, 1], inverse=True))
+
+            tilt_error = np.arccos(scalar_product)
+            if tilt_error == "nan":
+                tilt_error = 0
+            R_error = R_aligned_mocap[-1] * R_aligned_est[-1].inv()
+
+            min_y = min(min_y, np.min(euler))
+            max_y = max(max_y, np.max(euler))
+
+            min_y = min(min_y, np.min(p_aligned_est))
+            max_y = max(max_y, np.max(p_aligned_est))
+
+            tilt_error = np.rad2deg(tilt_error)
+
+            d[1][estimator]['pos'].append(error_pos)
+            d[1][estimator]['tilt'].append(tilt_error)
+            yaw_error = np.array(abs(R_error.as_euler('zxy', degrees=True)[0]))
+            d[1][estimator]['yaw'].append(yaw_error)
+
+
+    
+    for estimator in estimatorsList:
+        fig.add_trace(go.Scatter(
+                x=list(idx_range),
+                y=poses[estimator]["tx"],
+                mode='lines',
+            line=dict(color = colors[estimator]),
+                name=f'{estimator} aligned X',
+                showlegend=True,
+            ))
+        fig.add_trace(go.Scatter(
+            x=list(idx_range),
+            y=poses[estimator]["ty"],
+            mode='lines',
+        line=dict(color = colors[estimator]),
+            name=f'{estimator} aligned Y',
+            showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+            x=list(idx_range),
+            y=poses[estimator]["tz"],
+            mode='lines',
+        line=dict(color = colors[estimator]),
+            name=f'{estimator} aligned Z',
+            showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+                x=list(idx_range),
+                y=poses[estimator]["rx"],
+                mode='lines',
+            line=dict(color = colors[estimator]),
+                name=f'{estimator} aligned Roll',
+                showlegend=True,
+            ))
+        fig.add_trace(go.Scatter(
+            x=list(idx_range),
+            y=poses[estimator]["ry"],
+            mode='lines',
+        line=dict(color = colors[estimator]),
+            name=f'{estimator} aligned Pitch',
+            showlegend=True,
+        ))
+        fig.add_trace(go.Scatter(
+            x=list(idx_range),
+            y=poses[estimator]["rz"],
+            mode='lines',
+        line=dict(color = colors[estimator]),
+            name=f'{estimator} aligned Yaw',
+            showlegend=True,
+        ))
+
     num_contacts = len(contact_columns)
 
     # 1. Plot each contact's state in its own vertical band
     for i, (name, col) in enumerate(contact_columns.items()):
         raw_state = (data_df[col] != 'Set').astype(float)  # 0 if set, 1 if not
-        y_min = i * 0.1
-        y_max = band_height - i * 0.1
+        y_min = 0
+        y_max = max_y - i * 0.1 * max_y
         # Scale to band
-        scaled_state = raw_state * (y_max - y_min) + y_min
+        scaled_state = raw_state * y_max
 
         fig.add_trace(go.Scatter(
             x=data_df.index,
@@ -516,8 +687,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             type='rect',
             x0=interval['start_time'],
             x1=interval['end_time'],
-            y0=0,
-            y1=1,
+            y0=min_y,
+            y1=max_y,
             fillcolor=colors[i % len(colors)],
             opacity=0.3,
             layer='below',
@@ -526,13 +697,16 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
     fig.update_layout(
         title='Contact States with Shaded Intervals. 1=lifted',
-        yaxis=dict(title='Contact Bands', range=[-0.05, 1.05], showticklabels=False),
+        yaxis=dict(title='Contact Bands', range=[min_y * 1.05, max_y * 1.05], showticklabels=False),
         xaxis=dict(title='Time Index'),
         legend=dict(title='Contacts'),
         height=300 + 100 * num_contacts  # Adjust plot height dynamically
     )
 
     fig.show()
+
+    with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
+        pickle.dump(d, f)
 
     sys.exit(1)
 
