@@ -28,7 +28,7 @@ try:
 
     actual_dt = df_Observers['t'].iloc[1] - df_Observers['t'].iloc[0]
     if not (np.isclose(actual_dt, timeStep_s, rtol=1e-5, atol=1e-9) or np.isclose(actual_dt, timeStep_s * 2, rtol=1e-5, atol=1e-9)):
-        print(f"The timestep used in the pipeline ({timeStep_s} s) doesn't match that in the log, please check.")
+        print(f"The timestep used in the pipeline ({timeStep_s} s) doesn't match that in the log ({actual_dt}), please check.")
         sys.exit(1)
     if heavy_log and timeStep_ms <= 3:
         # we check if the log has already been downsampled

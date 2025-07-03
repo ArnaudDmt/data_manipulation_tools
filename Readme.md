@@ -10,7 +10,7 @@ To generate the necessary data, the mc_rtc's log will be replayed, please make s
 After changes, the script can be run with three options:
 * --compute-metrics: compute essentially the trajectory evaluation metrics of the observers for a desired projet / set of projects. Takes time if the logs are long.
 * --debug: run the routine with the possibility to re-run the steps one by one with more plots to debug the different steps.
-* --plot-metrics: plot the results of the computed metrics for the desired project/set of projects, without recomputing these metrics. Calls generate_metrics_plots.py, which calls the individual codes for the plots. The latter can be commented in or out.
+* --plot-results: plot the results of the computed metrics for the desired project/set of projects, without recomputing these metrics. Calls generate_metrics_plots.py, which calls the individual codes for the plots. The latter can be commented in or out.
 
 
 # Description of the main scripts

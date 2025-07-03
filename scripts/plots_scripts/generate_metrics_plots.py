@@ -720,6 +720,145 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
     plot_llve_statistics_as_boxplot(errorStats, colors, exps_to_merge[0])
     
 
+def plot_errors_per_walk_cycle_as_boxplot(errorStats, colors):    
+    f = open('/tmp/errors_per_walk_cycle.yaml', 'w+')
+    yaml.dump(errorStats, f, allow_unicode=True, default_flow_style=False)
+    fig = go.Figure()
+
+    all_categories = sorted({cat for distance in errorStats.values() for estimator in distance.values() for cat in estimator.keys()})
+    
+    dropdown_buttons = []
+    
+    traces_per_category = {category: [] for category in all_categories}
+
+    # Iterate over categories and create a trace per estimator-category pair
+    first_key = next(iter(errorStats))
+    for estimator in errorStats[first_key].keys():  # We assume the same estimators are present for all d_subTraj
+        for category in all_categories:
+            x_vals = []  # Collect x values (d_subTraj)
+            lower_fence = []
+            q1 = []
+            mean = []
+            meanAbs = []
+            median = []
+            q3 = []
+            upper_fence = []
+            rmse = []
+
+            # Collect the data across all sub-trajectory lengths for each estimator-category pair
+            for d_subTraj in errorStats.keys():
+                stats = errorStats[d_subTraj][estimator][category]
+                x_vals.append(d_subTraj)
+                lower_fence.append(stats['min'])
+                q1.append(stats['q1'])
+                mean.append(stats['mean'])
+                meanAbs.append(stats['meanAbs'])
+                median.append(stats['median'])
+                q3.append(stats['q3'])
+                upper_fence.append(stats['max'])
+                rmse.append(stats['rmse'])
+
+
+            trace = go.Box(
+                x=x_vals,  # X-axis corresponds to sub-trajectory lengths
+                lowerfence=lower_fence,
+                q1=q1,
+                mean=mean,
+                median=median,
+                q3=q3,
+                upperfence=upper_fence,
+                name=f"{estimator_plot_args[estimator]['name']} ({category})",  # Single legend entry per estimator-category pair
+                boxpoints=False,
+                marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)",  # Outline color
+                fillcolor=lighten_color(colors[estimator], 0.3),  # Slightly lighter and transparent background
+                line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"),  # Well-visible outline
+                opacity=0.8,
+                visible=False  # Initially hidden
+            )
+
+            trace2 = go.Scatter(x=x_vals, y=rmse, name=f"{estimator_plot_args[estimator]['name']} rmse ({category})", marker_color=f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)", visible=False, mode='markers')
+
+
+            traces_per_category[category].append(trace)
+            fig.add_trace(trace)
+
+            traces_per_category[category].append(trace2)
+            fig.add_trace(trace2)
+
+    # Create dropdown buttons to toggle visibility for each category
+    for category in all_categories:
+        visibility = [False] * len(fig.data)  # Start with all traces hidden
+        for i, trace in enumerate(fig.data):
+            if trace.name.endswith(f"({category})"):
+                visibility[i] = True  # Show traces of the selected category
+
+        button = dict(
+            label=category,
+            method='update',
+            args=[{'visible': visibility}, {'title': rel_category_titles.get(category, 'Default Label'), 'yaxis.title': rel_category_ylabels.get(category, 'Default Label')}]
+        )
+        dropdown_buttons.append(button)
+
+    fig.update_layout(
+        title='Select a Category to Display Boxplots',
+        xaxis_title='Sub-trajectory length [m]',
+        updatemenus=[
+            {
+                'buttons': dropdown_buttons,
+                'direction': 'down',
+                'showactive': True,
+            }
+        ],
+        boxmode='group'  # Group boxes together
+    )
+
+    fig.show()
+
+
+def plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors):
+    errorsByCycleLength = open_pickle(f"Projects/{exps_to_merge[0]}/output_data/evals/error_walk_cycle.pickle")
+    regroupedErrors = dict.fromkeys(errorsByCycleLength.keys())
+
+    for cycleLength in errorsByCycleLength:
+            regroupedErrors[cycleLength] = dict.fromkeys(estimatorsList)
+            for estimator in regroupedErrors[cycleLength]:
+                regroupedErrors[cycleLength][estimator] = {"pos_lateral": [], "pos_z": [], "tilt": [], "yaw": []}
+
+    for expe in exps_to_merge:   
+        errorsByCycleLength = open_pickle(f"Projects/{expe}/output_data/evals/error_walk_cycle.pickle")
+        for cycleLength in errorsByCycleLength:
+            for estimator in regroupedErrors[cycleLength]:
+                for pos in errorsByCycleLength[cycleLength][estimator]["pos"]:
+                    regroupedErrors[cycleLength][estimator]["pos_lateral"].append(np.linalg.norm(pos[0:2]))
+                    regroupedErrors[cycleLength][estimator]["pos_z"].append(np.linalg.norm(pos[2]))
+                regroupedErrors[cycleLength][estimator]["tilt"].extend(errorsByCycleLength[cycleLength][estimator]["tilt"])
+                regroupedErrors[cycleLength][estimator]["yaw"].extend(errorsByCycleLength[cycleLength][estimator]["yaw"])
+    print(regroupedErrors)
+
+
+    errorStats = dict.fromkeys(regroupedErrors.keys())
+    for cycleLength in errorStats:
+        errorStats[cycleLength] = dict.fromkeys(regroupedErrors[cycleLength].keys())
+        for estimator in errorStats[cycleLength]:
+            errorStats[cycleLength][estimator] = dict.fromkeys(regroupedErrors[cycleLength][estimator].keys())
+            for cat in errorStats[cycleLength][estimator]:
+                errorStats[cycleLength][estimator][cat]  = {
+                                        'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
+                                        'std': 0.0, 'min': 0.0, 'max': 0.0  }
+                data_vec = regroupedErrors[cycleLength][estimator][cat]
+                print(data_vec)
+                errorStats[cycleLength][estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
+                errorStats[cycleLength][estimator][cat]['mean'] = float(np.mean(data_vec))
+                errorStats[cycleLength][estimator][cat]['meanAbs'] = float(np.mean(np.abs(data_vec)))
+                errorStats[cycleLength][estimator][cat]['median'] = float(np.median(data_vec))
+                errorStats[cycleLength][estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
+                errorStats[cycleLength][estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
+                errorStats[cycleLength][estimator][cat]['std'] = float(np.std(data_vec))
+                errorStats[cycleLength][estimator][cat]['min'] = float(np.min(data_vec))
+                errorStats[cycleLength][estimator][cat]['max'] = float(np.max(data_vec))
+
+    plot_errors_per_walk_cycle_as_boxplot(errorStats, colors)
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -744,7 +883,7 @@ def main():
     estimatorsList = [e for e in estimatorsList if e in estimator_plot_args]
     estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
     estimators_to_plot = estimatorsList.copy()
-    estimators_to_plot.append("Mocap")
+    estimators_to_plot.append("Ground truth")
     colors = generate_turbo_subset_colors(estimators_to_plot)
 
     estimators_to_plot.reverse()
@@ -755,13 +894,15 @@ def main():
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
     # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
-    plot_relative_errors(exps_to_merge, estimatorsList, colors)
+    # plot_relative_errors(exps_to_merge, estimatorsList, colors)
+
+    # plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
     
     colors_to_plot = colors
 
-    # plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
 
     #import plotExternalForceAndBias

@@ -411,7 +411,6 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             if data_df[contact_columns[c]].iloc[0] == "Set"
         ]
 
-    print(contact_transitions)
     while True:
         start_time = end_time
         # removalIndex_contact_map = {end_time: removalIndex_contact_map[end_time]}
@@ -419,9 +418,13 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         removalIndex_contact_map = dict()
         success = False
         if reference is not None and contact_transitions[reference]:
+            currently_set_contacts = [
+            c for c in contacts
+            if data_df[contact_columns[c]].iloc[end_time] == "Set"
+        ]
+            
             index_found = None
             success = False
-
             other_contacts = [c for c in currently_set_contacts if c != reference]
             if other_contacts:
                 for i, t in enumerate(contact_transitions[reference]):
@@ -458,12 +461,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 reference = removalIndex_contact_map[start_time]
                 success = True
                 skipIter = True
-
-        currently_set_contacts = [
-            c for c in contacts
-            if data_df[contact_columns[c]].iloc[end_time] == "Set"
-        ]
-
+        
         if skipIter:
             continue
 

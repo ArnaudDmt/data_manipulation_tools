@@ -66,7 +66,7 @@ for arg in "$@"; do
         break
     elif [[ "$arg" == "--compute-metrics" ]]; then
         compute_metrics_only=true
-    elif [[ "$arg" == "--plot-metrics" ]]; then
+    elif [[ "$arg" == "--plot-results" ]]; then
         plot_results_only=true
     fi
 done
