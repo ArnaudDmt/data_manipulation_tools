@@ -58,7 +58,7 @@ with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
         observersInfos_yamlData = yaml.safe_load(observersInfos_str)
         for observer in observersInfos_yamlData['observers']:
             estimator_plot_args[observer["abbreviation"]] = dict()
-            estimator_plot_args[observer["abbreviation"]]['name'] = observer["abbreviation"]
+            estimator_plot_args[observer["abbreviation"]]['name'] = observer["name"]
             estimator_plot_args[observer["abbreviation"]]['lineWidth'] = observer["lineWidth"]
     except yaml.YAMLError as exc:
         print(exc)
@@ -443,7 +443,7 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f"{expe}_{estimator_plot_args['Ground truth']['name']}", line_color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"))
+                        name=f"{expe}_{estimator_plot_args['Ground truth']['name']}", line_color=f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"))
         
     fig.show()
 
@@ -479,7 +479,7 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
 
         # Mocap trajectory
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
-        color_rgba = f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"
+        color_rgba = f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"
 
         fig.add_trace(go.Scatter3d(
             x=mocapData['x'], y=mocapData['y'], z=mocapData['z'],
@@ -615,7 +615,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 y=values,
                 mode='lines',
                 name=f"{estimator_plot_args['Ground truth']['name']} ({axis})",  # Include the axis name in the legend
-                line=dict(width=estimator_plot_args['Ground truth']['lineWidth'], color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"),
+                line=dict(width=estimator_plot_args['Ground truth']['lineWidth'], color=f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"),
                 visible=False  # Initially not visible
             )
 
@@ -667,6 +667,7 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_loc_vel.pickle")
         for estimator in estimatorsList:
             data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/loc_vel.pickle")
+            
             for cat in data.keys():
                 for axis in data[cat].keys():
                     data[cat][axis] = data[cat][axis] - mocapData[cat][axis]    
@@ -674,9 +675,12 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
                         regroupedErrors[estimator][cat][axis] = data[cat][axis]
                     else:
                         regroupedErrors[estimator][cat][axis] = np.concatenate((regroupedErrors[estimator][cat][axis], data[cat][axis]))
-
+    
+    
+    # print(data.keys())
     for estimator in estimatorsList:
-        for cat in data.keys():
+        for cat in regroupedErrors[estimator].keys():
+            
             for axis in regroupedErrors[estimator][cat].keys():
                 regroupedErrors[estimator][cat][axis] = np.abs(regroupedErrors[estimator][cat][axis])
 
@@ -686,15 +690,14 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
 
             # Compute the Euclidean norm for each sample
             regroupedErrors[estimator][cat]["norm"] = np.linalg.norm(combined, axis=-1)
-
+            
             components = ['x', 'y']  # Adjust keys as needed
             combined = np.stack([regroupedErrors[estimator][cat][comp] for comp in components], axis=-1)
 
             # Compute the Euclidean norm for each sample
             regroupedErrors[estimator][cat]["velXY_norm"] = np.linalg.norm(combined, axis=-1)
 
-            
-
+   
     errorStats = dict.fromkeys(regroupedErrors.keys())
     for estimator in estimatorsList:
         errorStats[estimator] = dict.fromkeys(regroupedErrors[estimator].keys())
@@ -833,7 +836,6 @@ def plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors):
                     regroupedErrors[cycleLength][estimator]["pos_z"].append(np.linalg.norm(pos[2]))
                 regroupedErrors[cycleLength][estimator]["tilt"].extend(errorsByCycleLength[cycleLength][estimator]["tilt"])
                 regroupedErrors[cycleLength][estimator]["yaw"].extend(errorsByCycleLength[cycleLength][estimator]["yaw"])
-    print(regroupedErrors)
 
 
     errorStats = dict.fromkeys(regroupedErrors.keys())
@@ -846,7 +848,6 @@ def plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors):
                                         'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
                                         'std': 0.0, 'min': 0.0, 'max': 0.0  }
                 data_vec = regroupedErrors[cycleLength][estimator][cat]
-                print(data_vec)
                 errorStats[cycleLength][estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
                 errorStats[cycleLength][estimator][cat]['mean'] = float(np.mean(data_vec))
                 errorStats[cycleLength][estimator][cat]['meanAbs'] = float(np.mean(np.abs(data_vec)))
@@ -882,6 +883,8 @@ def main():
 
     estimatorsList = [e for e in estimatorsList if e in estimator_plot_args]
     estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
+
+    
     estimators_to_plot = estimatorsList.copy()
     estimators_to_plot.append("Ground truth")
     colors = generate_turbo_subset_colors(estimators_to_plot)
@@ -902,7 +905,7 @@ def main():
     
     colors_to_plot = colors
 
-    plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    # plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
 
     #import plotExternalForceAndBias
@@ -910,7 +913,7 @@ def main():
     
     if(len(exps_to_merge) == 1):
         import plotPoseAndVelocity
-        # plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
+        plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses

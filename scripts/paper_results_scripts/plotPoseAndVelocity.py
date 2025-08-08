@@ -20,10 +20,10 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 zeros_row = np.zeros((1, 3))
 
 estimator_plot_args = {
-   # 'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 1},
+   'KO': {'name': 'Kinetics Observer', 'lineWidth': 1},
     'Tilt': {'name': 'Valinor', 'lineWidth': 1},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 1},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 1},
+    'RI-EKF': {'name': 'RI-EKF', 'lineWidth': 1},
+    'Ground truth': {'name': 'Ground truth', 'lineWidth': 1},
 }
 
 def continuous_euler(angles):
@@ -46,6 +46,7 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     rows=3, cols=3, shared_xaxes=True, vertical_spacing=0.05, horizontal_spacing=0.09, insets=[dict(cell=(1,1), l=0.20, w= 0.30, b= 0.20, h= 0.35), dict(cell=(1,2), l=0.15, w= 0.70, b= 0.00, h= 0.35), dict(cell=(3,1), l=0.15, w= 0.35, b= 0.55, h= 0.30), dict(cell=(3,2), l=0.15, w= 0.30, b= 0.15, h= 0.30), dict(cell=(1,3), l=0.27, w= 0.25, b= 0.60, h= 0.40), dict(cell=(2,3), l=0.27, w= 0.25, b= 0.70, h= 0.40), dict(cell=(3,3), l=0.27, w= 0.25, b= 0.70, h= 0.45), dict(cell=(2,2), l=0.15, w= 0.70, b= 0.00, h= 0.40)]
     )
 
+
     figPoseVel.update_layout(
             template="plotly_white",
             legend=dict(
@@ -62,8 +63,9 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             ,autosize=True  # Automatically adjusts the figure size
     )
 
-    observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
-    observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
+    print(estimators)
+
+    observer_data = pd.read_csv(f'{path}/output_data/finalDataCSV.csv',  delimiter=';')
 
     observer_data["t"] = observer_data["t"] - 130
 
@@ -84,68 +86,70 @@ def plotPoseVel(estimators, path = default_path, colors = None):
     linVelFbImu_overlap = rImuFb_overlap.apply(np.cross(angVelImuFb_overlap, posImuFb_overlap), inverse=True) - rImuFb_overlap.apply(linVelImuFb_overlap, inverse=True)
 
 
-    estimatorsPoses = { 'Mocap': {'pos': observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()), \
+    estimatorsPoses = { 'Ground truth': {'pos': observer_data[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy(), \
+                                    'ori': R.from_quat(observer_data[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()), \
                                     'linVel': None, \
                                     'angVel': None}, \
                         # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
                         #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
-                        # 'KineticsObserver': {  'pos': observer_data[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy(), \
-                        #                         'ori': R.from_quat(observer_data[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy()), \
-                        #                         'linVel': observer_data[['KO_velW_vx', 'KO_velW_vy', 'KO_velW_vz']].to_numpy(), \
-                        #                         'angVel': observer_data[['KO_velW_wx', 'KO_velW_wy', 'KO_velW_wz']].to_numpy()}, \
+                        'KO': {  'pos': observer_data[['KO_position_x', 'KO_position_y', 'KO_position_z']].to_numpy(), \
+                                                'ori': R.from_quat(observer_data[['KO_orientation_x', 'KO_orientation_y', 'KO_orientation_z', 'KO_orientation_w']].to_numpy()), \
+                                                'linVel': observer_data[['KO_linVel_x', 'KO_linVel_y', 'KO_linVel_z']].to_numpy(), \
+                                                'angVel': observer_data[['KO_angVel_x', 'KO_angVel_y', 'KO_angVel_z']].to_numpy()}, \
                         # 'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
                         #             'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()), \
                         #             'linVel': observer_data[['KO_ZPC_velW_vx', 'KO_ZPC_velW_vy', 'KO_ZPC_velW_vz']].to_numpy(), \
                         #             'angVel': observer_data[['KO_ZPC_velW_wx', 'KO_ZPC_velW_wy', 'KO_ZPC_velW_wz']].to_numpy()}, \
-                        'Tilt': {'pos': observer_data[['Tilt_pose_tx', 'Tilt_pose_ty', 'Tilt_pose_tz']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['Tilt_pose_qx', 'Tilt_pose_qy', 'Tilt_pose_qz', 'Tilt_pose_qw']].to_numpy()), \
-                                    'linVel': observer_data[['Tilt_vel_vx', 'Tilt_vel_vy', 'Tilt_vel_vz']].to_numpy(), \
-                                    'angVel': observer_data[['Tilt_vel_wx', 'Tilt_vel_wy', 'Tilt_vel_wz']].to_numpy()},
+                        'Tilt': {'pos': observer_data[['Tilt_position_x', 'Tilt_position_y', 'Tilt_position_z']].to_numpy(), \
+                                    'ori': R.from_quat(observer_data[['Tilt_orientation_x', 'Tilt_orientation_y', 'Tilt_orientation_z', 'Tilt_orientation_w']].to_numpy()), \
+                                    'linVel': observer_data[['Tilt_linVel_x', 'Tilt_linVel_y', 'Tilt_linVel_z']].to_numpy(), \
+                                    'angVel': observer_data[['Tilt_angVel_x', 'Tilt_angVel_y', 'Tilt_angVel_z']].to_numpy()},
 
-                        'Hartley': {'pos': observer_data[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()), \
+                        'RI-EKF': {'pos': observer_data[['RI-EKF_position_x', 'RI-EKF_position_y', 'RI-EKF_position_z']].to_numpy(), \
+                                    'ori': R.from_quat(observer_data[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z', 'RI-EKF_orientation_w']].to_numpy()), \
                                     'linVel': None, \
                                     'angVel': None}
                         }
     
     # Velocity of Hartley (different as we already have the velocity of the IMU)
     # estimated velocity
-    linVelImu_Hartley_overlap = observer_data[['Hartley_IMU_Velocity_x', 'Hartley_IMU_Velocity_y', 'Hartley_IMU_Velocity_z']].to_numpy()
-    quaternionsHartley_fb_overlap = observer_data[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy()
+    linVelImu_Hartley_overlap = observer_data[['RI-EKF_IMU_linVel_x', 'RI-EKF_IMU_linVel_y', 'RI-EKF_IMU_linVel_z']].to_numpy()
+    quaternionsHartley_fb_overlap = observer_data[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z', 'RI-EKF_orientation_w']].to_numpy()
     rHartley_fb_overlap = R.from_quat(quaternionsHartley_fb_overlap)
     rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
     locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
-    estimatorsPoses["Hartley"]["linVel"] = locVelHartley_imu_estim
-    estimatorsPoses["Hartley"]["ori"] = estimatorsPoses["Hartley"]["ori"].as_euler('xyz')
-    estimatorsPoses["Hartley"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Hartley"]["ori"]))
+    estimatorsPoses["RI-EKF"]["linVel"] = locVelHartley_imu_estim
     
 
     # Velocity of the mocap (different as we only have the position)
-    posMocap_overlap = observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy()
-    quaternionsMocap_overlap = observer_data[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy()
+    posMocap_overlap = observer_data[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy()
+    quaternionsMocap_overlap = observer_data[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()
     rMocap_overlap = R.from_quat(quaternionsMocap_overlap)
     posMocap_imu_overlap = posMocap_overlap + rMocap_overlap.apply(posFbImu_overlap)
-    velMocap_imu_overlap = np.diff(posMocap_imu_overlap, axis=0)/timeStep_s
+    velMocap_imu_overlap = np.diff(posMocap_imu_overlap, axis=0)/0.005
     velMocap_imu_overlap = np.vstack((zeros_row,velMocap_imu_overlap))
     rWorldImuMocap_overlap = rMocap_overlap * rImuFb_overlap.inv()
     locVelMocap_imu_estim = rWorldImuMocap_overlap.apply(velMocap_imu_overlap, inverse=True)
     b, a = butter(2, 0.15, analog=False)
     locVelMocap_imu_estim = filtfilt(b, a, locVelMocap_imu_estim, axis=0)
-    estimatorsPoses["Mocap"]["linVel"] = locVelMocap_imu_estim       
-    estimatorsPoses["Mocap"]["ori"] = estimatorsPoses["Mocap"]["ori"].as_euler('xyz')
-    estimatorsPoses["Mocap"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Mocap"]["ori"]))
-
+    estimatorsPoses["Ground truth"]["linVel"] = locVelMocap_imu_estim       
     
 
-#     index_t_z_138 = 27400 - startIndex
-#     index_t_z_178 = 36000 - startIndex
+    estimatorsPoses["RI-EKF"]["ori"] = estimatorsPoses["RI-EKF"]["ori"].as_euler('xyz')
+    estimatorsPoses["RI-EKF"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["RI-EKF"]["ori"]))
+    
 
-#     index_t_yaw_200 = 40000 - startIndex
-#     index_t_yaw_240 = 48001 - startIndex
+    estimatorsPoses["Ground truth"]["ori"] = estimatorsPoses["Ground truth"]["ori"].as_euler('xyz')
+    estimatorsPoses["Ground truth"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Ground truth"]["ori"]))
 
-#     index_t_vel_139_5 = 27900 - startIndex
-#     index_t_vel_141_5 = 28300 - startIndex
+    index_t_z_138 = 27400
+    index_t_z_178 = 36000
+
+    index_t_yaw_200 = 40000
+    index_t_yaw_240 = 48001
+
+    index_t_vel_139_5 = 27900
+    index_t_vel_141_5 = 28300
 
 #     positions = estimatorsPoses["Mocap"]["pos"][index_t_z_138:index_t_z_178 + 1]
 
@@ -181,7 +185,8 @@ def plotPoseVel(estimators, path = default_path, colors = None):
 
     for estimator in estimators:
         if estimator in estimator_plot_args and estimator in estimatorsPoses.keys():
-            if estimator not in ["Mocap", "Hartley"]:
+            
+            if estimator not in ["Ground truth", "RI-EKF"]:
                 computeObserverLocVel(estimator)
 
             x_min_z = observer_data["t"][index_t_z_138]
@@ -199,8 +204,8 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             y_min_pos_x = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
             y_max_pos_x = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 0])
             y_min_pos_y = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
-            print("WESH")
-            print(y_min_pos_y)
+
+
             y_max_pos_y = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
             y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_178, 2])
             y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_z_138:index_t_z_178, 2])
@@ -413,7 +418,7 @@ def plotPoseVel(estimators, path = default_path, colors = None):
             )
         )
 
-        print(f"Average pitch error: {np.mean(estimatorsPoses['Hartley']['ori'][index_t_z_138:index_t_z_178, 1] - estimatorsPoses['Mocap']['ori'][index_t_z_138:index_t_z_178, 1])}")
+        print(f"Average pitch error: {np.mean(estimatorsPoses['RI-EKF']['ori'][index_t_z_138:index_t_z_178, 1] - estimatorsPoses['Ground truth']['ori'][index_t_z_138:index_t_z_178, 1])}")
         
 
         # Add the inset plot as an additional trace

@@ -1,4 +1,5 @@
 import yaml
+import os
 
 
 def to_camel_case_with_letters(snake_str):
@@ -47,17 +48,10 @@ def format_Angle(value):
     return f"{abs(round(float(value),2)):.2f}"
 
 
+abs_errors_path = "/tmp/relative_errors.yaml"
+relative_errors_path = "/tmp/relative_errors.yaml"
+vel_errors_path = "/tmp/velocity_errors.yaml"
 
-
-# Load the results YAML file
-with open("/tmp/absolute_errors.yaml", "r") as absolute_errors_file:
-    absolute_errors = yaml.safe_load(absolute_errors_file)
-
-with open("/tmp/relative_errors.yaml", "r") as relative_errors_file:
-    relative_errors = yaml.safe_load(relative_errors_file)
-
-with open("/tmp/velocity_errors.yaml", "r") as velocity_errors_file:
-    velocity_errors = yaml.safe_load(velocity_errors_file)
 
 
 scenarioName = input("Please give the name of the experimental scenario:")
@@ -78,63 +72,72 @@ desired_subdistances.append(input("Please give the desired subdistance length:")
 
 # Create the LaTeX variables file
 with open("/tmp/metrics_results.tex", "w") as latex_file:
-    for estimator, cats in velocity_errors.items():
-        for cat, metrics in cats.items():
-            for var_name, metrics in metrics.items():
-                if(var_name in velErrorsFilter.keys()):
-                    for metric, value in metrics.items():
-                        if(metric == 'meanAbs' or metric == 'std'):
-                            # Construct the variable name
-                            varName = f'{cat}_{velErrorsFilter[var_name]}'
-                            snake_case_var = f"{scenarioName}_{estimator}_velError_{varName}_{metric}"
-                            camel_case_var = to_camel_case_with_letters(snake_case_var)
-                            
-                            # Ensure the value is properly formatted as a float
-                            if("tilt" in var_name or "yaw" in var_name):
-                                formatted_value = format_Angle(value)
-                            else:
-                                formatted_value = format_PosVel(value)
+    if os.path.isfile(vel_errors_path):
+        with open(vel_errors_path, "r") as velocity_errors_file:
+            velocity_errors = yaml.safe_load(velocity_errors_file)
+            for estimator, cats in velocity_errors.items():
+                for cat, metrics in cats.items():
+                    for var_name, metrics in metrics.items():
+                        if(var_name in velErrorsFilter.keys()):
+                            for metric, value in metrics.items():
+                                if(metric == 'meanAbs' or metric == 'std'):
+                                    # Construct the variable name
+                                    varName = f'{cat}_{velErrorsFilter[var_name]}'
+                                    snake_case_var = f"{scenarioName}_{estimator}_velError_{varName}_{metric}"
+                                    camel_case_var = to_camel_case_with_letters(snake_case_var)
+                                    
+                                    # Ensure the value is properly formatted as a float
+                                    if("tilt" in var_name or "yaw" in var_name):
+                                        formatted_value = format_Angle(value)
+                                    else:
+                                        formatted_value = format_PosVel(value)
 
-                            # Write the LaTeX definition with CamelCase
-                            latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
-    for subdistance, estimators in relative_errors.items():
-        if(subdistance in desired_subdistances):
-            for estimator, variables in estimators.items():
-                for var_name, metrics in variables.items():
-                    if(var_name in relErrorsFilter.keys()):
-                        for metric, value in metrics.items():
-                            if(metric == 'meanAbs' or metric == 'std'):
-                                # Construct the variable name
-                                snake_case_var = f"{scenarioName}_{estimator}_relError_{relErrorsFilter[var_name]}_{metric}"
-                                camel_case_var = to_camel_case_with_letters(snake_case_var)
-                                
-                                # Ensure the value is properly formatted as a float
-                                if("tilt" in var_name or "yaw" in var_name):
-                                    formatted_value = format_Angle(value)
-                                else:
-                                    formatted_value = format_PosVel(value)
-                                
-                                # Write the LaTeX definition with CamelCase
-                                latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                    # Write the LaTeX definition with CamelCase
+                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+    if os.path.isfile(relative_errors_path):
+        with open(relative_errors_path, "r") as relative_errors_file:
+            relative_errors = yaml.safe_load(relative_errors_file)
+            for subdistance, estimators in relative_errors.items():
+                if(subdistance in desired_subdistances):
+                    for estimator, variables in estimators.items():
+                        for var_name, metrics in variables.items():
+                            if(var_name in relErrorsFilter.keys()):
+                                for metric, value in metrics.items():
+                                    if(metric == 'meanAbs' or metric == 'std'):
+                                        # Construct the variable name
+                                        snake_case_var = f"{scenarioName}_{estimator}_relError_{relErrorsFilter[var_name]}_{metric}"
+                                        camel_case_var = to_camel_case_with_letters(snake_case_var)
+                                        
+                                        # Ensure the value is properly formatted as a float
+                                        if("tilt" in var_name or "yaw" in var_name):
+                                            formatted_value = format_Angle(value)
+                                        else:
+                                            formatted_value = format_PosVel(value)
+                                        
+                                        # Write the LaTeX definition with CamelCase
+                                        latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
 
-    # Write LaTeX commands for each desired variable
-    for experiment, estimators in absolute_errors.items():
-        for estimator, variables in estimators.items():
-            for var_name, metrics in variables.items():
-                if(var_name in absErrorsFilter.keys()):
-                    for metric, value in metrics.items():
-                        if(metric == 'meanAbs' or metric == 'std'):
-                            # Construct the variable name
-                            snake_case_var = f"{scenarioName}_{estimator}_absError_{experiment}_{absErrorsFilter[var_name]}_{metric}"
-                            camel_case_var = to_camel_case_with_letters(snake_case_var)
-                            # Ensure the value is properly formatted as a float
-                            if("tilt" in var_name or "ypr_0" in var_name):
-                                formatted_value = format_Angle(value)
-                            else:
-                                formatted_value = format_PosVel(value)
-                            
-                            # Write the LaTeX definition with CamelCase
-                            latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+    if os.path.isfile(abs_errors_path):
+        with open(abs_errors_path, "r") as absolute_errors_file:
+            absolute_errors = yaml.safe_load(absolute_errors_file)
+            # Write LaTeX commands for each desired variable
+            for experiment, estimators in absolute_errors.items():
+                for estimator, variables in estimators.items():
+                    for var_name, metrics in variables.items():
+                        if(var_name in absErrorsFilter.keys()):
+                            for metric, value in metrics.items():
+                                if(metric == 'meanAbs' or metric == 'std'):
+                                    # Construct the variable name
+                                    snake_case_var = f"{scenarioName}_{estimator}_absError_{experiment}_{absErrorsFilter[var_name]}_{metric}"
+                                    camel_case_var = to_camel_case_with_letters(snake_case_var)
+                                    # Ensure the value is properly formatted as a float
+                                    if("tilt" in var_name or "ypr_0" in var_name):
+                                        formatted_value = format_Angle(value)
+                                    else:
+                                        formatted_value = format_PosVel(value)
+                                    
+                                    # Write the LaTeX definition with CamelCase
+                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
 
     
 

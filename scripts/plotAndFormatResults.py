@@ -224,24 +224,84 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         # Show the interactive plot
         fig_pose.show()
 
-        fig_traj_2d = go.Figure()
+        # fig_traj_2d = go.Figure()
 
-        for estimator in estimatorsList:
-            fig_traj_2d.add_trace(go.Scatter(x=kinematics[estimator][mocapBody]["position"][:, 0], y=kinematics[estimator][mocapBody]["position"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_2dMotion_xy'))
+        # for estimator in estimatorsList:
+        #     fig_traj_2d.add_trace(go.Scatter(x=kinematics[estimator][mocapBody]["position"][:, 0], y=kinematics[estimator][mocapBody]["position"][:, 1], mode='lines', line=dict(color = colors[estimator]), name=f'{estimator}_2dMotion_xy'))
 
-        # Update layout
-        fig_traj_2d.update_layout(
-            xaxis_title='x',
-            yaxis_title='y',
-            hovermode='x',
-            title=f"{scriptName}: 2D trajectories"
-        )
-        fig_traj_2d.update_yaxes(
-            scaleanchor="x",
-            scaleratio=1,
-        )
-        # Show the interactive plot
-        fig_traj_2d.show()
+        # # Update layout
+        # fig_traj_2d.update_layout(
+        #     xaxis_title='x',
+        #     yaxis_title='y',
+        #     hovermode='x',
+        #     title=f"{scriptName}: 2D trajectories",
+        #     updatemenus=[dict(type="buttons",
+        #                                buttons=[dict(label="Play",
+        #                                              method="animate",
+        #                                              args=[None])])],
+        # )
+        # fig_traj_2d.update_yaxes(
+        #     scaleanchor="x",
+        #     scaleratio=1,
+            
+        # )
+        
+        # # Show the interactive plot
+        # fig_traj_2d.show()
+
+        # fig_traj_2d_animated = go.Figure()
+
+        # # Initial frame (empty traces)
+        # for estimator in estimatorsList:
+        #     fig_traj_2d_animated.add_trace(go.Scatter(
+        #         x=[], y=[],
+        #         mode='lines',
+        #         line=dict(color=colors[estimator]),
+        #         name=f'{estimator}_2dMotion_xy'
+        #     ))
+
+        # # Number of steps (assumes all estimators have same length)
+        # n_steps = min([kinematics[estimator][mocapBody]["position"].shape[0] for estimator in estimatorsList])
+
+        # # Create frames
+        # frames = []
+        # for i in range(n_steps):
+        #     frame_data = []
+        #     for estimator in estimatorsList:
+        #         pos = kinematics[estimator][mocapBody]["position"]
+        #         frame_data.append(go.Scatter(
+        #             x=pos[:i+1, 0],
+        #             y=pos[:i+1, 1],
+        #             mode='lines',
+        #             line=dict(color=colors[estimator]),
+        #             name=f'{estimator}_2dMotion_xy'
+        #         ))
+        #     frames.append(go.Frame(data=frame_data, name=str(i)))
+
+        # fig_traj_2d_animated.frames = frames
+
+        # # Layout with play button and slider
+        # fig_traj_2d_animated.update_layout(
+        #     xaxis_title='x',
+        #     yaxis_title='y',
+        #     hovermode='x',
+        #     title=f"{scriptName}: 2D trajectories",
+        #     updatemenus=[dict(
+        #         type="buttons",
+        #         showactive=False,
+        #         buttons=[dict(label="Play", method="animate", args=[None])]
+        #     )],
+        #     sliders=[dict(
+        #         steps=[dict(method="animate", args=[[str(k)]], label=str(k)) for k in range(n_steps)],
+        #         transition=dict(duration=0),
+        #         x=0.1,
+        #         len=0.9
+        #     )]
+        # )
+
+        # fig_traj_2d_animated.update_yaxes(scaleanchor="x", scaleratio=1)
+
+        # fig_traj_2d_animated.show()
 
         fig_traj_3d = go.Figure()
 
@@ -363,350 +423,348 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
     # contact_columns = [col for col in data_df.columns if col.endswith('_isSet')]
 
-   
     contact_columns = {
-    col.split('_')[-2]: col
-    for col in data_df.columns
-    if col.endswith('_isSet')
-    }
+        col.split('_')[-2]: col
+        for col in data_df.columns
+        if col.endswith('_isSet')
+        }
+    if(writeFormattedData and len(contact_columns.keys()) > 0):
+        
 
-    contact_transitions_init = {}
+        contact_transitions_init = {}
 
-    for contact, col in contact_columns.items():
-        series = data_df[col].fillna("").astype(str)
-        prev = series.shift(1).fillna("").astype(str)
-        transitions = (prev == "Set") & (series != "Set")
-        contact_transitions_init[contact] = deque(series.index[transitions].tolist())
+        for contact, col in contact_columns.items():
+            series = data_df[col].fillna("").astype(str)
+            prev = series.shift(1).fillna("").astype(str)
+            transitions = (prev == "Set") & (series != "Set")
+            contact_transitions_init[contact] = deque(series.index[transitions].tolist())
 
-    contacts = list(contact_transitions_init.keys())
-    intervals = []
-    
-    contact_transitions = contact_transitions_init.copy()
+        contacts = list(contact_transitions_init.keys())
+        intervals = []
+        
+        contact_transitions = contact_transitions_init.copy()
 
-    # First phase: find when all contacts have been removed once
-    removalIndex_contact_map = dict()
-    for c in contacts:
-        if not contact_transitions[c]:
-            break  # if any contact has no transition, we can't proceed
-        removalIndex_contact_map[contact_transitions[c][0]] = c
-
-    if len(removalIndex_contact_map) < len(contacts):
-        raise ValueError("Not all contacts have at least one transition.")
-
-    end_time = max(removalIndex_contact_map.keys())
-    intervals.append({
-        'start_time': 0,
-        'end_time': end_time,
-        'reference': None
-    })
-
-    reference = removalIndex_contact_map[end_time]
-    
-    for c in contacts:
-        while  contact_transitions[c][0] < end_time:
-            contact_transitions[c].popleft()
-
-    currently_set_contacts = [
-            c for c in contacts
-            if data_df[contact_columns[c]].iloc[0] == "Set"
-        ]
-
-    while True:
-        start_time = end_time
-        # removalIndex_contact_map = {end_time: removalIndex_contact_map[end_time]}
-
+        # First phase: find when all contacts have been removed once
         removalIndex_contact_map = dict()
-        success = False
-        if reference is not None and contact_transitions[reference]:
-            currently_set_contacts = [
-            c for c in contacts
-            if data_df[contact_columns[c]].iloc[end_time] == "Set"
-        ]
-            
-            index_found = None
-            success = False
-            other_contacts = [c for c in currently_set_contacts if c != reference]
-            if other_contacts:
-                for i, t in enumerate(contact_transitions[reference]):
-                    if t <= start_time:
-                        continue  # Skip transitions before or at start_time
+        for c in contacts:
+            if not contact_transitions[c]:
+                break  # if any contact has no transition, we can't proceed
+            removalIndex_contact_map[contact_transitions[c][0]] = c
 
-                    all_removed = True
-                    for c in other_contacts:
-                        transitions = contact_transitions.get(c, [])
-                        # Check if there is any transition for contact c strictly after start_time and at or before t
-                        if not any(start_time < tc <= t for tc in transitions):
-                            all_removed = False
-                            break
+        if len(removalIndex_contact_map) < len(contacts):
+            raise ValueError("Not all contacts have at least one transition.")
 
-                    if all_removed:
-                        success = True
-                        index_found = i
-                        break  # Found a valid time for the reference contact
-
-            if success:
-                end_time = contact_transitions[reference][index_found]
-
-
-        skipIter = False
-        if reference == None or success == False:
-            for c in currently_set_contacts:
-                if len(contact_transitions[c]) > 2:
-                    removalIndex_contact_map[contact_transitions[c][0]] = c
-                else:
-                    break
-            if removalIndex_contact_map:
-                start_time = min(removalIndex_contact_map.keys())
-                end_time = start_time
-                reference = removalIndex_contact_map[start_time]
-                success = True
-                skipIter = True
-        
-        if skipIter:
-            continue
-
-        if not success and not skipIter:
-            break
-        
-
+        end_time = max(removalIndex_contact_map.keys())
         intervals.append({
-            'start_time': start_time,
+            'start_time': 0,
             'end_time': end_time,
-            'reference': reference
+            'reference': None
         })
 
-        nbRemaining = 0
+        reference = removalIndex_contact_map[end_time]
         
         for c in contacts:
-            while contact_transitions[c] and contact_transitions[c][0] < end_time:
+            while  contact_transitions[c][0] < end_time:
                 contact_transitions[c].popleft()
-            if not contact_transitions[c]:
-                reference = None
-            nbRemaining += len(contact_transitions[c])
-        if nbRemaining == 0:
-            break
 
-    fig = go.Figure()
+        currently_set_contacts = [
+                c for c in contacts
+                if data_df[contact_columns[c]].iloc[0] == "Set"
+            ]
 
-    def get_invariant_orthogonal_vector(Rhat: np.ndarray, Rtez: np.ndarray):
-            epsilon = 2.2204460492503131e-16
-            Rhat_Rtez = np.dot(Rhat, Rtez)
-            if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
-                return np.array([1, 0, 0])
-            else:
-                return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
-            
-    def merge_tilt_with_yaw_axis_agnostic(Rtez: np.ndarray, R2: np.ndarray):
-        ez = np.array([0, 0, 1])
-        v1 = Rtez
-    
-        m = get_invariant_orthogonal_vector(R2, Rtez)
-        m = m / np.linalg.norm(m)
+        while True:
+            start_time = end_time
+            # removalIndex_contact_map = {end_time: removalIndex_contact_map[end_time]}
 
-        ml = np.dot(R2.T, m)
-
-        R_temp1 = np.column_stack((np.cross(m, ez), m, ez))
-
-        R_temp2 = np.vstack((np.cross(ml, v1).T, ml.T, v1.T))
-
-        return np.dot(R_temp1, R_temp2)
-    
-    final_position_errors = {estimator: [] for estimator in estimatorsList}
-
-    min_y = float('inf')
-    max_y = -float('inf')
-    
-    d = {1: {}} 
-    poses = {}
-    for estimator in estimatorsList:
-        poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
-        if(estimator != "Mocap"):
-            d[1][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
-
-    print(intervals)
-
-    idx_range = []
-    
-    for i, interval in enumerate(intervals):
-        idx_range.extend(range(interval["start_time"], interval["end_time"]))
-
-        start_time = interval["start_time"]
-        end_time = interval["end_time"]
-
-        R_mocap = kinematics["Mocap"][mocapBody]["R"][start_time:end_time]
-        pos_mocap = kinematics["Mocap"][mocapBody]["position"][start_time:end_time]
+            removalIndex_contact_map = dict()
+            success = False
+            if reference is not None and contact_transitions[reference]:
+                currently_set_contacts = [
+                c for c in contacts
+                if data_df[contact_columns[c]].iloc[end_time] == "Set"
+            ]
                 
-        aligned_init_ori_mat_mocap = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
-                R_mocap[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
-            ))
-        
-        R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
-        p_aligned_mocap = np.array([0, 0, 0]) + \
-        (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(
-            pos_mocap - pos_mocap[0]
-        )
+                index_found = None
+                success = False
+                other_contacts = [c for c in currently_set_contacts if c != reference]
+                if other_contacts:
+                    for i, t in enumerate(contact_transitions[reference]):
+                        if t <= start_time:
+                            continue  # Skip transitions before or at start_time
 
-        poses["Mocap"]["tx"].extend(p_aligned_mocap[:,0])
-        poses["Mocap"]["ty"].extend(p_aligned_mocap[:,1])
-        poses["Mocap"]["tz"].extend(p_aligned_mocap[:,2])
-        euler = R_aligned_mocap.as_euler('zxy')
-        poses["Mocap"]["rz"].extend(euler[:,0])
-        poses["Mocap"]["rx"].extend(euler[:,1])
-        poses["Mocap"]["ry"].extend(euler[:,2])
+                        all_removed = True
+                        for c in other_contacts:
+                            transitions = contact_transitions.get(c, [])
+                            # Check if there is any transition for contact c strictly after start_time and at or before t
+                            if not any(start_time < tc <= t for tc in transitions):
+                                all_removed = False
+                                break
 
-        min_y = min(min_y, np.min(p_aligned_mocap))
-        max_y = max(max_y, np.max(p_aligned_mocap))
-       
-        for estimator in estimatorsList:
-            if(estimator == "Mocap"):
+                        if all_removed:
+                            success = True
+                            index_found = i
+                            break  # Found a valid time for the reference contact
+
+                if success:
+                    end_time = contact_transitions[reference][index_found]
+
+
+            skipIter = False
+            if reference == None or success == False:
+                for c in currently_set_contacts:
+                    if len(contact_transitions[c]) > 2:
+                        removalIndex_contact_map[contact_transitions[c][0]] = c
+                    else:
+                        break
+                if removalIndex_contact_map:
+                    start_time = min(removalIndex_contact_map.keys())
+                    end_time = start_time
+                    reference = removalIndex_contact_map[start_time]
+                    success = True
+                    skipIter = True
+            
+            if skipIter:
                 continue
+
+            if not success and not skipIter:
+                break
             
-            R_est = kinematics[estimator][mocapBody]["R"][start_time:end_time]
-            pos_est = kinematics[estimator][mocapBody]["position"][start_time:end_time]
-          
-            aligned_init_ori_mat_est = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
-                R_est[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
-            ))
+
+            intervals.append({
+                'start_time': start_time,
+                'end_time': end_time,
+                'reference': reference
+            })
+
+            nbRemaining = 0
             
-            R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
-            p_aligned_est = np.array([0, 0, 0]) + \
-            (aligned_init_ori_mat_est * R_est[0].inv()).apply(
-                pos_est - pos_est[0]
+            for c in contacts:
+                while contact_transitions[c] and contact_transitions[c][0] < end_time:
+                    contact_transitions[c].popleft()
+                if not contact_transitions[c]:
+                    reference = None
+                nbRemaining += len(contact_transitions[c])
+            if nbRemaining == 0:
+                break
+
+        fig = go.Figure()
+
+        def get_invariant_orthogonal_vector(Rhat: np.ndarray, Rtez: np.ndarray):
+                epsilon = 2.2204460492503131e-16
+                Rhat_Rtez = np.dot(Rhat, Rtez)
+                if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
+                    return np.array([1, 0, 0])
+                else:
+                    return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
+                
+        def merge_tilt_with_yaw_axis_agnostic(Rtez: np.ndarray, R2: np.ndarray):
+            ez = np.array([0, 0, 1])
+            v1 = Rtez
+        
+            m = get_invariant_orthogonal_vector(R2, Rtez)
+            m = m / np.linalg.norm(m)
+
+            ml = np.dot(R2.T, m)
+
+            R_temp1 = np.column_stack((np.cross(m, ez), m, ez))
+
+            R_temp2 = np.vstack((np.cross(ml, v1).T, ml.T, v1.T))
+
+            return np.dot(R_temp1, R_temp2)
+        
+        final_position_errors = {estimator: [] for estimator in estimatorsList}
+
+        min_y = float('inf')
+        max_y = -float('inf')
+        
+        d = {1: {}} 
+        poses = {}
+        for estimator in estimatorsList:
+            poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
+            if(estimator != "Mocap"):
+                d[1][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
+
+        idx_range = []
+        
+        for i, interval in enumerate(intervals):
+            idx_range.extend(range(interval["start_time"], interval["end_time"]))
+
+            start_time = interval["start_time"]
+            end_time = interval["end_time"]
+
+            R_mocap = kinematics["Mocap"][mocapBody]["R"][start_time:end_time]
+            pos_mocap = kinematics["Mocap"][mocapBody]["position"][start_time:end_time]
+                    
+            aligned_init_ori_mat_mocap = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                    R_mocap[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+                ))
+            
+            R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
+            p_aligned_mocap = np.array([0, 0, 0]) + \
+            (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(
+                pos_mocap - pos_mocap[0]
             )
 
+            poses["Mocap"]["tx"].extend(p_aligned_mocap[:,0])
+            poses["Mocap"]["ty"].extend(p_aligned_mocap[:,1])
+            poses["Mocap"]["tz"].extend(p_aligned_mocap[:,2])
+            euler = R_aligned_mocap.as_euler('zxy')
+            poses["Mocap"]["rz"].extend(euler[:,0])
+            poses["Mocap"]["rx"].extend(euler[:,1])
+            poses["Mocap"]["ry"].extend(euler[:,2])
+
+            min_y = min(min_y, np.min(p_aligned_mocap))
+            max_y = max(max_y, np.max(p_aligned_mocap))
+        
+            for estimator in estimatorsList:
+                if(estimator == "Mocap"):
+                    continue
+                
+                R_est = kinematics[estimator][mocapBody]["R"][start_time:end_time]
+                pos_est = kinematics[estimator][mocapBody]["position"][start_time:end_time]
             
+                aligned_init_ori_mat_est = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                    R_est[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+                ))
+                
+                R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
+                p_aligned_est = np.array([0, 0, 0]) + \
+                (aligned_init_ori_mat_est * R_est[0].inv()).apply(
+                    pos_est - pos_est[0]
+                )
 
-            poses[estimator]["tx"].extend(p_aligned_est[:,0])
-            poses[estimator]["ty"].extend(p_aligned_est[:,1])
-            poses[estimator]["tz"].extend(p_aligned_est[:,2])
-            euler = R_aligned_est.as_euler('zxy')
-            poses[estimator]["rz"].extend(euler[:,0])
-            poses[estimator]["rx"].extend(euler[:,1])
-            poses[estimator]["ry"].extend(euler[:,2])
+                
 
-
-            error_pos = p_aligned_est[-1] - p_aligned_mocap[-1]
-            final_position_errors[estimator].append(error_pos)
-
-            scalar_product = np.dot(R_aligned_mocap[-1].apply([0, 0, 1], inverse=True), R_aligned_est[-1].apply([0, 0, 1], inverse=True))
-
-            tilt_error = np.arccos(scalar_product)
-            if tilt_error == "nan":
-                tilt_error = 0
-            R_error = R_aligned_mocap[-1] * R_aligned_est[-1].inv()
-
-            min_y = min(min_y, np.min(euler))
-            max_y = max(max_y, np.max(euler))
-
-            min_y = min(min_y, np.min(p_aligned_est))
-            max_y = max(max_y, np.max(p_aligned_est))
-
-            tilt_error = np.rad2deg(tilt_error)
-
-            d[1][estimator]['pos'].append(error_pos)
-            d[1][estimator]['tilt'].append(tilt_error)
-            yaw_error = np.array(abs(R_error.as_euler('zxy', degrees=True)[0]))
-            d[1][estimator]['yaw'].append(yaw_error)
+                poses[estimator]["tx"].extend(p_aligned_est[:,0])
+                poses[estimator]["ty"].extend(p_aligned_est[:,1])
+                poses[estimator]["tz"].extend(p_aligned_est[:,2])
+                euler = R_aligned_est.as_euler('zxy')
+                poses[estimator]["rz"].extend(euler[:,0])
+                poses[estimator]["rx"].extend(euler[:,1])
+                poses[estimator]["ry"].extend(euler[:,2])
 
 
-    
-    for estimator in estimatorsList:
-        fig.add_trace(go.Scatter(
+                error_pos = p_aligned_est[-1] - p_aligned_mocap[-1]
+                final_position_errors[estimator].append(error_pos)
+
+                scalar_product = np.dot(R_aligned_mocap[-1].apply([0, 0, 1], inverse=True), R_aligned_est[-1].apply([0, 0, 1], inverse=True))
+
+                tilt_error = np.arccos(scalar_product)
+                if tilt_error == "nan":
+                    tilt_error = 0
+                R_error = R_aligned_mocap[-1] * R_aligned_est[-1].inv()
+
+                min_y = min(min_y, np.min(euler))
+                max_y = max(max_y, np.max(euler))
+
+                min_y = min(min_y, np.min(p_aligned_est))
+                max_y = max(max_y, np.max(p_aligned_est))
+
+                tilt_error = np.rad2deg(tilt_error)
+
+                d[1][estimator]['pos'].append(error_pos)
+                d[1][estimator]['tilt'].append(tilt_error)
+                yaw_error = np.array(abs(R_error.as_euler('zxy', degrees=True)[0]))
+                d[1][estimator]['yaw'].append(yaw_error)
+
+
+        
+        for estimator in estimatorsList:
+            fig.add_trace(go.Scatter(
+                    x=list(idx_range),
+                    y=poses[estimator]["tx"],
+                    mode='lines',
+                line=dict(color = colors[estimator]),
+                    name=f'{estimator} aligned X',
+                    showlegend=True,
+                ))
+            fig.add_trace(go.Scatter(
                 x=list(idx_range),
-                y=poses[estimator]["tx"],
+                y=poses[estimator]["ty"],
                 mode='lines',
             line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned X',
+                name=f'{estimator} aligned Y',
                 showlegend=True,
             ))
-        fig.add_trace(go.Scatter(
-            x=list(idx_range),
-            y=poses[estimator]["ty"],
-            mode='lines',
-        line=dict(color = colors[estimator]),
-            name=f'{estimator} aligned Y',
-            showlegend=True,
-        ))
-        fig.add_trace(go.Scatter(
-            x=list(idx_range),
-            y=poses[estimator]["tz"],
-            mode='lines',
-        line=dict(color = colors[estimator]),
-            name=f'{estimator} aligned Z',
-            showlegend=True,
-        ))
-        fig.add_trace(go.Scatter(
+            fig.add_trace(go.Scatter(
                 x=list(idx_range),
-                y=poses[estimator]["rx"],
+                y=poses[estimator]["tz"],
                 mode='lines',
             line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned Roll',
+                name=f'{estimator} aligned Z',
                 showlegend=True,
             ))
-        fig.add_trace(go.Scatter(
-            x=list(idx_range),
-            y=poses[estimator]["ry"],
-            mode='lines',
-        line=dict(color = colors[estimator]),
-            name=f'{estimator} aligned Pitch',
-            showlegend=True,
-        ))
-        fig.add_trace(go.Scatter(
-            x=list(idx_range),
-            y=poses[estimator]["rz"],
-            mode='lines',
-        line=dict(color = colors[estimator]),
-            name=f'{estimator} aligned Yaw',
-            showlegend=True,
-        ))
+            fig.add_trace(go.Scatter(
+                    x=list(idx_range),
+                    y=poses[estimator]["rx"],
+                    mode='lines',
+                line=dict(color = colors[estimator]),
+                    name=f'{estimator} aligned Roll',
+                    showlegend=True,
+                ))
+            fig.add_trace(go.Scatter(
+                x=list(idx_range),
+                y=poses[estimator]["ry"],
+                mode='lines',
+            line=dict(color = colors[estimator]),
+                name=f'{estimator} aligned Pitch',
+                showlegend=True,
+            ))
+            fig.add_trace(go.Scatter(
+                x=list(idx_range),
+                y=poses[estimator]["rz"],
+                mode='lines',
+            line=dict(color = colors[estimator]),
+                name=f'{estimator} aligned Yaw',
+                showlegend=True,
+            ))
 
-    num_contacts = len(contact_columns)
+        num_contacts = len(contact_columns)
 
-    # 1. Plot each contact's state in its own vertical band
-    for i, (name, col) in enumerate(contact_columns.items()):
-        raw_state = (data_df[col] != 'Set').astype(float)  # 0 if set, 1 if not
-        y_min = 0
-        y_max = max_y - i * 0.1 * max_y
-        # Scale to band
-        scaled_state = raw_state * y_max
+        # 1. Plot each contact's state in its own vertical band
+        for i, (name, col) in enumerate(contact_columns.items()):
+            raw_state = (data_df[col] != 'Set').astype(float)  # 0 if set, 1 if not
+            y_min = 0
+            y_max = max_y - i * 0.1 * max_y
+            # Scale to band
+            scaled_state = raw_state * y_max
 
-        fig.add_trace(go.Scatter(
-            x=data_df.index,
-            y=scaled_state,
-            mode='lines',
-            name=name
-        ))
+            fig.add_trace(go.Scatter(
+                x=data_df.index,
+                y=scaled_state,
+                mode='lines',
+                name=name
+            ))
 
-    import plotly.colors as pc
-    # 2. Shaded intervals (full height)
-    colors = pc.qualitative.Pastel
-    for i, interval in enumerate(intervals):
-        fig.add_shape(
-            type='rect',
-            x0=interval['start_time'],
-            x1=interval['end_time'],
-            y0=min_y,
-            y1=max_y,
-            fillcolor=colors[i % len(colors)],
-            opacity=0.3,
-            layer='below',
-            line=dict(width=0),
+        import plotly.colors as pc
+        # 2. Shaded intervals (full height)
+        colors = pc.qualitative.Pastel
+        for i, interval in enumerate(intervals):
+            fig.add_shape(
+                type='rect',
+                x0=interval['start_time'],
+                x1=interval['end_time'],
+                y0=min_y,
+                y1=max_y,
+                fillcolor=colors[i % len(colors)],
+                opacity=0.3,
+                layer='below',
+                line=dict(width=0),
+            )
+
+        fig.update_layout(
+            title='Contact States with Shaded Intervals. 1=lifted',
+            yaxis=dict(title='Contact Bands', range=[min_y * 1.05, max_y * 1.05], showticklabels=False),
+            xaxis=dict(title='Time Index'),
+            legend=dict(title='Contacts'),
+            height=300 + 100 * num_contacts  # Adjust plot height dynamically
         )
 
-    fig.update_layout(
-        title='Contact States with Shaded Intervals. 1=lifted',
-        yaxis=dict(title='Contact Bands', range=[min_y * 1.05, max_y * 1.05], showticklabels=False),
-        xaxis=dict(title='Time Index'),
-        legend=dict(title='Contacts'),
-        height=300 + 100 * num_contacts  # Adjust plot height dynamically
-    )
+        fig.show()
 
-    fig.show()
+        with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
+            pickle.dump(d, f)
 
-    with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
-        pickle.dump(d, f)
-
-    sys.exit(1)
 
     ###############################  Criteria based on the local linear velocity  ###############################
 
@@ -722,20 +780,22 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
     zeros_row = np.zeros((1, 3))
     
     if("Mocap" in estimatorsList):
+        b,a = butter(N=2, Wn=15/(0.5*200), btype='low')
+
         kinematics['Mocap']['IMU'] = dict()
-        kinematics['Mocap'][mocapBody]['linVel'] = np.diff(kinematics['Mocap'][mocapBody]['position'], axis=0)/timeStep_s
+        kinematics['Mocap'][mocapBody]['linVel'] = filtfilt(b, a, kinematics['Mocap'][mocapBody]['position'], axis=0)
+        kinematics['Mocap'][mocapBody]['linVel'] = np.diff(kinematics['Mocap'][mocapBody]['linVel'], axis=0) / timeStep_s
         kinematics['Mocap'][mocapBody]['linVel'] = np.vstack((zeros_row,kinematics['Mocap'][mocapBody]['linVel']))
 
         kinematics['Mocap']['IMU']['position'] =  kinematics['Mocap'][mocapBody]['position'] + kinematics['Mocap'][mocapBody]['R'].apply(posFbImu)
         kinematics['Mocap']['IMU']['R'] = kinematics['Mocap'][mocapBody]['R'] * rImuFb.inv()
-
-        kinematics['Mocap']['IMU']['linVel'] = np.diff(kinematics['Mocap']['IMU']['position'], axis=0)/timeStep_s
+        kinematics['Mocap']['IMU']['linVel'] = filtfilt(b, a, kinematics['Mocap']['IMU']['position'], axis=0)
+        kinematics['Mocap']['IMU']['linVel'] = np.diff(kinematics['Mocap']['IMU']['linVel'], axis=0) / timeStep_s
         kinematics['Mocap']['IMU']['linVel'] = np.vstack((zeros_row,kinematics['Mocap']['IMU']['linVel']))
-        
+
+
         kinematics['Mocap'][mocapBody]['locLinVel'] = kinematics['Mocap'][mocapBody]['R'].apply(kinematics['Mocap'][mocapBody]['linVel'], inverse=True)
         kinematics['Mocap']['IMU']['locLinVel'] = kinematics['Mocap']['IMU']['R'].apply(kinematics['Mocap'][mocapBody]['linVel'], inverse=True)
-
-        #b, a = butter(2, 0.15, analog=False)
 
         #kinematics['Mocap'][mocapBody]['locLinVel'] = filtfilt(b, a, kinematics['Mocap'][mocapBody]['locLinVel'], axis=0)
         #kinematics['Mocap']['IMU']['locLinVel'] = filtfilt(b, a, kinematics['Mocap']['IMU']['locLinVel'], axis=0)
@@ -758,7 +818,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             if estimator != "RI-EKF":
                 d[estimator] = dict()
 
-                kinematics[estimator][mocapBody]['llve'] = np.diff(kinematics['Mocap'][mocapBody]['position'], axis=0)/timeStep_s
+                kinematics[estimator][mocapBody]['llve'] = filtfilt(b, a, kinematics[estimator][mocapBody]['position'], axis=0)
+                kinematics[estimator][mocapBody]['llve'] = np.diff(kinematics[estimator][mocapBody]['llve'], axis=0)/timeStep_s
                 kinematics[estimator][mocapBody]['llve'] = np.vstack((zeros_row,kinematics[estimator][mocapBody]['llve']))
                 kinematics[estimator][mocapBody]['llve'] = kinematics[estimator][mocapBody]["R"].apply(kinematics[estimator][mocapBody]['llve'], inverse=True)
 
@@ -795,8 +856,10 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             
         if("RI-EKF" in estimatorsList):
             d['RI-EKF'] = dict()
-            kinematics["RI-EKF"][mocapBody]["linVel"] = np.diff(kinematics["RI-EKF"][mocapBody]["position"], axis=0)/timeStep_s
-            kinematics["RI-EKF"][mocapBody]["linVel"] = np.vstack((zeros_row,kinematics["RI-EKF"][mocapBody]["linVel"])) # Velocity obtained by finite differences
+            kinematics["RI-EKF"][mocapBody]['linVel'] = filtfilt(b, a, kinematics["RI-EKF"][mocapBody]['position'], axis=0)
+            kinematics["RI-EKF"][mocapBody]['linVel'] = np.diff(kinematics["RI-EKF"][mocapBody]['linVel'], axis=0)/timeStep_s
+            kinematics["RI-EKF"][mocapBody]['linVel'] = np.vstack((zeros_row,kinematics["RI-EKF"][mocapBody]['linVel']))
+            kinematics["RI-EKF"][mocapBody]['linVel'] = kinematics["RI-EKF"][mocapBody]["R"].apply(kinematics["RI-EKF"][mocapBody]['linVel'], inverse=True)
 
             kinematics["RI-EKF"][mocapBody]["locLinVel"] = kinematics["RI-EKF"][mocapBody]["R"].apply(kinematics["RI-EKF"][mocapBody]["linVel"], inverse=True)
 

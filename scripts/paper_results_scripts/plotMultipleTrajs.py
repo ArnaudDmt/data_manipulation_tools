@@ -38,7 +38,7 @@ default_exps = [
 ]
 
 default_estimators = [
-    'Controller',
+    'Control',
     'Vanyte',
     'Hartley',
     'KineticsObserver',
@@ -46,23 +46,23 @@ default_estimators = [
     'KO_ASC',
     'KO_ZPC',
     'KOWithoutWrenchSensors',
+    'Tilt',
     'Mocap',
-    'Tilt'
 ]
 
 
-# Define columns for each estimator
+# # Define columns for each estimator
 estimator_plot_args_default = {
-    'KineticsObserver': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_posW_tx', 'KO_posW_ty']},
-    'Controller': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
-    #'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_pose_tx', 'Vanyte_pose_ty']},
-    'Hartley': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
+    'KO': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_position_x', 'KO_position_y']},
+    'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
+    'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
+    'RI-EKF': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
-    'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
+    'KO-ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
     #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
-    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_pos_x', 'Mocap_pos_y']},
-    'Tilt': {'group': 0, 'lineWidth': 3, 'column_names': ['Tilt_pose_tx', 'Tilt_pose_ty']}
+    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
+    'Tilt': {'group': 0, 'lineWidth': 3, 'column_names': ['Tilt_position_x', 'Tilt_position_y']}
 }
 
 
@@ -192,16 +192,23 @@ estimator_plot_args_default = {
 
 
 
-def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):
-    #estimators = list(set(estimators).intersection(estimator_plot_args_default.keys()))
-    estimators = [x for x in estimators if x in estimator_plot_args_default]
+def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):    
+    print(estimator_plot_args_default.keys())
+    print(estimator_plot_args.keys())
+    estimators = list(set(estimators).intersection(estimator_plot_args.keys()))
+    if 'Ground truth' in estimators:
+        estimators.append('Mocap')
+        estimators.remove('Ground truth')
+        estimator_plot_args['Mocap'] = estimator_plot_args.pop('Ground truth')
+        colors['Mocap'] = colors.pop('Ground truth')
+        
 
     for estimatorName in estimators:
         estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
 
     xys = dict.fromkeys(estimators)
 
-    all_columns = []
+    # all_columns = []
     all_groups_keys = set()
 
     for estimator in estimators:
@@ -209,28 +216,24 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         xys[estimator] = dict.fromkeys(range(len(exps)))
         for k in range(len(exps)):
             xys[estimator][k] = {0: [], 1:[]}
-        for col in estimator_plot_args[estimator]['column_names']:
-            all_columns.append(col)
+        # for col in estimator_plot_args[estimator]['column_names']:
+        #     all_columns.append(col)
 
     all_groups = dict.fromkeys(all_groups_keys)
     
-    all_columns.append("Mocap_datasOverlapping")
-
     for group in all_groups.keys():
         all_groups[group] = {'estimators': [], 'plot_lims': {'xmin': {}, 'xmax': {}, 'ymin': {}, 'ymax': {}}}
     for estimator in estimators:
         all_groups[estimator_plot_args[estimator]['group']]["estimators"].append(estimator)
 
     for e, exp in enumerate(exps):
-        file = f'{path}{exp}/output_data/observerResultsCSV.csv'
-        df = pd.read_csv(file, sep=';', usecols=all_columns)
-        df_overlap = df[df["Mocap_datasOverlapping"] == "Datas overlap"]
+        file = f'{path}{exp}/output_data/finalDataCSV.csv'
+        df = pd.read_csv(file, sep=';')
         for estimator in estimators:
-            xys[estimator][e][0] = df_overlap[estimator_plot_args[estimator]['column_names'][0]]
-            xys[estimator][e][1] = df_overlap[estimator_plot_args[estimator]['column_names'][1]]
-    
-    
+            xys[estimator][e][0] = df[estimator + '_position_x'].to_numpy()  # 1-D
+            xys[estimator][e][1] = df[estimator + '_position_y'].to_numpy()  # 1-D
 
+    
     for group in list(filter(lambda x: x != 0, all_groups.keys())):
         xmins = []
         xmaxs = []
@@ -240,17 +243,16 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         combined_estimators = sorted(combined_estimators, key=estimators.index)
         for estimator in combined_estimators:
             for e in range(len(exps)):
-                xmins.append(min(xys[estimator][e][0]))
-                xmaxs.append(max(xys[estimator][e][0]))
-                ymins.append(min(xys[estimator][e][1]))
-                ymaxs.append(max(xys[estimator][e][1]))
+                xmins.append(np.min(xys[estimator][e][0]))
+                xmaxs.append(np.max(xys[estimator][e][0]))
+                ymins.append(np.min(xys[estimator][e][1]))
+                ymaxs.append(np.max(xys[estimator][e][1]))
 
-        all_groups[group]['plot_lims']['xmin'] = min(xmins)
-        all_groups[group]['plot_lims']['xmax'] = max(xmaxs)
-        all_groups[group]['plot_lims']['ymin'] = min(ymins)
-        all_groups[group]['plot_lims']['ymax'] = max(ymaxs)
+        all_groups[group]['plot_lims']['xmin'] = np.min(xmins)
+        all_groups[group]['plot_lims']['xmax'] = np.max(xmaxs)
+        all_groups[group]['plot_lims']['ymin'] = np.min(ymins)
+        all_groups[group]['plot_lims']['ymax'] = np.max(ymaxs)
                 
-
     # Create a Plotly figure
     
     for group in list(filter(lambda x: x != 0, all_groups.keys())):
@@ -360,23 +362,23 @@ def generate_video_from_trajs(estimators, exps, colors, estimator_plot_args, pat
         estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
 
     xys = dict.fromkeys(estimators)
-    all_columns = []
+    # all_columns = []
 
-    for estimator in estimators:
-        xys[estimator] = dict.fromkeys(range(len(exps)))
-        for k in range(len(exps)):
-            xys[estimator][k] = {0: [], 1: []}
-        for col in estimator_plot_args[estimator]['column_names']:
-            all_columns.append(col)
-    all_columns.append("Mocap_datasOverlapping")
+    # for estimator in estimators:
+    #     xys[estimator] = dict.fromkeys(range(len(exps)))
+    #     for k in range(len(exps)):
+    #         xys[estimator][k] = {0: [], 1: []}
+    #     for col in estimator_plot_args[estimator]['column_names']:
+    #         all_columns.append(col)
 
     for e, exp in enumerate(exps):
         file = f'{path}{exp}/output_data/observerResultsCSV.csv'
-        df = pd.read_csv(file, sep=';', usecols=all_columns)
-        df_overlap = df[df["Mocap_datasOverlapping"] == "Datas overlap"]
+        df = pd.read_csv(file, sep=';')
         for estimator in estimators:
-            xys[estimator][e][0] = df_overlap[estimator_plot_args[estimator]['column_names'][0]].values
-            xys[estimator][e][1] = df_overlap[estimator_plot_args[estimator]['column_names'][1]].values
+            xys[estimator][e][0] = df[[estimator + '_position_x']].values
+            xys[estimator][e][1] = df[[estimator + '_position_y']].values.values
+
+
 
     # Prepare a temporary directory for saving frames
     temp_dir = "temp_frames"
