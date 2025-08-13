@@ -9,6 +9,9 @@ from pathlib import Path
 import plotly.io as pio
 import os
 
+import plotly.io as pio
+pio.kaleido.scope.mathjax = None
+
 # Tell webbrowser to use wslview
 os.environ["BROWSER"] = "wslview"
 pio.renderers.default = "browser"
@@ -39,30 +42,33 @@ default_exps = [
 
 default_estimators = [
     'Control',
-    'Vanyte',
+    # 'Vanyte',
     'Hartley',
-    'KineticsObserver',
-    'KO_APC',
-    'KO_ASC',
-    'KO_ZPC',
-    'KOWithoutWrenchSensors',
+    # 'KineticsObserver',
+    # 'KO_APC',
+    # 'KO_ASC',
+    # 'KO_ZPC',
+    # 'KOWithoutWrenchSensors',
     'Tilt',
-    'Mocap',
+    # 'Mocap',
 ]
 
 
 # # Define columns for each estimator
 estimator_plot_args_default = {
-    'KO': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_position_x', 'KO_position_y']},
-    'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
-    'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
-    'RI-EKF': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
+    # 'KO': {'group': 0, 'lineWidth': 3, 'column_names': ['KO_position_x', 'KO_position_y']},
+    # 'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
+    # 'Vanyte': {'group': 1, 'lineWidth': 2, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
+    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
+    
+    'Hartley': {'group': 1, 'lineWidth': 2, 'column_names':  ['Hartley_Position_x', 'Hartley_Position_y']},
+    'Tilt': {'group': 1, 'lineWidth': 3, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
-    'KO-ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
+    # 'KO-ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
     #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
-    'Mocap': {'group': 0, 'lineWidth': 3, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
-    'Tilt': {'group': 0, 'lineWidth': 3, 'column_names': ['Tilt_position_x', 'Tilt_position_y']}
+    
+    
 }
 
 
@@ -193,19 +199,15 @@ estimator_plot_args_default = {
 
 
 def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):    
-    print(estimator_plot_args_default.keys())
-    print(estimator_plot_args.keys())
-    estimators = list(set(estimators).intersection(estimator_plot_args.keys()))
-    if 'Ground truth' in estimators:
-        estimators.append('Mocap')
-        estimators.remove('Ground truth')
-        estimator_plot_args['Mocap'] = estimator_plot_args.pop('Ground truth')
-        colors['Mocap'] = colors.pop('Ground truth')
+    estimators = list(set(estimators).intersection(estimator_plot_args.keys()).intersection(estimator_plot_args_default.keys())) 
         
 
     for estimatorName in estimators:
         estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
-
+        
+    order = list(estimator_plot_args_default.keys())
+    estimators = sorted(estimators, key=order.index)
+    
     xys = dict.fromkeys(estimators)
 
     # all_columns = []
@@ -240,7 +242,7 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         ymins = []
         ymaxs = []
         combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
-        combined_estimators = sorted(combined_estimators, key=estimators.index)
+        
         for estimator in combined_estimators:
             for e in range(len(exps)):
                 xmins.append(np.min(xys[estimator][e][0]))
@@ -258,7 +260,6 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
     for group in list(filter(lambda x: x != 0, all_groups.keys())):
         fig = go.Figure()
         combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
-        combined_estimators = sorted(combined_estimators, key=estimators.index)
         for estimator in combined_estimators:
             estimatorName = estimator_plot_args[estimator]["name"]
             color = colors[estimator]
@@ -361,15 +362,7 @@ def generate_video_from_trajs(estimators, exps, colors, estimator_plot_args, pat
     for estimatorName in estimators:
         estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
 
-    xys = dict.fromkeys(estimators)
-    # all_columns = []
-
-    # for estimator in estimators:
-    #     xys[estimator] = dict.fromkeys(range(len(exps)))
-    #     for k in range(len(exps)):
-    #         xys[estimator][k] = {0: [], 1: []}
-    #     for col in estimator_plot_args[estimator]['column_names']:
-    #         all_columns.append(col)
+    xys = dict.fromkeys(estimators) 
 
     for e, exp in enumerate(exps):
         file = f'{path}{exp}/output_data/observerResultsCSV.csv'

@@ -63,18 +63,19 @@ with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
     except yaml.YAMLError as exc:
         print(exc)
 
-# estimator_plot_args = {
-#     # 'KineticsObserver': {'name': 'KO', 'lineWidth': 3},
-#     # 'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 2},
-#     # 'KO_APC': {'name': 'KO_APC', 'lineWidth': 2},
-#     # 'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 2},
-#     # 'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 2},
-#     # 'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 2},
-#     'Tilt': {'name': 'VALINOR', 'lineWidth': 2},
-#     'Hartley': {'name': 'RI-EKF', 'lineWidth': 2},
-#     # 'Controller': {'name': 'Control', 'lineWidth': 2},
-#     'Mocap': {'name': 'Ground truth', 'lineWidth': 2},
-# }
+estimators_to_plot = [
+    # 'Control',
+    # 'Vanyte',
+    'Tilt',
+    'Hartley',
+    # 'KineticsObserver',
+    # 'KO_APC',
+    # 'KO_ASC',
+    # 'KO_ZPC',
+    # 'KOWithoutWrenchSensors',
+    
+    'Mocap',
+]
 
 
 def reduce_intensity(color, amount=0.7):
@@ -881,15 +882,15 @@ def main():
     # if "KineticsObserver" in estimatorsList:
     #     estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
 
-    estimatorsList = [e for e in estimatorsList if e in estimator_plot_args]
-    estimatorsList = sorted(estimatorsList, key=list(estimator_plot_args.keys()).index)
-
-    
-    estimators_to_plot = estimatorsList.copy()
-    estimators_to_plot.append("Ground truth")
-    colors = generate_turbo_subset_colors(estimators_to_plot)
-
-    estimators_to_plot.reverse()
+    # estimatorsList = [e for e in estimatorsList if e in estimator_plot_args]
+    estimatorsList = list(dict.fromkeys(
+        e for e in estimators_to_plot
+        if e in estimatorsList and e in estimator_plot_args
+    ))
+    print("WESH")
+    print(estimatorsList)
+    estimatorsList.append("Mocap")
+    colors = generate_turbo_subset_colors(estimatorsList)
 
     # plot_llve(exps_to_merge, estimatorsList, colors)
     # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
@@ -905,19 +906,19 @@ def main():
     
     colors_to_plot = colors
 
-    # plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
-    #plotMultipleTrajs.generate_video_from_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
+    # plotMultipleTrajs.plot_multiple_trajs(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    #plotMultipleTrajs.generate_video_from_trajs(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
 
     #import plotExternalForceAndBias
     #plotExternalForceAndBias.computeExtWrenchError(exps_to_merge)
     
     if(len(exps_to_merge) == 1):
         import plotPoseAndVelocity
-        plotPoseAndVelocity.plotPoseVel(estimators_to_plot, f'Projects/{exps_to_merge[0]}', colors_to_plot)
+        plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses
-        #plotContactPoses.plotContactPoses(estimators_to_plot, colors_to_plot, f'Projects/{exps_to_merge[0]}')
+        #plotContactPoses.plotContactPoses(estimatorsList, colors_to_plot, f'Projects/{exps_to_merge[0]}')
         #plotContactPoses.plotContactRestPoses(colors_to_plot, f'Projects/{exps_to_merge[0]}')
         
     if(len(exps_to_merge) == 1):
@@ -927,7 +928,7 @@ def main():
     
     import plotAndFormatResults
     # for expe in exps_to_merge:
-        # plotAndFormatResults.run(True, False, f"Projects/{expe}", estimators_to_plot, colors_to_plot)
+        # plotAndFormatResults.run(True, False, f"Projects/{expe}", estimatorsList, colors_to_plot)
     
     
     

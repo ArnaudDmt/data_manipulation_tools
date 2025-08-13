@@ -47,8 +47,9 @@ compute_metrics() {
         # Set the trap for SIGINT (Ctrl+C)
         trap cleanup SIGINT
         
-        # Define an array of observer names
-        observers=("KO" "KO_APC" "KO_ASC" "KO_ZPC" "KOWithoutWrenchSensors"  "Tilt" "Control" "Vanyte" "RI-EKF") 
+        # Observers whose metrtics are evaluated
+        observers=($(yq -r '.observers[].abbreviation' observersInfos.yaml))
+        echo "Observers: $observers"
 
         mv "$outputDataPath/mocap_x_y_z_traj.pickle" "$outputDataPath/evals/mocap_x_y_z_traj.pickle"
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"

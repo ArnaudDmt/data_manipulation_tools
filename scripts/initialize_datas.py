@@ -88,10 +88,8 @@ with open('../observersInfos.yaml', 'r') as file:
     except yaml.YAMLError as exc:
         print(exc)
 
-
-if 'RI-EKF_IMU_position_x' in df_Observers.columns:
-    observersList.append('RI-EKF')
-
+if 'Hartley_IMU_position_x' in df_Observers.columns:
+    observersList.append('Hartley')
 
 observersList.append("Mocap")
 class InlineListDumper(yaml.SafeDumper):

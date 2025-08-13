@@ -453,10 +453,10 @@ with alive_bar(len(observersList)) as bar:
 
         bar()
 
-if 'RI-EKF_IMU_position_x' in data_df.columns:
-    observersList.append('RI-EKF')
-    world_HartleyIMU_Pos = np.array([data_df['RI-EKF_IMU_position_x'], data_df['RI-EKF_IMU_position_y'], data_df['RI-EKF_IMU_position_z']]).T
-    world_HartleyIMU_Ori_R = R.from_quat(data_df[["RI-EKF_IMU_orientation_x", "RI-EKF_IMU_orientation_y", "RI-EKF_IMU_orientation_z", "RI-EKF_IMU_orientation_w"]].values)
+if 'Hartley_IMU_position_x' in data_df.columns:
+    observersList.append('Hartley')
+    world_HartleyIMU_Pos = np.array([data_df['Hartley_IMU_position_x'], data_df['Hartley_IMU_position_y'], data_df['Hartley_IMU_position_z']]).T
+    world_HartleyIMU_Ori_R = R.from_quat(data_df[["Hartley_IMU_orientation_x", "Hartley_IMU_orientation_y", "Hartley_IMU_orientation_z", "Hartley_IMU_orientation_w"]].values)
 
     posImuFb = data_df[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
     quaternions_rImuFb = data_df[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
@@ -472,13 +472,13 @@ if 'RI-EKF_IMU_position_x' in data_df.columns:
     )
 
     new_world_Hartley_Ori_quat = alignedPoses["Hartley"]["aligned_orientation"].as_quat()
-    data_df['RI-EKF_position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
-    data_df['RI-EKF_position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
-    data_df['RI-EKF_position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
-    data_df['RI-EKF_orientation_x'] = new_world_Hartley_Ori_quat[:,0]
-    data_df['RI-EKF_orientation_y'] = new_world_Hartley_Ori_quat[:,1]
-    data_df['RI-EKF_orientation_z'] = new_world_Hartley_Ori_quat[:,2]
-    data_df['RI-EKF_orientation_w'] = new_world_Hartley_Ori_quat[:,3]
+    data_df['Hartley_position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
+    data_df['Hartley_position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
+    data_df['Hartley_position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
+    data_df['Hartley_orientation_x'] = new_world_Hartley_Ori_quat[:,0]
+    data_df['Hartley_orientation_y'] = new_world_Hartley_Ori_quat[:,1]
+    data_df['Hartley_orientation_z'] = new_world_Hartley_Ori_quat[:,2]
+    data_df['Hartley_orientation_w'] = new_world_Hartley_Ori_quat[:,3]
 
 
 observersList.append("Mocap")

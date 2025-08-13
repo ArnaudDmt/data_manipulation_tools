@@ -1,6 +1,6 @@
 observers:
-  - name: KineticsObserver
-    abbreviation: KO
+  - abbreviation: KO
+    name: Kinetics Observer
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_tx, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_ty, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_tz]
@@ -18,8 +18,8 @@ observers:
       RightHand:
         contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_RightHandForceSensor
     lineWidth: 2
-  - name: MCVanytEstimator
-    abbreviation: Vanyte
+  - abbreviation: Vanyte
+    name: Vanyte
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tz]
@@ -29,8 +29,8 @@ observers:
       IMU:
         locLinVel: [Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_x, Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_y, Observers_MainObserverPipeline_MCVanytEstimator_estimatedState_x1_z]
     lineWidth: 2
-  - name: MCWaiko
-    abbreviation: WAIKO
+  - abbreviation: WAIKO
+    name: WAIKO
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_MCWaiko_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_MCWaiko_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_MCWaiko_FloatingBase_world_pose_tz]
@@ -40,8 +40,8 @@ observers:
       IMU:
         locLinVel: [Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_x, Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_y, Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_z]
     lineWidth: 2
-  - name: Tilt
-    abbreviation: Tilt
+  - abbreviation: Tilt
+    name: VALINOR
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_Tilt_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_Tilt_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_Tilt_FloatingBase_world_pose_tz]
@@ -51,8 +51,8 @@ observers:
       IMU:
         locLinVel: [Observers_MainObserverPipeline_Tilt_estimatedState_x1_x, Observers_MainObserverPipeline_Tilt_estimatedState_x1_y, Observers_MainObserverPipeline_Tilt_estimatedState_x1_z]
     lineWidth: 2
-  - name: Hartley
-    abbreviation: RI-EKF
+  - abbreviation: Hartley
+    name: RI-EKF
     kinematics:
       IMU:
         position: [Hartley_IMU_Position_x, Hartley_IMU_Position_y, Hartley_IMU_Position_z]
@@ -60,22 +60,22 @@ observers:
         linVel: [Hartley_IMU_Velocity_x, Hartley_IMU_Velocity_y, Hartley_IMU_Velocity_z]
         gyroBias: [Hartley_IMU_GyroBias_x, Hartley_IMU_GyroBias_y, Hartley_IMU_GyroBias_z]
     lineWidth: 2
-  - name: Mocap
-    abbreviation: Ground truth
+  - abbreviation: Mocap
+    name: Ground truth
     kinematics:
       FloatingBase:
         position: [Mocap_pos_x, Mocap_pos_y, Mocap_pos_z]
         orientation: [Mocap_ori_x, Mocap_ori_y, Mocap_ori_z, Mocap_ori_w]
     lineWidth: 2
-  - name: Controller
-    abbreviation: Control
+  - abbreviation: Control
+    name: Controller
     kinematics:
       FloatingBase:
         position: [ff_tx, ff_ty, ff_tz]
         orientation: [ff_qx, ff_qy, ff_qz, ff_qw]
     lineWidth: 2
-  - name: KO_ZPC
-    abbreviation: KO-ZPC
+  - abbreviation: KO_ZPC
+    name: KO-ZPC
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_KOZPC_mcko_fb_posW_tx, Observers_MainObserverPipeline_KOZPC_mcko_fb_posW_ty, Observers_MainObserverPipeline_KOZPC_mcko_fb_posW_tz]
@@ -84,8 +84,8 @@ observers:
         angVel: [Observers_MainObserverPipeline_KOZPC_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOZPC_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOZPC_mcko_fb_velW_wz]
     lineWidth: 2
 
-  - name: KO_APC
-    abbreviation: KO-APC
+  - abbreviation: KO_APC
+    name: KO-APC
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_KOAPC_mcko_fb_posW_tx, Observers_MainObserverPipeline_KOAPC_mcko_fb_posW_ty, Observers_MainObserverPipeline_KOAPC_mcko_fb_posW_tz]
@@ -94,8 +94,8 @@ observers:
         angVel: [Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wz]
     lineWidth: 2
 
-  - name: KO_ASC
-    abbreviation: KO-ASC
+  - abbreviation: KO_ASC
+    name: KO-ASC
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_KOASC_mcko_fb_posW_tx, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_ty, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_tz]

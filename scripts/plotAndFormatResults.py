@@ -90,7 +90,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         kinematics["Mocap"][mocapBody]["euler_angles"] = continuous_euler(euler_angles_Mocap)
     
     for estimator in estimatorsList:
-        if estimator != "RI-EKF" and estimator != "Mocap":
+        if estimator != "Hartley" and estimator != "Mocap":
             kinematics[estimator] = dict()
             kinematics[estimator][mocapBody] = dict()
             kinematics[estimator][mocapBody]["position"] = data_df[[estimator + '_position_x', estimator + '_position_y', estimator + '_position_z']].to_numpy()
@@ -108,29 +108,29 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 euler_angles = kinematics[estimator][mocapBody]["R"].as_euler('xyz')
                 kinematics[estimator][mocapBody]["euler_angles"] = continuous_euler(euler_angles)
 
-    if("RI-EKF" in estimatorsList and "Mocap" in estimatorsList):
-        kinematics["RI-EKF"] = dict()
-        kinematics["RI-EKF"][mocapBody] = dict()
-        kinematics["RI-EKF"][mocapBody]["position"] = data_df[['RI-EKF_position_x', 'RI-EKF_position_y', 'RI-EKF_position_z']].to_numpy()
-        kinematics["RI-EKF"][mocapBody]["quaternions"] = data_df[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z', 'RI-EKF_orientation_w']].to_numpy()
-        kinematics["RI-EKF"][mocapBody]["R"] = R.from_quat(kinematics["RI-EKF"][mocapBody]["quaternions"])
+    if("Hartley" in estimatorsList and "Mocap" in estimatorsList):
+        kinematics["Hartley"] = dict()
+        kinematics["Hartley"][mocapBody] = dict()
+        kinematics["Hartley"][mocapBody]["position"] = data_df[['Hartley_position_x', 'Hartley_position_y', 'Hartley_position_z']].to_numpy()
+        kinematics["Hartley"][mocapBody]["quaternions"] = data_df[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()
+        kinematics["Hartley"][mocapBody]["R"] = R.from_quat(kinematics["Hartley"][mocapBody]["quaternions"])
 
-        euler_angles_Hartley = kinematics["RI-EKF"][mocapBody]["R"].as_euler('xyz')
-        kinematics["RI-EKF"][mocapBody]["euler-angles"] = continuous_euler(euler_angles_Hartley)
+        euler_angles_Hartley = kinematics["Hartley"][mocapBody]["R"].as_euler('xyz')
+        kinematics["Hartley"][mocapBody]["euler-angles"] = continuous_euler(euler_angles_Hartley)
 
         if("Mocap" in estimatorsList):
-            kinematics["RI-EKF"][mocapBody]["position"] = data_df[['RI-EKF_position_x', 'RI-EKF_position_y', 'RI-EKF_position_z']].to_numpy()
-            kinematics["RI-EKF"][mocapBody]["quaternions"] = data_df[['RI-EKF_orientation_x', 'RI-EKF_orientation_y', 'RI-EKF_orientation_z', 'RI-EKF_orientation_w']].to_numpy()
-            kinematics["RI-EKF"][mocapBody]["R"] = R.from_quat(kinematics["RI-EKF"][mocapBody]["quaternions"])
-            euler_angles_Hartley = kinematics["RI-EKF"][mocapBody]["R"].as_euler('xyz')
-            kinematics["RI-EKF"][mocapBody]["euler_angles"] = continuous_euler(euler_angles_Hartley)
+            kinematics["Hartley"][mocapBody]["position"] = data_df[['Hartley_position_x', 'Hartley_position_y', 'Hartley_position_z']].to_numpy()
+            kinematics["Hartley"][mocapBody]["quaternions"] = data_df[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()
+            kinematics["Hartley"][mocapBody]["R"] = R.from_quat(kinematics["Hartley"][mocapBody]["quaternions"])
+            euler_angles_Hartley = kinematics["Hartley"][mocapBody]["R"].as_euler('xyz')
+            kinematics["Hartley"][mocapBody]["euler_angles"] = continuous_euler(euler_angles_Hartley)
 
-            kinematics["RI-EKF"]["IMU"] = dict()
-            kinematics["RI-EKF"]["IMU"]["position"] = data_df[['RI-EKF_IMU_position_x', 'RI-EKF_IMU_position_y', 'RI-EKF_IMU_position_z']].to_numpy()
-            kinematics["RI-EKF"]["IMU"]["quaternions"] = data_df[['RI-EKF_IMU_orientation_x', 'RI-EKF_IMU_orientation_y', 'RI-EKF_IMU_orientation_z', 'RI-EKF_IMU_orientation_w']].to_numpy()
-            kinematics["RI-EKF"]["IMU"]["R"] = R.from_quat(kinematics["RI-EKF"]["IMU"]["quaternions"])
-            euler_angles_Hartley = kinematics["RI-EKF"]["IMU"]["R"].as_euler('xyz')
-            kinematics["RI-EKF"]["IMU"]["euler_angles"] = continuous_euler(euler_angles_Hartley)
+            kinematics["Hartley"]["IMU"] = dict()
+            kinematics["Hartley"]["IMU"]["position"] = data_df[['Hartley_IMU_position_x', 'Hartley_IMU_position_y', 'Hartley_IMU_position_z']].to_numpy()
+            kinematics["Hartley"]["IMU"]["quaternions"] = data_df[['Hartley_IMU_orientation_x', 'Hartley_IMU_orientation_y', 'Hartley_IMU_orientation_z', 'Hartley_IMU_orientation_w']].to_numpy()
+            kinematics["Hartley"]["IMU"]["R"] = R.from_quat(kinematics["Hartley"]["IMU"]["quaternions"])
+            euler_angles_Hartley = kinematics["Hartley"]["IMU"]["R"].as_euler('xyz')
+            kinematics["Hartley"]["IMU"]["euler_angles"] = continuous_euler(euler_angles_Hartley)
             
             
             posImuFb = data_df[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
@@ -138,6 +138,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             rImuFb = R.from_quat(quaternions_rImuFb)
 
             linVelImuFb = data_df[['HartleyIEKF_imuFbKine_linVel_x', 'HartleyIEKF_imuFbKine_linVel_y', 'HartleyIEKF_imuFbKine_linVel_z']].to_numpy()
+    
             angVelImuFb = data_df[['HartleyIEKF_imuFbKine_angVel_x', 'HartleyIEKF_imuFbKine_angVel_y', 'HartleyIEKF_imuFbKine_angVel_z']].to_numpy()
             posFbImu = - rImuFb.apply(posImuFb, inverse=True)
             linVelFbImu = rImuFb.apply(np.cross(angVelImuFb, posImuFb), inverse=True) - rImuFb.apply(linVelImuFb, inverse=True)
@@ -815,7 +816,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             figLocLinVels.update_layout(title=f"{scriptName}: Linear velocities")  
 
         for estimator in estimatorsList:
-            if estimator != "RI-EKF":
+            if estimator != "Hartley":
                 d[estimator] = dict()
 
                 kinematics[estimator][mocapBody]['llve'] = filtfilt(b, a, kinematics[estimator][mocapBody]['position'], axis=0)
@@ -854,25 +855,25 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
                         d[estimator]['estimate'] = {'x': kinematics[estimator][vel_eval_body]["locLinVel"][:, 0], 'y': kinematics[estimator][vel_eval_body]["locLinVel"][:, 1], 'z': kinematics[estimator][vel_eval_body]["locLinVel"][:, 2]}
             
-        if("RI-EKF" in estimatorsList):
-            d['RI-EKF'] = dict()
-            kinematics["RI-EKF"][mocapBody]['linVel'] = filtfilt(b, a, kinematics["RI-EKF"][mocapBody]['position'], axis=0)
-            kinematics["RI-EKF"][mocapBody]['linVel'] = np.diff(kinematics["RI-EKF"][mocapBody]['linVel'], axis=0)/timeStep_s
-            kinematics["RI-EKF"][mocapBody]['linVel'] = np.vstack((zeros_row,kinematics["RI-EKF"][mocapBody]['linVel']))
-            kinematics["RI-EKF"][mocapBody]['linVel'] = kinematics["RI-EKF"][mocapBody]["R"].apply(kinematics["RI-EKF"][mocapBody]['linVel'], inverse=True)
+        if("Hartley" in estimatorsList):
+            d['Hartley'] = dict()
+            kinematics["Hartley"][mocapBody]['linVel'] = filtfilt(b, a, kinematics["Hartley"][mocapBody]['position'], axis=0)
+            kinematics["Hartley"][mocapBody]['linVel'] = np.diff(kinematics["Hartley"][mocapBody]['linVel'], axis=0)/timeStep_s
+            kinematics["Hartley"][mocapBody]['linVel'] = np.vstack((zeros_row,kinematics["Hartley"][mocapBody]['linVel']))
+            kinematics["Hartley"][mocapBody]['linVel'] = kinematics["Hartley"][mocapBody]["R"].apply(kinematics["Hartley"][mocapBody]['linVel'], inverse=True)
 
-            kinematics["RI-EKF"][mocapBody]["locLinVel"] = kinematics["RI-EKF"][mocapBody]["R"].apply(kinematics["RI-EKF"][mocapBody]["linVel"], inverse=True)
+            kinematics["Hartley"][mocapBody]["locLinVel"] = kinematics["Hartley"][mocapBody]["R"].apply(kinematics["Hartley"][mocapBody]["linVel"], inverse=True)
 
-            kinematics["RI-EKF"]["IMU"]["linVel"] = data_df[['RI-EKF_IMU_linVel_x', 'RI-EKF_IMU_linVel_y', 'RI-EKF_IMU_linVel_z']].to_numpy()
-            kinematics["RI-EKF"]["IMU"]["locLinVel"] = kinematics["RI-EKF"]["IMU"]["R"].apply(kinematics["RI-EKF"]["IMU"]["linVel"], inverse=True)
+            kinematics["Hartley"]["IMU"]["linVel"] = data_df[['Hartley_IMU_linVel_x', 'Hartley_IMU_linVel_y', 'Hartley_IMU_linVel_z']].to_numpy()
+            kinematics["Hartley"]["IMU"]["locLinVel"] = kinematics["Hartley"]["IMU"]["R"].apply(kinematics["Hartley"]["IMU"]["linVel"], inverse=True)
 
             if(displayLogs):
-                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["RI-EKF"][vel_eval_body]["locLinVel"][:,0], mode='lines', line=dict(color = colors["RI-EKF"]), name=f'locLinVel_{vel_eval_body}_{"RI-EKF"}_x'))
-                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["RI-EKF"][vel_eval_body]["locLinVel"][:,1], mode='lines', line=dict(color = colors["RI-EKF"]), name=f'locLinVel_{vel_eval_body}_{"RI-EKF"}_y'))
-                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["RI-EKF"][vel_eval_body]["locLinVel"][:,2], mode='lines', line=dict(color = colors["RI-EKF"]), name=f'locLinVel_{vel_eval_body}_{"RI-EKF"}_z'))
+                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["Hartley"][vel_eval_body]["locLinVel"][:,0], mode='lines', line=dict(color = colors["Hartley"]), name=f'locLinVel_{vel_eval_body}_{"Hartley"}_x'))
+                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["Hartley"][vel_eval_body]["locLinVel"][:,1], mode='lines', line=dict(color = colors["Hartley"]), name=f'locLinVel_{vel_eval_body}_{"Hartley"}_y'))
+                figLocLinVels.add_trace(go.Scatter(x=data_df["t"], y=kinematics["Hartley"][vel_eval_body]["locLinVel"][:,2], mode='lines', line=dict(color = colors["Hartley"]), name=f'locLinVel_{vel_eval_body}_{"Hartley"}_z'))
 
-            d['RI-EKF']['llve'] = {'x': kinematics["RI-EKF"][mocapBody]["locLinVel"][:, 0], 'y': kinematics["RI-EKF"][mocapBody]["locLinVel"][:, 1], 'z': kinematics["RI-EKF"][mocapBody]["locLinVel"][:, 2]}
-            d['RI-EKF']['estimate'] = {'x': kinematics["RI-EKF"]["IMU"]["locLinVel"][:, 0], 'y': kinematics["RI-EKF"]["IMU"]["locLinVel"][:, 1], 'z': kinematics["RI-EKF"]["IMU"]["locLinVel"][:, 2]}
+            d['Hartley']['llve'] = {'x': kinematics["Hartley"][mocapBody]["locLinVel"][:, 0], 'y': kinematics["Hartley"][mocapBody]["locLinVel"][:, 1], 'z': kinematics["Hartley"][mocapBody]["locLinVel"][:, 2]}
+            d['Hartley']['estimate'] = {'x': kinematics["Hartley"]["IMU"]["locLinVel"][:, 0], 'y': kinematics["Hartley"]["IMU"]["locLinVel"][:, 1], 'z': kinematics["Hartley"]["IMU"]["locLinVel"][:, 2]}
 
     if(displayLogs):
         figLocLinVels.show()
