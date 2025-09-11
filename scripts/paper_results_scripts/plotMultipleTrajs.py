@@ -448,29 +448,23 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from matplotlib.animation import FFMpegWriter
-
-
-def quat_to_yaw(qx: float, qy: float, qz: float, qw: float) -> float:
-    """Return the yaw angle (rotation around Z) from a unit quaternion."""
-    return math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
-
-
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 def _to_mpl_rgb(c):
-    """Convert various colour specs to an (r, g, b) tuple in 0‑1 range."""
-    if isinstance(c, (str, np.str_)):
-        r, g, b, _ = mcolors.to_rgba(c)
-        return (r, g, b)
+    """Accept hex string or tuple/list in 0-1 or 0-255."""
+    try:
+        return mcolors.to_rgb(c)
+    except Exception:
+        c = tuple(c)
+        if max(c) > 1.0:
+            return tuple(v / 255.0 for v in c)
+        return c
 
-    if len(c) == 4:
-        r, g, b, _ = c
-    else:
-        r, g, b = c
-    r = float(r); g = float(g); b = float(b)
-    if max(r, g, b) > 1:
-        return (r / 255.0, g / 255.0, b / 255.0)
-    return (r, g, b)
-
+def quat_to_yaw(x, y, z, w):
+    """Yaw (rotation about Z) from quaternion."""
+    siny_cosp = 2.0 * (w * z + x * y)
+    cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+    return math.atan2(siny_cosp, cosy_cosp)
 
 def _ema_forward(x: np.ndarray, lam: float) -> np.ndarray:
     """Causal first-order low-pass (EMA): y[n] = (1-lam)*y[n-1] + lam*x[n]."""
@@ -506,53 +500,75 @@ def _cum_arclen(x: np.ndarray, y: np.ndarray) -> np.ndarray:
     seg[0] = 0.0
     return np.cumsum(seg)
 
-def _tail_slice_from_filtered_cumlen(S: np.ndarray, t: int, dist: float) -> slice:
+def _tail_slice_from_filtered_cumlen(S: np.ndarray, t: int, dist: float, direction: str = "past") -> slice:
     """
-    Choose i_best in [0..t] so that S[t] - S[i_best] is as close as possible to 'dist'.
-    Returns slice(i_best, t+1).
+    Returns a slice covering the tail around time t:
+      - direction="past":   slice(i_best, t+1) with S[t]-S[i_best] ~ dist
+      - direction="future": slice(t, j_best+1) with S[j_best]-S[t] ~ dist
     """
     if S.size == 0:
         return slice(t, t + 1)
+
     t = max(0, min(int(t), len(S) - 1))
-    if t == 0:
-        return slice(0, 1)
 
+    if direction == "past":
+        if t == 0:
+            return slice(0, 1)
+        s_t = S[t]
+        target = max(0.0, s_t - dist)
+        St = S[:t + 1]
+
+        i_low = int(np.searchsorted(St, target, side="right") - 1)
+        i_low = max(0, i_low)
+        i_high = min(t, i_low + 1)
+
+        d_low = abs((s_t - St[i_low]) - dist)
+        d_high = abs((s_t - St[i_high]) - dist)
+        i_best = i_low if d_low <= d_high else i_high
+        return slice(i_best, t + 1)
+
+    # direction == "future"
+    if t == len(S) - 1:
+        return slice(t, t + 1)
     s_t = S[t]
-    target = max(0.0, s_t - dist)
-    St = S[:t + 1]
+    target = s_t + max(0.0, dist)
 
-    i_low = int(np.searchsorted(St, target, side="right") - 1)
-    i_low = max(0, i_low)
-    i_high = min(t, i_low + 1)
+    j_high = int(np.searchsorted(S, target, side="left"))
+    j_high = max(t, min(j_high, len(S) - 1))
+    j_low = max(t, j_high - 1)
 
-    d_low = abs((s_t - St[i_low]) - dist)
-    d_high = abs((s_t - St[i_high]) - dist)
-    i_best = i_low if d_low <= d_high else i_high
-    return slice(i_best, t + 1)
+    d_low = abs((S[j_low]  - s_t) - dist)
+    d_high = abs((S[j_high] - s_t) - dist)
+    j_best = j_low if d_low <= d_high else j_high
+    return slice(t, j_best + 1)
 
 # ----------------------------
-# Main plotting function
+# Main function
 # ----------------------------
 def plot_relative_trajs_video_distance(
-    estimators,
-    exps,
-    colors,
-    estimator_plot_args,
-    path=".",
-    main_expe=0,
+    estimators, exps, colors, estimator_plot_args,
+    path=".", main_expe=0,
     sample_rate_hz: float = 250.0,
-    cutoff_hz: float = 0.05,
+    cutoff_hz: float = 0.02,
     trail_dist: float = 4.0,
+    tail_mode: str = "future",           # "past" or "future"
     out_mp4: str = "trajectories_relative.mp4",
     fps: int = 60,
-    skip_every_n: int = 500,
-    dpi: int = 200
+    skip_every_n: int = 1000,
+    dpi: int = 200,
+    slow_x: float = 4.0,               # slow down by this factor (≥1)
+    slow_mode: str = "duplicate",      # "duplicate" or "fps"
 ):
     """
-    Animation where each frame shows ~last 'trail_dist' meters in robot frame.
-    - Tail length (meters) and #iterations are determined **ONLY** from filtered Mocap positions.
-    - Plot geometry uses **RAW** positions for every estimator.
-    - A per-frame inset shows the **cumulative distance over the current tail** (filtered Mocap).
+    At each frame t:
+      • Choose tail length (in meters) from FILTERED Mocap cumulative distance.
+      • Plot the tail using RAW positions for every estimator in the robot frame at time t.
+      • tail_mode="future": plot indices [t .. j_best]  (or "past" for [i_best .. t])
+      • Display a plain speedup label 'x<value>' that accounts for both skip_every_n and the slow-down factor.
+
+    Speedup label:
+      speedup = skip_every_n / effective_slow
+      where effective_slow = dup (duplicate mode) OR (fps / fps_out) (fps mode).
     """
 
     # --- 1) Normalize estimators & defaults ---
@@ -605,7 +621,6 @@ def plot_relative_trajs_video_distance(
                 fx = _lowpass_zero_phase_ema(rx, sample_rate_hz, cutoff_hz)
                 fy = _lowpass_zero_phase_ema(ry, sample_rate_hz, cutoff_hz)
                 cumS_mocap[k] = _cum_arclen(fx, fy)  # meters on FILTERED Mocap
-                del fx, fy  # ensure filtered arrays aren't used elsewhere
 
     if not groups:
         raise RuntimeError("No estimator data found after masking.")
@@ -644,11 +659,12 @@ def plot_relative_trajs_video_distance(
     fig, ax = plt.subplots(figsize=(6, 6), dpi=dpi)
     ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim)
     ax.set_aspect("equal", adjustable="box")
-    ax.set_xlabel("X [m] – robot frame (RAW)")
-    ax.set_ylabel("Y [m] – robot frame (RAW)")
-    ax.set_title(
-        f"Relative Trajectories (tail set by FILTERED Mocap fc={cutoff_hz:g} Hz; plot uses RAW positions)"
-    )
+    ax.set_xlabel("X [m]")
+    ax.set_ylabel("Y [m]")
+    mode_str = "past" if tail_mode == "past" else "future"
+    # ax.set_title(
+    #     f"Relative Trajectories (tail={mode_str}, set by FILTERED Mocap fc={cutoff_hz:g} Hz; plot uses RAW positions)"
+    # )
 
     line_handles = {}
     for est in combined_estimators:
@@ -657,7 +673,7 @@ def plot_relative_trajs_video_distance(
             is_main = (k == main_expe)
             (ln,) = ax.plot(
                 [], [],
-                lw=(estimator_plot_args[est]["lineWidth"] + 2 if is_main else 1.5),
+                lw=(estimator_plot_args[est]["lineWidth"] + 2 if is_main else 1.5),  # <-- original linewidth logic
                 ls="--" if (not is_main and est == "Mocap") else "-",
                 color=rgb,
                 alpha=1.0 if is_main else 0.6,
@@ -675,35 +691,52 @@ def plot_relative_trajs_video_distance(
         fontsize=8,
     )
 
-    # Tail info textbox
-    tail_info_txt = ax.text(
-        0.01, 0.99, "", transform=ax.transAxes, ha="left", va="top",
-        fontsize=9, family="monospace",
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=0.85)
+    robot_img = mpimg.imread("hrp5p.png")
+    img_h, img_w = robot_img.shape[0], robot_img.shape[1]
+    aspect = img_h / img_w
+    real_width = 0.8   # meters
+    real_height = real_width * aspect
+
+    # Create an AxesImage artist once
+    robot_artist = ax.imshow(
+        robot_img,
+        extent=[0, real_width, -real_height/2, real_height/2],  # will be adjusted for tail_mode
+        zorder=10
     )
 
-    # -------- Inset: cumulative distance over the current tail (filtered Mocap) --------
-    # Place it in the lower-right; tweak as desired.
-    tail_ax = fig.add_axes([0.62, 0.08, 0.35, 0.28])
-    (tail_line,) = tail_ax.plot([], [], lw=1.8)
-    tail_target_line = tail_ax.axhline(
-        trail_dist, linestyle="--", linewidth=1.0, alpha=0.6
-    )
-    tail_ax.set_title("Cum. distance over tail (Mocap, filtered)", fontsize=8)
-    tail_ax.set_xlabel("iters", fontsize=8)
-    tail_ax.set_ylabel("m", fontsize=8)
-    tail_ax.tick_params(axis='both', labelsize=8)
-    tail_ax.grid(True, linewidth=0.5, alpha=0.3)
-    # -----------------------------------------------------------------------------------
+    # --- 5) Playback control & speedup label ---
+    if slow_mode not in ("duplicate", "fps"):
+        slow_mode = "duplicate"
 
-    # --- 5) Animation ---
+    if slow_mode == "duplicate":
+        dup = max(1, int(round(slow_x)))   # render each frame 'dup' times
+        fps_out = fps                      # keep original fps
+        effective_slow = float(dup)
+    else:  # "fps"
+        fps_out = max(1, int(round(fps / max(1e-9, slow_x))))
+        dup = 1
+        effective_slow = float(fps) / float(fps_out)
+
+    # Speedup factor that reflects BOTH skipping and slowdown
+    # (x=1 -> speedup = skip_every_n; increasing x reduces speedup accordingly)
+    speedup_factor = float(skip_every_n) / max(1e-9, effective_slow)
+
+    # Writer
     writer = FFMpegWriter(
-        fps=fps,
+        fps=fps_out,
         codec="libx264",
         extra_args=["-pix_fmt", "yuv420p", "-profile:v", "high", "-movflags", "faststart"],
     )
 
-    print(f"Encoding {len(frame_idx)} frames → {out_mp4} …")
+    # Plain "x<speedup>" label (no box), bottom-right
+    speed_label = ax.text(
+        0.99, 0.01, f"x{speedup_factor:.2f}",
+        transform=ax.transAxes, ha="right", va="bottom",
+        fontsize=10, fontweight="bold"
+    )
+
+    # --- 6) Animation ---
+    print(f"Encoding frames → {out_mp4} … (fps_out={fps_out}, dup={dup}, speedup≈x{speedup_factor:.2f})")
     with writer.saving(fig, out_mp4, dpi=dpi):
         for t in frame_idx:
             # ----------------- choose tail ONCE from Mocap (FILTERED) -----------------
@@ -717,31 +750,16 @@ def plot_relative_trajs_video_distance(
                         S_moc = cumS_mocap[k]
                         break
 
-            # Prepare inset data
             if S_moc.size > 0 and t < len(S_moc):
-                sl_mocap = _tail_slice_from_filtered_cumlen(S_moc, t, trail_dist)
-                i0_mocap = sl_mocap.start
-                n_iters = int(t - i0_mocap + 1)
-                tail_len_m = float(S_moc[t] - S_moc[i0_mocap])
+                sl_mocap = _tail_slice_from_filtered_cumlen(S_moc, t, trail_dist, direction=tail_mode)
+                if tail_mode == "past":
+                    i0 = sl_mocap.start
+                    n_iters = int(t - i0 + 1)
+                    tail_len_m = float(S_moc[t] - S_moc[i0])
+                else:  # future
+                    j1 = sl_mocap.stop - 1
+                    n_iters = int(j1 - t + 1)
 
-                # Inset curve: relative cumulative distance over the tail
-                S_rel = S_moc[sl_mocap] - S_moc[i0_mocap]   # starts at 0, ends at tail_len_m
-                x_tail = np.arange(len(S_rel))
-                tail_line.set_data(x_tail, S_rel)
-                tail_ax.set_xlim(0, max(1, len(S_rel) - 1))
-                y_max = max(0.1, float(S_rel[-1])) * 1.05
-                tail_ax.set_ylim(0, y_max)
-            else:
-                # No Mocap available this frame
-                tail_line.set_data([], [])
-                tail_ax.set_xlim(0, 1)
-                tail_ax.set_ylim(0, 1)
-            # --------------------------------------------------------------------------
-
-            # Show info (meters from Mocap; iterations applied to all)
-            tail_info_txt.set_text(
-                f"tail ≈ {tail_len_m:.2f} m (Mocap, filtered) | iters: {n_iters} | target: {trail_dist:.2f} m"
-            )
 
             # Draw each estimator using RAW positions and shared n_iters
             for est in combined_estimators:
@@ -753,8 +771,12 @@ def plot_relative_trajs_video_distance(
                     if len(rx) == 0 or t >= len(rx):
                         continue
 
-                    start_i = max(0, t - n_iters + 1)
-                    sl = slice(start_i, t + 1)
+                    if tail_mode == "past":
+                        start_i = max(0, t - n_iters + 1)
+                        sl = slice(start_i, t + 1)
+                    else:  # future
+                        end_j = min(len(rx), t + n_iters)  # stop is exclusive
+                        sl = slice(t, end_j)
 
                     # Robot frame at time t from RAW pose & yaw
                     x0, y0 = rx[t], ry[t]
@@ -770,7 +792,19 @@ def plot_relative_trajs_video_distance(
 
                     line_handles[(est, k)].set_data(x_rel, y_rel)
 
-            writer.grab_frame()
+                    if tail_mode == "future":
+                        # Align the anchor at 0.465 m from the left
+                        shift = 0.465
+                        extent = [-shift, real_width - shift, -real_height/2, real_height/2]
+                    else:  # past
+                        # Align left edge at 0.0
+                        extent = [0, real_width, -real_height/2, real_height/2]
+
+                    robot_artist.set_extent(extent) 
+
+            # Grab (possibly duplicated) frames
+            for _ in range(dup):
+                writer.grab_frame()
 
     plt.close(fig)
     print(f"Done ({len(frame_idx)} frames, {len(frame_idx)/fps:.2f}s @ {fps} fps)")
