@@ -5,7 +5,7 @@ import plotly.express as px  # For color palette generation
 from plotly.subplots import make_subplots
 import matplotlib.colors as mcolors
 from pathlib import Path
-
+import matplotlib.image as mpimg
 import plotly.io as pio
 import os
 from tqdm import tqdm   
@@ -431,91 +431,349 @@ def plot_multiple_trajs_video(
     print(f"(y_min, y_max): {(y_min, y_max)}")
 
 
+
+import math
+
+
+def quat_to_yaw(qx: float, qy: float, qz: float, qw: float) -> float:
+    """Return the yaw angle (rotation around Z) from a unit quaternion."""
+    # atan2(2*(w*z + x*y), 1 - 2*(y*y + z*z))
+    return math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
+
+
 import os
-import cv2
+import math
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+from matplotlib.animation import FFMpegWriter
 
-def generate_video_from_trajs(estimators, exps, colors, estimator_plot_args, path=default_path, main_expe=0, fps=10, video_output="output_video.mp4"):
-    estimators = [x for x in estimators if x in estimator_plot_args_default]
-    
-    for estimatorName in estimators:
-        estimator_plot_args[estimatorName].update(estimator_plot_args_default[estimatorName])
 
-    xys = dict.fromkeys(estimators) 
-
-    for e, exp in enumerate(exps):
-        file = f'{path}{exp}/output_data/observerResultsCSV.csv'
-        df = pd.read_csv(file, sep=';')
-        for estimator in estimators:
-            xys[estimator][e][0] = df[[estimator + '_position_x']].values
-            xys[estimator][e][1] = df[[estimator + '_position_y']].values.values
+def quat_to_yaw(qx: float, qy: float, qz: float, qw: float) -> float:
+    """Return the yaw angle (rotation around Z) from a unit quaternion."""
+    return math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz))
 
 
 
-    # Prepare a temporary directory for saving frames
-    temp_dir = "temp_frames"
-    os.makedirs(temp_dir, exist_ok=True)
+def _to_mpl_rgb(c):
+    """Convert various colour specs to an (r, g, b) tuple in 0‑1 range."""
+    if isinstance(c, (str, np.str_)):
+        r, g, b, _ = mcolors.to_rgba(c)
+        return (r, g, b)
 
-    num_frames = len(next(iter(xys.values()))[0][0])  # Number of points
+    if len(c) == 4:
+        r, g, b, _ = c
+    else:
+        r, g, b = c
+    r = float(r); g = float(g); b = float(b)
+    if max(r, g, b) > 1:
+        return (r / 255.0, g / 255.0, b / 255.0)
+    return (r, g, b)
 
-    fig = go.Figure()
 
-    # Create traces once
-    traces = []
-    for estimator in estimators:
-        color = colors[estimator]
-        transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
-        for e in range(len(exps)):
-            trace = go.Scatter(
-                x=[],  # Start with empty data
-                y=[],
-                mode='lines+markers',
-                name=f'{estimator}',
-                line=dict(color=transparent_color, width=2)
-            )
-            traces.append(trace)
-            fig.add_trace(trace)
+def _ema_forward(x: np.ndarray, lam: float) -> np.ndarray:
+    """Causal first-order low-pass (EMA): y[n] = (1-lam)*y[n-1] + lam*x[n]."""
+    if x.size == 0:
+        return x
+    y = np.empty_like(x, dtype=float)
+    y[0] = x[0]
+    one_minus = 1.0 - lam
+    for i in range(1, x.size):
+        y[i] = one_minus * y[i-1] + lam * x[i]
+    return y
 
-    fig.update_layout(
-        xaxis_title="X Position [m]",
-        yaxis_title="Y Position [m]",
-        template="plotly_white",
-        showlegend=True
+def _lowpass_zero_phase_ema(x: np.ndarray, sample_rate_hz: float, cutoff_hz: float) -> np.ndarray:
+    """
+    Zero-phase first-order low-pass using forward-backward EMA.
+    lam = 1 - exp(-2*pi*fc*dt).  fc in Hz, dt = 1/fs.
+    """
+    if x.size == 0 or cutoff_hz <= 0 or sample_rate_hz <= 0:
+        return x.astype(float).copy()
+    dt = 1.0 / sample_rate_hz
+    lam = 1.0 - np.exp(-2.0 * np.pi * cutoff_hz * dt)
+    y = _ema_forward(x.astype(float), lam)              # forward
+    y_rev = _ema_forward(y[::-1], lam)[::-1]            # backward (zero-phase)
+    return y_rev
+
+def _cum_arclen(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Cumulative arclength S[i] (world frame) with S[0]=0, computed on FILTERED positions."""
+    if x.size == 0:
+        return np.array([], dtype=float)
+    dx = np.diff(x, prepend=x[:1])
+    dy = np.diff(y, prepend=y[:1])
+    seg = np.hypot(dx, dy)
+    seg[0] = 0.0
+    return np.cumsum(seg)
+
+def _tail_slice_from_filtered_cumlen(S: np.ndarray, t: int, dist: float) -> slice:
+    """
+    Choose i_best in [0..t] so that S[t] - S[i_best] is as close as possible to 'dist'.
+    Returns slice(i_best, t+1).
+    """
+    if S.size == 0:
+        return slice(t, t + 1)
+    t = max(0, min(int(t), len(S) - 1))
+    if t == 0:
+        return slice(0, 1)
+
+    s_t = S[t]
+    target = max(0.0, s_t - dist)
+    St = S[:t + 1]
+
+    i_low = int(np.searchsorted(St, target, side="right") - 1)
+    i_low = max(0, i_low)
+    i_high = min(t, i_low + 1)
+
+    d_low = abs((s_t - St[i_low]) - dist)
+    d_high = abs((s_t - St[i_high]) - dist)
+    i_best = i_low if d_low <= d_high else i_high
+    return slice(i_best, t + 1)
+
+# ----------------------------
+# Main plotting function
+# ----------------------------
+def plot_relative_trajs_video_distance(
+    estimators,
+    exps,
+    colors,
+    estimator_plot_args,
+    path=".",
+    main_expe=0,
+    sample_rate_hz: float = 250.0,
+    cutoff_hz: float = 0.05,
+    trail_dist: float = 4.0,
+    out_mp4: str = "trajectories_relative.mp4",
+    fps: int = 60,
+    skip_every_n: int = 500,
+    dpi: int = 200
+):
+    """
+    Animation where each frame shows ~last 'trail_dist' meters in robot frame.
+    - Tail length (meters) and #iterations are determined **ONLY** from filtered Mocap positions.
+    - Plot geometry uses **RAW** positions for every estimator.
+    - A per-frame inset shows the **cumulative distance over the current tail** (filtered Mocap).
+    """
+
+    # --- 1) Normalize estimators & defaults ---
+    estimators = list(dict.fromkeys(estimators))  # preserve order, unique
+    for est in estimators:
+        estimator_plot_args.setdefault(est, {})
+        estimator_plot_args[est].setdefault("group", 0)
+        estimator_plot_args[est].setdefault("lineWidth", 2.0)
+        estimator_plot_args[est].setdefault("name", est)
+
+    # --- 2) Load & align data; keep RAW for plotting; FILTERED only for Mocap distance ---
+    xys_raw = {est: {k: {0: np.array([]), 1: np.array([])} for k in range(len(exps))} for est in estimators}
+    yaws    = {est: {k: np.array([]) for k in range(len(exps))} for est in estimators}
+
+    # cumulative length ONLY for Mocap (filtered)
+    cumS_mocap = {k: np.array([]) for k in range(len(exps))}
+    groups: dict[int, set[str]] = {}
+
+    for k, exp in enumerate(exps):
+        df_path = os.path.join(path, exp, "output_data", "finalDataCSV.csv")
+        df = pd.read_csv(df_path, sep=";")
+
+        for est in estimators:
+            grp = estimator_plot_args[est]["group"]
+            groups.setdefault(grp, set()).add(est)
+
+            px = df.get(f"{est}_position_x", pd.Series([np.nan]*len(df))).to_numpy()
+            py = df.get(f"{est}_position_y", pd.Series([np.nan]*len(df))).to_numpy()
+            qx = df.get(f"{est}_orientation_x", pd.Series([np.nan]*len(df))).to_numpy()
+            qy = df.get(f"{est}_orientation_y", pd.Series([np.nan]*len(df))).to_numpy()
+            qz = df.get(f"{est}_orientation_z", pd.Series([np.nan]*len(df))).to_numpy()
+            qw = df.get(f"{est}_orientation_w", pd.Series([np.nan]*len(df))).to_numpy()
+
+            # Single common mask across all streams for this estimator to keep alignment
+            mask = ~(np.isnan(px) | np.isnan(py) | np.isnan(qx) | np.isnan(qy) | np.isnan(qz) | np.isnan(qw))
+            if not np.any(mask):
+                continue
+
+            rx = px[mask]  # RAW aligned
+            ry = py[mask]
+            traj_yaw = np.array([quat_to_yaw(a, b, c, d) for a, b, c, d in zip(qx[mask], qy[mask], qz[mask], qw[mask])])
+
+            # Store RAW for plotting
+            xys_raw[est][k][0] = rx
+            xys_raw[est][k][1] = ry
+            yaws[est][k]       = traj_yaw
+
+            # For Mocap ONLY: build filtered cumulative distance (used to choose tail length)
+            if est == "Mocap":
+                fx = _lowpass_zero_phase_ema(rx, sample_rate_hz, cutoff_hz)
+                fy = _lowpass_zero_phase_ema(ry, sample_rate_hz, cutoff_hz)
+                cumS_mocap[k] = _cum_arclen(fx, fy)  # meters on FILTERED Mocap
+                del fx, fy  # ensure filtered arrays aren't used elsewhere
+
+    if not groups:
+        raise RuntimeError("No estimator data found after masking.")
+
+    # Reference group first (for legend ordering)
+    ref_grp = 0 if 0 in groups else list(groups.keys())[0]
+    grouped_lists = {g: [e for e in estimators if e in groups[g]] for g in groups}
+    combined_estimators = grouped_lists[ref_grp] + [e for g, lst in grouped_lists.items() if g != ref_grp for e in lst]
+
+    # --- 3) Axis limits from RAW data only ---
+    def _lim(func, axis):
+        vals = [func(xys_raw[e][k][axis]) for e in combined_estimators for k in xys_raw[e] if xys_raw[e][k][axis].size]
+        return func(vals) * 1.1 if vals else 0.0
+
+    max_extent = max(
+        abs(_lim(np.min, 0)),
+        abs(_lim(np.max, 0)),
+        abs(_lim(np.min, 1)),
+        abs(_lim(np.max, 1)),
+    )
+    lim = max(max_extent, trail_dist) * 1.1 or 1.0
+
+    # --- 3b) Frame indices ---
+    total_samples = 0
+    for e in combined_estimators:
+        for k in xys_raw[e]:
+            total_samples = max(total_samples, len(xys_raw[e][k][0]))
+    if total_samples <= 1:
+        raise RuntimeError("Not enough samples to animate.")
+
+    frame_idx = range(0, total_samples, skip_every_n)
+    if len(frame_idx) < 2:
+        raise RuntimeError("Need at least two frames – lower skip_every_n.")
+
+    # --- 4) Figure & lines ---
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=dpi)
+    ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim)
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel("X [m] – robot frame (RAW)")
+    ax.set_ylabel("Y [m] – robot frame (RAW)")
+    ax.set_title(
+        f"Relative Trajectories (tail set by FILTERED Mocap fc={cutoff_hz:g} Hz; plot uses RAW positions)"
     )
 
-    # Accumulate and save frames
-    for frame_idx in range(num_frames):
-        if frame_idx % 10 == 0:
-            for i, estimator in enumerate(estimators):
-                for e in range(len(exps)):
-                    #print(f'remaining: {num_frames - frame_idx}')
-                    # Access the trace data and update it
-                    trace = fig.data[i * len(exps) + e]
-                    trace.x = list(trace.x) + [xys[estimator][e][0][frame_idx]]
-                    trace.y = list(trace.y) + [xys[estimator][e][1][frame_idx]]
+    line_handles = {}
+    for est in combined_estimators:
+        rgb = _to_mpl_rgb(colors[est])
+        for k in xys_raw[est]:
+            is_main = (k == main_expe)
+            (ln,) = ax.plot(
+                [], [],
+                lw=(estimator_plot_args[est]["lineWidth"] + 2 if is_main else 1.5),
+                ls="--" if (not is_main and est == "Mocap") else "-",
+                color=rgb,
+                alpha=1.0 if is_main else 0.6,
+                label=(estimator_plot_args[est]["name"] if is_main else "_nolegend_"),
+            )
+            line_handles[(est, k)] = ln
 
-            # Save the updated figure for this frame
-            frame_filename = f"{temp_dir}/frame_{frame_idx:06d}.png"
-            fig.write_image(frame_filename)
+    ax.legend(
+        handles=[line_handles[(e, main_expe)] for e in combined_estimators if (e, main_expe) in line_handles],
+        labels=[estimator_plot_args[e]["name"] for e in combined_estimators if (e, main_expe) in line_handles],
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.05),
+        ncol=max(1, len(combined_estimators)),
+        frameon=False,
+        fontsize=8,
+    )
 
-    # Combine frames into a video
-    frame_files = sorted(os.listdir(temp_dir))
-    frame_path = os.path.join(temp_dir, frame_files[0])
-    frame = cv2.imread(frame_path)
-    height, width, layers = frame.shape
+    # Tail info textbox
+    tail_info_txt = ax.text(
+        0.01, 0.99, "", transform=ax.transAxes, ha="left", va="top",
+        fontsize=9, family="monospace",
+        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="0.7", alpha=0.85)
+    )
 
-    video = cv2.VideoWriter(video_output, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
+    # -------- Inset: cumulative distance over the current tail (filtered Mocap) --------
+    # Place it in the lower-right; tweak as desired.
+    tail_ax = fig.add_axes([0.62, 0.08, 0.35, 0.28])
+    (tail_line,) = tail_ax.plot([], [], lw=1.8)
+    tail_target_line = tail_ax.axhline(
+        trail_dist, linestyle="--", linewidth=1.0, alpha=0.6
+    )
+    tail_ax.set_title("Cum. distance over tail (Mocap, filtered)", fontsize=8)
+    tail_ax.set_xlabel("iters", fontsize=8)
+    tail_ax.set_ylabel("m", fontsize=8)
+    tail_ax.tick_params(axis='both', labelsize=8)
+    tail_ax.grid(True, linewidth=0.5, alpha=0.3)
+    # -----------------------------------------------------------------------------------
 
-    for frame_file in frame_files:
-        frame = cv2.imread(os.path.join(temp_dir, frame_file))
-        video.write(frame)
+    # --- 5) Animation ---
+    writer = FFMpegWriter(
+        fps=fps,
+        codec="libx264",
+        extra_args=["-pix_fmt", "yuv420p", "-profile:v", "high", "-movflags", "faststart"],
+    )
 
-    video.release()
+    print(f"Encoding {len(frame_idx)} frames → {out_mp4} …")
+    with writer.saving(fig, out_mp4, dpi=dpi):
+        for t in frame_idx:
+            # ----------------- choose tail ONCE from Mocap (FILTERED) -----------------
+            n_iters = 1
+            tail_len_m = 0.0
+            S_moc = cumS_mocap.get(main_expe, np.array([]))
+            # fallback: first available Mocap run that covers t
+            if S_moc.size == 0 or t >= len(S_moc):
+                for k in cumS_mocap:
+                    if cumS_mocap[k].size > 0 and t < len(cumS_mocap[k]):
+                        S_moc = cumS_mocap[k]
+                        break
 
-    # Clean up
-    for frame_file in frame_files:
-        os.remove(os.path.join(temp_dir, frame_file))
-    os.rmdir(temp_dir)
-    print(f"Video saved to {video_output}")
+            # Prepare inset data
+            if S_moc.size > 0 and t < len(S_moc):
+                sl_mocap = _tail_slice_from_filtered_cumlen(S_moc, t, trail_dist)
+                i0_mocap = sl_mocap.start
+                n_iters = int(t - i0_mocap + 1)
+                tail_len_m = float(S_moc[t] - S_moc[i0_mocap])
+
+                # Inset curve: relative cumulative distance over the tail
+                S_rel = S_moc[sl_mocap] - S_moc[i0_mocap]   # starts at 0, ends at tail_len_m
+                x_tail = np.arange(len(S_rel))
+                tail_line.set_data(x_tail, S_rel)
+                tail_ax.set_xlim(0, max(1, len(S_rel) - 1))
+                y_max = max(0.1, float(S_rel[-1])) * 1.05
+                tail_ax.set_ylim(0, y_max)
+            else:
+                # No Mocap available this frame
+                tail_line.set_data([], [])
+                tail_ax.set_xlim(0, 1)
+                tail_ax.set_ylim(0, 1)
+            # --------------------------------------------------------------------------
+
+            # Show info (meters from Mocap; iterations applied to all)
+            tail_info_txt.set_text(
+                f"tail ≈ {tail_len_m:.2f} m (Mocap, filtered) | iters: {n_iters} | target: {trail_dist:.2f} m"
+            )
+
+            # Draw each estimator using RAW positions and shared n_iters
+            for est in combined_estimators:
+                for k in xys_raw[est]:
+                    rx = xys_raw[est][k][0]  # RAW
+                    ry = xys_raw[est][k][1]
+                    yaw = yaws[est][k]
+
+                    if len(rx) == 0 or t >= len(rx):
+                        continue
+
+                    start_i = max(0, t - n_iters + 1)
+                    sl = slice(start_i, t + 1)
+
+                    # Robot frame at time t from RAW pose & yaw
+                    x0, y0 = rx[t], ry[t]
+                    yaw0 = yaw[t] if t < len(yaw) else 0.0
+                    cy, sy = math.cos(yaw0), math.sin(yaw0)
+
+                    tail_x_w = rx[sl]  # RAW positions for plotting
+                    tail_y_w = ry[sl]
+                    dx = tail_x_w - x0
+                    dy = tail_y_w - y0
+                    x_rel =  cy * dx + sy * dy
+                    y_rel = -sy * dx + cy * dy
+
+                    line_handles[(est, k)].set_data(x_rel, y_rel)
+
+            writer.grab_frame()
+
+    plt.close(fig)
+    print(f"Done ({len(frame_idx)} frames, {len(frame_idx)/fps:.2f}s @ {fps} fps)")
 
 
 
