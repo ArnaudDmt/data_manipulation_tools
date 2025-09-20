@@ -64,10 +64,14 @@ with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
         print(exc)
 
 estimators_to_plot = [
-    # 'Control',
-    # 'Vanyte',
+    'KO',
+    'Control',
+    'WAIKO',
     'Tilt',
+    
+    'Vanyte',
     'Hartley',
+    
     # 'KineticsObserver',
     # 'KO_APC',
     # 'KO_ASC',
@@ -820,44 +824,70 @@ def plot_errors_per_walk_cycle_as_boxplot(errorStats, colors):
 
 
 def plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors):
-    errorsByCycleLength = open_pickle(f"Projects/{exps_to_merge[0]}/output_data/evals/error_walk_cycle.pickle")
-    regroupedErrors = dict.fromkeys(errorsByCycleLength.keys())
+    first = open_pickle(f"Projects/{exps_to_merge[0]}/output_data/evals/error_walk_cycle.pickle")
+    valid_cycle_lengths = [k for k, v in first.items() if isinstance(v, dict)]
 
-    for cycleLength in errorsByCycleLength:
-            regroupedErrors[cycleLength] = dict.fromkeys(estimatorsList)
-            for estimator in regroupedErrors[cycleLength]:
-                regroupedErrors[cycleLength][estimator] = {"pos_lateral": [], "pos_z": [], "tilt": [], "yaw": []}
+    regroupedErrors = {
+        cycleLength: {
+            estimator: {"pos_lateral": [], "pos_z": [], "tilt": [], "yaw": []}
+            for estimator in estimatorsList
+        }
+        for cycleLength in valid_cycle_lengths
+    }
 
-    for expe in exps_to_merge:   
-        errorsByCycleLength = open_pickle(f"Projects/{expe}/output_data/evals/error_walk_cycle.pickle")
-        for cycleLength in errorsByCycleLength:
-            for estimator in regroupedErrors[cycleLength]:
-                for pos in errorsByCycleLength[cycleLength][estimator]["pos"]:
-                    regroupedErrors[cycleLength][estimator]["pos_lateral"].append(np.linalg.norm(pos[0:2]))
-                    regroupedErrors[cycleLength][estimator]["pos_z"].append(np.linalg.norm(pos[2]))
-                regroupedErrors[cycleLength][estimator]["tilt"].extend(errorsByCycleLength[cycleLength][estimator]["tilt"])
-                regroupedErrors[cycleLength][estimator]["yaw"].extend(errorsByCycleLength[cycleLength][estimator]["yaw"])
+    for expe in exps_to_merge:
+        errorsByCycleLength_expe = open_pickle(f"Projects/{expe}/output_data/evals/error_walk_cycle.pickle")
+        for cycleLength in valid_cycle_lengths:
+            block = errorsByCycleLength_expe.get(cycleLength)
+            if not isinstance(block, dict):
+                continue
+            for estimator in estimatorsList:
+                est_block = block.get(estimator)
+                if not isinstance(est_block, dict):
+                    continue
+                pos_list = est_block.get("pos", [])
+                for pos in pos_list:
+                    lateral = float(np.linalg.norm(pos[0:2]))
+                    z_abs = float(np.abs(pos[2]))
+                    regroupedErrors[cycleLength][estimator]["pos_lateral"].append(lateral)
+                    regroupedErrors[cycleLength][estimator]["pos_z"].append(z_abs)
+                regroupedErrors[cycleLength][estimator]["tilt"].extend(
+                    [float(x) for x in est_block.get("tilt", [])]
+                )
+                regroupedErrors[cycleLength][estimator]["yaw"].extend(
+                    [float(x) for x in est_block.get("yaw", [])]
+                )
 
-
-    errorStats = dict.fromkeys(regroupedErrors.keys())
+    errorStats = {cycleLength: {} for cycleLength in regroupedErrors.keys()}
     for cycleLength in errorStats:
-        errorStats[cycleLength] = dict.fromkeys(regroupedErrors[cycleLength].keys())
+        errorStats[cycleLength] = {estimator: {} for estimator in regroupedErrors[cycleLength].keys()}
         for estimator in errorStats[cycleLength]:
-            errorStats[cycleLength][estimator] = dict.fromkeys(regroupedErrors[cycleLength][estimator].keys())
-            for cat in errorStats[cycleLength][estimator]:
-                errorStats[cycleLength][estimator][cat]  = {
-                                        'rmse': 0.0, 'mean': 0.0, 'meanAbs': 0.0, 'median': 0.0, 'q1': 0.0, 'q3': 0.0, 
-                                        'std': 0.0, 'min': 0.0, 'max': 0.0  }
-                data_vec = regroupedErrors[cycleLength][estimator][cat]
-                errorStats[cycleLength][estimator][cat]['rmse'] = float(np.sqrt(np.dot(data_vec, data_vec) / len(data_vec)))
-                errorStats[cycleLength][estimator][cat]['mean'] = float(np.mean(data_vec))
-                errorStats[cycleLength][estimator][cat]['meanAbs'] = float(np.mean(np.abs(data_vec)))
-                errorStats[cycleLength][estimator][cat]['median'] = float(np.median(data_vec))
-                errorStats[cycleLength][estimator][cat]['q1'] = float(np.quantile(data_vec, 0.25))
-                errorStats[cycleLength][estimator][cat]['q3'] = float(np.quantile(data_vec, 0.75))
-                errorStats[cycleLength][estimator][cat]['std'] = float(np.std(data_vec))
-                errorStats[cycleLength][estimator][cat]['min'] = float(np.min(data_vec))
-                errorStats[cycleLength][estimator][cat]['max'] = float(np.max(data_vec))
+            for cat in regroupedErrors[cycleLength][estimator].keys():
+                data_vec = np.asarray(regroupedErrors[cycleLength][estimator][cat], dtype=float)
+                if data_vec.size == 0:
+                    errorStats[cycleLength][estimator][cat] = {
+                        'rmse': float('nan'),
+                        'mean': float('nan'),
+                        'meanAbs': float('nan'),
+                        'median': float('nan'),
+                        'q1': float('nan'),
+                        'q3': float('nan'),
+                        'std': float('nan'),
+                        'min': float('nan'),
+                        'max': float('nan')
+                    }
+                else:
+                    errorStats[cycleLength][estimator][cat] = {
+                        'rmse': float(np.sqrt(np.dot(data_vec, data_vec) / data_vec.size)),
+                        'mean': float(np.mean(data_vec)),
+                        'meanAbs': float(np.mean(np.abs(data_vec))),
+                        'median': float(np.median(data_vec)),
+                        'q1': float(np.quantile(data_vec, 0.25)),
+                        'q3': float(np.quantile(data_vec, 0.75)),
+                        'std': float(np.std(data_vec)),
+                        'min': float(np.min(data_vec)),
+                        'max': float(np.max(data_vec))
+                    }
 
     plot_errors_per_walk_cycle_as_boxplot(errorStats, colors)
 
@@ -882,39 +912,49 @@ def main():
     # if "KineticsObserver" in estimatorsList:
     #     estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
 
+
     # estimatorsList = [e for e in estimatorsList if e in estimator_plot_args]
     estimatorsList = list(dict.fromkeys(
         e for e in estimators_to_plot
         if e in estimatorsList and e in estimator_plot_args
     ))
-    print("WESH")
-    print(estimatorsList)
-    estimatorsList.append("Mocap")
+
+    estimatorsForErrors = estimatorsList.copy()
+    
+
+    if(estimatorsList.count("Mocap") == 0):
+        estimatorsList.append("Mocap")
+
     colors = generate_turbo_subset_colors(estimatorsList)
 
     # plot_llve(exps_to_merge, estimatorsList, colors)
-    # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
-    # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
+    
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
     # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
-    # plot_relative_errors(exps_to_merge, estimatorsList, colors)
 
-    # plot_errors_per_walk_cycle(exps_to_merge, estimatorsList, colors)
+    plot_relative_errors(exps_to_merge, estimatorsForErrors, colors)
+
+    plot_errors_per_walk_cycle(exps_to_merge, estimatorsForErrors, colors)
+
+    # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
+    # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
 
     import plotMultipleTrajs
     
     colors_to_plot = colors
 
-    # plotMultipleTrajs.plot_multiple_trajs(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    # plotMultipleTrajs.plot_relative_trajs_video_distance(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    # plotMultipleTrajs.plot_relative_trajs_video_temporal(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
+    # plotMultipleTrajs.plot_multiple_trajs_video(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     #plotMultipleTrajs.generate_video_from_trajs(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/', main_expe=0, fps=20, video_output="output_video.mp4")
 
     #import plotExternalForceAndBias
     #plotExternalForceAndBias.computeExtWrenchError(exps_to_merge)
     
     if(len(exps_to_merge) == 1):
-        import plotPoseAndVelocity
-        plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
+        # import plotPoseAndVelocity
+        # plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses

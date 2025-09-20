@@ -175,6 +175,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 pickle.dump(d, f)
 
             for estimator in estimatorsList:
+                if estimator == "Mocap":
+                    continue
                 dfPose = pd.DataFrame(columns=['#', 'timestamp', 'tx', 'ty', 'tz', 'qx', 'qy', 'qz', 'qw'])
                 dfPose['timestamp'] = data_df['t']
                 dfPose['tx'] = kinematics[estimator][mocapBody]["position"][:,0]
@@ -382,14 +384,14 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         average_bias_z_tuple_last = tuple(average_bias_z_last for _ in range(len(data_df)))
 
         # Plotting the original data and the computed biases
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
-        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
+        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
         fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_last, mode='lines', name='measured_GyroBias_end_z'))
 
         obs = []
@@ -405,19 +407,20 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         for estimator in estimatorsList:
             if estimator in obs:
-                fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_x'], mode='lines', name=f'{estimator}_gyroBias_x'))
-                fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_y'], mode='lines', name=f'{estimator}_gyroBias_y'))
+                # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_x'], mode='lines', name=f'{estimator}_gyroBias_x'))
+                # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_y'], mode='lines', name=f'{estimator}_gyroBias_y'))
                 fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_z'], mode='lines', name=f'{estimator}_gyroBias_z'))
         # Update layout
         fig_gyroBias.update_layout(
             title='Gyrometer biases',
-            xaxis_title='x',
-            yaxis_title='y',
+            xaxis_title='Time [seconds]',
+            yaxis_title='Gyrometer bias (rad/s)',
             hovermode='x'
         )
 
         # Show the interactive plot
         fig_gyroBias.show()
+        fig_gyroBias.write_image(f'/tmp/biases.svg')
 
 
     ###############################  Criteria based on the step sequence  ###############################
@@ -573,195 +576,249 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
             return np.dot(R_temp1, R_temp2)
         
+        from plotly.subplots import make_subplots
+
+        def _merge_consecutive_intervals(_intervals, k):
+            out = []
+            if k <= 1:
+                return _intervals[:]
+            for i in range(len(_intervals) - k + 1):
+                out.append({
+                    'start_time': _intervals[i]['start_time'],
+                    'end_time': _intervals[i + k - 1]['end_time'],
+                    'reference': _intervals[i + k - 1]['reference']
+                })
+            return out
+
         final_position_errors = {estimator: [] for estimator in estimatorsList}
 
-        min_y = float('inf')
-        max_y = -float('inf')
-        
-        d = {1: {}} 
-        poses = {}
-        for estimator in estimatorsList:
-            poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
-            if(estimator != "Mocap"):
-                d[1][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
+        # Ensure d exists and seed for 1, 2, 3
+        if 'd' not in locals():
+            d = {1: {}}
+        elif 1 not in d:
+            d[1] = {}
 
-        idx_range = []
-        
-        for i, interval in enumerate(intervals):
-            idx_range.extend(range(interval["start_time"], interval["end_time"]))
-
-            start_time = interval["start_time"]
-            end_time = interval["end_time"]
-
-            R_mocap = kinematics["Mocap"][mocapBody]["R"][start_time:end_time]
-            pos_mocap = kinematics["Mocap"][mocapBody]["position"][start_time:end_time]
-                    
-            aligned_init_ori_mat_mocap = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
-                    R_mocap[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
-                ))
-            
-            R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
-            p_aligned_mocap = np.array([0, 0, 0]) + \
-            (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(
-                pos_mocap - pos_mocap[0]
-            )
-
-            poses["Mocap"]["tx"].extend(p_aligned_mocap[:,0])
-            poses["Mocap"]["ty"].extend(p_aligned_mocap[:,1])
-            poses["Mocap"]["tz"].extend(p_aligned_mocap[:,2])
-            euler = R_aligned_mocap.as_euler('zxy')
-            poses["Mocap"]["rz"].extend(euler[:,0])
-            poses["Mocap"]["rx"].extend(euler[:,1])
-            poses["Mocap"]["ry"].extend(euler[:,2])
-
-            min_y = min(min_y, np.min(p_aligned_mocap))
-            max_y = max(max_y, np.max(p_aligned_mocap))
-        
+        for _mult in [1, 2, 3]:
+            if _mult not in d:
+                d[_mult] = {}
             for estimator in estimatorsList:
-                if(estimator == "Mocap"):
-                    continue
-                
-                R_est = kinematics[estimator][mocapBody]["R"][start_time:end_time]
-                pos_est = kinematics[estimator][mocapBody]["position"][start_time:end_time]
-            
-                aligned_init_ori_mat_est = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
-                    R_est[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
-                ))
-                
-                R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
-                p_aligned_est = np.array([0, 0, 0]) + \
-                (aligned_init_ori_mat_est * R_est[0].inv()).apply(
-                    pos_est - pos_est[0]
-                )
+                if estimator != "Mocap" and estimator not in d[_mult]:
+                    d[_mult][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
 
-                
+        cycle_mults = [1, 2, 3]
+        intervals_by_mult = {
+            1: intervals,
+            2: _merge_consecutive_intervals(intervals, 2),
+            3: _merge_consecutive_intervals(intervals, 3),
+        }
 
-                poses[estimator]["tx"].extend(p_aligned_est[:,0])
-                poses[estimator]["ty"].extend(p_aligned_est[:,1])
-                poses[estimator]["tz"].extend(p_aligned_est[:,2])
-                euler = R_aligned_est.as_euler('zxy')
-                poses[estimator]["rz"].extend(euler[:,0])
-                poses[estimator]["rx"].extend(euler[:,1])
-                poses[estimator]["ry"].extend(euler[:,2])
-
-
-                error_pos = p_aligned_est[-1] - p_aligned_mocap[-1]
-                final_position_errors[estimator].append(error_pos)
-
-                scalar_product = np.dot(R_aligned_mocap[-1].apply([0, 0, 1], inverse=True), R_aligned_est[-1].apply([0, 0, 1], inverse=True))
-
-                tilt_error = np.arccos(scalar_product)
-                if tilt_error == "nan":
-                    tilt_error = 0
-                R_error = R_aligned_mocap[-1] * R_aligned_est[-1].inv()
-
-                min_y = min(min_y, np.min(euler))
-                max_y = max(max_y, np.max(euler))
-
-                min_y = min(min_y, np.min(p_aligned_est))
-                max_y = max(max_y, np.max(p_aligned_est))
-
-                tilt_error = np.rad2deg(tilt_error)
-
-                d[1][estimator]['pos'].append(error_pos)
-                d[1][estimator]['tilt'].append(tilt_error)
-                yaw_error = np.array(abs(R_error.as_euler('zxy', degrees=True)[0]))
-                d[1][estimator]['yaw'].append(yaw_error)
-
-
-        
-        for estimator in estimatorsList:
-            fig.add_trace(go.Scatter(
-                    x=list(idx_range),
-                    y=poses[estimator]["tx"],
-                    mode='lines',
-                line=dict(color = colors[estimator]),
-                    name=f'{estimator} aligned X',
-                    showlegend=True,
-                ))
-            fig.add_trace(go.Scatter(
-                x=list(idx_range),
-                y=poses[estimator]["ty"],
-                mode='lines',
-            line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned Y',
-                showlegend=True,
-            ))
-            fig.add_trace(go.Scatter(
-                x=list(idx_range),
-                y=poses[estimator]["tz"],
-                mode='lines',
-            line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned Z',
-                showlegend=True,
-            ))
-            fig.add_trace(go.Scatter(
-                    x=list(idx_range),
-                    y=poses[estimator]["rx"],
-                    mode='lines',
-                line=dict(color = colors[estimator]),
-                    name=f'{estimator} aligned Roll',
-                    showlegend=True,
-                ))
-            fig.add_trace(go.Scatter(
-                x=list(idx_range),
-                y=poses[estimator]["ry"],
-                mode='lines',
-            line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned Pitch',
-                showlegend=True,
-            ))
-            fig.add_trace(go.Scatter(
-                x=list(idx_range),
-                y=poses[estimator]["rz"],
-                mode='lines',
-            line=dict(color = colors[estimator]),
-                name=f'{estimator} aligned Yaw',
-                showlegend=True,
-            ))
-
-        num_contacts = len(contact_columns)
-
-        # 1. Plot each contact's state in its own vertical band
-        for i, (name, col) in enumerate(contact_columns.items()):
-            raw_state = (data_df[col] != 'Set').astype(float)  # 0 if set, 1 if not
-            y_min = 0
-            y_max = max_y - i * 0.1 * max_y
-            # Scale to band
-            scaled_state = raw_state * y_max
-
-            fig.add_trace(go.Scatter(
-                x=data_df.index,
-                y=scaled_state,
-                mode='lines',
-                name=name
-            ))
+        fig = make_subplots(
+            rows=4,
+            cols=1,
+            shared_xaxes=True,
+            subplot_titles=["Contact states", "1 cycle", "2 cycles", "3 cycles"]
+        )
 
         import plotly.colors as pc
-        # 2. Shaded intervals (full height)
-        colors = pc.qualitative.Pastel
-        for i, interval in enumerate(intervals):
-            fig.add_shape(
-                type='rect',
-                x0=interval['start_time'],
-                x1=interval['end_time'],
-                y0=min_y,
-                y1=max_y,
-                fillcolor=colors[i % len(colors)],
-                opacity=0.3,
-                layer='below',
-                line=dict(width=0),
+        interval_colors = pc.qualitative.Pastel
+
+        # Contact states subplot (row 1)
+        for i_cs, (name, col) in enumerate(contact_columns.items()):
+            raw_state = (data_df[col] != "Set").astype(float)
+            y_max_cs = 1.0# - i_cs * 0.1
+            scaled_state = raw_state * y_max_cs
+            fig.add_trace(
+                go.Scatter(
+                    x=data_df.index,
+                    y=scaled_state,
+                    mode="lines",
+                    name=name,
+                    legendgroup="contacts",
+                    showlegend=True,
+                    line=dict(dash="longdashdot") 
+                ),
+                row=1, col=1
             )
 
+        # Same colored areas across ALL subplots, based on base 'intervals'
+        for i_rect, interval in enumerate(intervals):
+            for r in [1, 2, 3, 4]:
+                fig.add_vrect(
+                    x0=interval["start_time"],
+                    x1=interval["end_time"],
+                    fillcolor=interval_colors[i_rect % len(interval_colors)],
+                    opacity=0.3,
+                    line_width=0,
+                    row=r,
+                    col=1
+                )
+        
+
+        show_legend_traj = True
+        row_for_mult = {1: 2, 2: 3, 3: 4} 
+
+        for mult in cycle_mults:
+            poses = {}
+            for estimator in estimatorsList:
+                poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
+            idx_range = []
+            min_y = float("inf")
+            max_y = -float("inf")
+
+            for i_int, interval in enumerate(intervals_by_mult[mult]):
+                start_time = interval["start_time"]
+                end_time = interval["end_time"]
+
+                R_mocap = kinematics["Mocap"][mocapBody]["R"][start_time:end_time]
+                pos_mocap = kinematics["Mocap"][mocapBody]["position"][start_time:end_time]
+
+                aligned_init_ori_mat_mocap = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                    R_mocap[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+                ))
+
+                R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
+                p_aligned_mocap = np.array([0, 0, 0]) + \
+                    (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(pos_mocap - pos_mocap[0])
+
+                idx_range.extend(range(start_time, end_time))
+                poses["Mocap"]["tx"].extend(p_aligned_mocap[:, 0])
+                poses["Mocap"]["ty"].extend(p_aligned_mocap[:, 1])
+                poses["Mocap"]["tz"].extend(p_aligned_mocap[:, 2])
+                euler_m = R_aligned_mocap.as_euler("zxy")
+                poses["Mocap"]["rz"].extend(euler_m[:, 0])
+                poses["Mocap"]["rx"].extend(euler_m[:, 1])
+                poses["Mocap"]["ry"].extend(euler_m[:, 2])
+
+                min_y = min(min_y, np.min(p_aligned_mocap))
+                max_y = max(max_y, np.max(p_aligned_mocap))
+
+                for estimator in estimatorsList:
+                    if estimator == "Mocap":
+                        continue
+
+                    R_est = kinematics[estimator][mocapBody]["R"][start_time:end_time]
+                    pos_est = kinematics[estimator][mocapBody]["position"][start_time:end_time]
+
+                    aligned_init_ori_mat_est = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(
+                        R_est[0].apply([0, 0, 1], inverse=True), R.identity().as_matrix()
+                    ))
+
+                    R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
+                    p_aligned_est = np.array([0, 0, 0]) + \
+                        (aligned_init_ori_mat_est * R_est[0].inv()).apply(pos_est - pos_est[0])
+
+                    poses[estimator]["tx"].extend(p_aligned_est[:, 0])
+                    poses[estimator]["ty"].extend(p_aligned_est[:, 1])
+                    poses[estimator]["tz"].extend(p_aligned_est[:, 2])
+                    euler = R_aligned_est.as_euler("zxy")
+                    poses[estimator]["rz"].extend(euler[:, 0])
+                    poses[estimator]["rx"].extend(euler[:, 1])
+                    poses[estimator]["ry"].extend(euler[:, 2])
+
+                    error_pos = p_aligned_est[-1] - p_aligned_mocap[-1]
+                    final_position_errors[estimator].append(error_pos)
+
+                    scalar_product = np.dot(
+                        R_aligned_mocap[-1].apply([0, 0, 1], inverse=True),
+                        R_aligned_est[-1].apply([0, 0, 1], inverse=True)
+                    )
+                    tilt_error = np.arccos(scalar_product)
+                    if tilt_error == "nan":
+                        tilt_error = 0
+                    R_error = R_aligned_mocap[-1] * R_aligned_est[-1].inv()
+
+                    min_y = min(min_y, np.min(euler))
+                    max_y = max(max_y, np.max(euler))
+                    min_y = min(min_y, np.min(p_aligned_est))
+                    max_y = max(max_y, np.max(p_aligned_est))
+
+                    tilt_error = np.rad2deg(tilt_error)
+                    d[mult][estimator]["pos"].append(error_pos)
+                    d[mult][estimator]["tilt"].append(tilt_error)
+                    yaw_error = np.array(abs(R_error.as_euler("zxy", degrees=True)[0]))
+                    d[mult][estimator]["yaw"].append(yaw_error) 
+
+                # Separator to avoid straight lines across windows
+                idx_range.append(None)
+                for est in estimatorsList:
+                    for k in ["tx", "ty", "tz", "rz", "rx", "ry"]:
+                        poses[est][k].append(None)
+
+            y_low = min_y * 1.05
+            y_high = max_y * 1.05
+            xv = []
+            yv = []
+            for iv in intervals_by_mult[mult]:
+                xv += [iv["end_time"], iv["end_time"], None]
+                yv += [y_low, y_high, None]
+
+            r = row_for_mult[mult]
+            for iv in intervals_by_mult[mult]:
+                fig.add_shape(
+                    type="line",
+                    x0=iv["start_time"],
+                    x1=iv["start_time"],
+                    y0=0,
+                    y1=1,
+                    xref="x",
+                    yref="y domain",
+                    line=dict(dash="dash", width=1, color="black"),
+                    layer="above",
+                    row=r,
+                    col=1
+                )
+
+            r = row_for_mult[mult]
+            for estimator in estimatorsList:
+                leg = show_legend_traj
+                fig.add_trace(
+                    go.Scatter(x=idx_range, y=poses[estimator]["tx"], mode="lines",
+                            line=dict(color=colors[estimator]), name=f"{estimator}",
+                            showlegend=leg),
+                    row=r, col=1
+                )
+                # fig.add_trace(
+                #     go.Scatter(x=idx_range, y=poses[estimator]["ty"], mode="lines",
+                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Y",
+                #             showlegend=False),
+                #     row=r, col=1
+                # )
+                # fig.add_trace(
+                #     go.Scatter(x=idx_range, y=poses[estimator]["tz"], mode="lines",
+                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Z",
+                #             showlegend=False),
+                #     row=r, col=1
+                # )
+                # fig.add_trace(
+                #     go.Scatter(x=idx_range, y=poses[estimator]["rx"], mode="lines",
+                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Roll",
+                #             showlegend=False),
+                #     row=r, col=1
+                # )
+                # fig.add_trace(
+                #     go.Scatter(x=idx_range, y=poses[estimator]["ry"], mode="lines",
+                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Pitch",
+                #             showlegend=False),
+                #     row=r, col=1
+                # )
+                # fig.add_trace(
+                #     go.Scatter(x=idx_range, y=poses[estimator]["rz"], mode="lines",
+                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Yaw",
+                #             showlegend=False),
+                #     row=r, col=1
+                # )
+            fig.update_yaxes(title_text="Contact Bands", showticklabels=False, row=r, col=1)
+            show_legend_traj = False
+
         fig.update_layout(
-            title='Contact States with Shaded Intervals. 1=lifted',
-            yaxis=dict(title='Contact Bands', range=[min_y * 1.05, max_y * 1.05], showticklabels=False),
-            xaxis=dict(title='Time Index'),
-            legend=dict(title='Contacts'),
-            height=300 + 100 * num_contacts  # Adjust plot height dynamically
+            title="Contact states and trajectories across cycle multiples",
+            xaxis=dict(title="Time Index"),
+            legend=dict(title="Trajectories"),
+            height=250 + 350 * 3
         )
 
         fig.show()
+
 
         with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
             pickle.dump(d, f)
