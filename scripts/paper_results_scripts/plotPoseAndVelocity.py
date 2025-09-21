@@ -511,8 +511,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 yref="y2",  # Absolute positioning on the y-axis of subplot (3,3)
                 x0=rect_lims["roll"][0],  # Start of x-range
                 x1=rect_lims["roll"][1],  # End of x-range
-                y0=rect_lims["roll"][2],  # Start of y-range
-                y1=rect_lims["roll"][3],  # End of y-range
+                y0=rect_lims["roll"][2] * 1.1,  # Start of y-range
+                y1=rect_lims["roll"][3] * 1.1,  # End of y-range
                 line=dict(color="grey", width=1),
                 layer="above"  # Ensures the rectangle appears above the plot
                 )
@@ -539,8 +539,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 yref="y5",  # Absolute positioning on the y-axis of subplot (3,3)
                 x0=rect_lims["pitch"][0],  # Start of x-range
                 x1=rect_lims["pitch"][1],  # End of x-range
-                y0=rect_lims["pitch"][2],  # Start of y-range
-                y1=rect_lims["pitch"][3],  # End of y-range
+                y0=rect_lims["pitch"][2] * 1.1,  # Start of y-range
+                y1=rect_lims["pitch"][3] * 1.1,  # End of y-range
                 line=dict(color="grey", width=1),
                 layer="above"  # Ensures the rectangle appears above the plot
                 )
@@ -596,8 +596,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 yref="y3",  # Absolute positioning on the y-axis of subplot (3,3)
                 x0=rect_lims["vel_x"][0],  # Start of x-range
                 x1=rect_lims["vel_x"][1],  # End of x-range
-                y0=rect_lims["vel_x"][2],  # Start of y-range
-                y1=rect_lims["vel_x"][3],  # End of y-range
+                y0=rect_lims["vel_x"][2] * 1.1,  # Start of y-range
+                y1=rect_lims["vel_x"][3] * 1.1,  # End of y-range
                 line=dict(color="grey", width=1),
                 layer="above"  # Ensures the rectangle appears above the plot
                 )
@@ -621,8 +621,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 yref="y6",  # Absolute positioning on the y-axis of subplot (3,3)
                 x0=rect_lims["vel_y"][0],  # Start of x-range
                 x1=rect_lims["vel_y"][1],  # End of x-range
-                y0=rect_lims["vel_y"][2],  # Start of y-range
-                y1=rect_lims["vel_y"][3],  # End of y-range
+                y0=rect_lims["vel_y"][2] * 1.1,  # Start of y-range
+                y1=rect_lims["vel_y"][3] * 1.1,  # End of y-range
                 line=dict(color="grey", width=1),
                 layer="above"  # Ensures the rectangle appears above the plot
                 )
@@ -646,53 +646,53 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 yref="y9",  # Absolute positioning on the y-axis of subplot (3,3)
                 x0=rect_lims["vel_z"][0],  # Start of x-range
                 x1=rect_lims["vel_z"][1],  # End of x-range
-                y0=rect_lims["vel_z"][2],  # Start of y-range
-                y1=rect_lims["vel_z"][3],  # End of y-range
+                y0=rect_lims["vel_z"][2] * 1.1,  # Start of y-range
+                y1=rect_lims["vel_z"][3] * 1.1,  # End of y-range
                 line=dict(color="grey", width=1),
                 layer="above"  # Ensures the rectangle appears above the plot
                 )
 
                 figPoseVel.update_layout(
                         xaxis=dict(
-                                dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman',  color="black")),
                         xaxis1=dict(
-                                dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridwidth=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman',  color="black")),
                         xaxis2=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis3=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis4=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis5=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis6=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis7=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis8=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         xaxis9=dict(
-                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                dtick=50, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis1=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis2=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black"), dtick = 2),
                         yaxis3=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black"), ),
                         yaxis4=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis5=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis6=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis7=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black"),dtick = 0.20),
                         yaxis8=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black")),
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black")),
                         yaxis9=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"))
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', zerolinewidth = 1, linecolor= 'lightgrey', mirror=True, ticks='outside', showline=False, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=10, color="black"))
                         )
                 
                 # figPoseVel.update_layout(
@@ -720,7 +720,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         xaxis13=dict(
                                 dtick=5, linewidth=0.5, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                         yaxis13=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"), dtick=2)
                         )
                 
                 figPoseVel.update_layout(
@@ -741,7 +741,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         xaxis16=dict(
                                 dtick=1, gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),),
                         yaxis16=dict(
-                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
+                                gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"), dtick=0.05)
                         )
                 
                 figPoseVel.update_layout(
@@ -758,9 +758,6 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                                 gridcolor= 'lightgrey', zerolinecolor= 'lightgrey', linecolor= 'darkgrey', mirror=True, ticks='outside', showline=True, tickcolor='lightgrey', tickfont = dict(family = 'Times New Roman', size=7, color="black"),)
                         )
 
-                
-                
-                
 
 
                 figPoseVel.add_trace(go.Scatter(
@@ -820,27 +817,30 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
 
         # Update layout
 
-        figPoseVel.update_yaxes(title=dict(text="Translation x (m)", standoff=10), row=1, col=1)
-        figPoseVel.update_yaxes(title=dict(text="Translation y (m)", standoff=10), row=2, col=1)
-        figPoseVel.update_yaxes(title=dict(text="Translation z (m)", standoff=10), row=3, col=1)
+        figPoseVel.update_yaxes(title=dict(text="Translation x [m]", standoff=10), row=1, col=1)
+        figPoseVel.update_yaxes(title=dict(text="Translation y [m]", standoff=10), row=2, col=1)
+        figPoseVel.update_yaxes(title=dict(text="Translation z [m]", standoff=10), row=3, col=1)
         # figPoseVel.update_yaxes(title=dict(text="Roll (°)", standoff=5), row=1, col=2)
         # figPoseVel.update_yaxes(title=dict(text="Pitch (°)", standoff=5), row=2, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Tilt x ≈ Roll (°)", standoff=5), row=1, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Tilt y ≈ Pitch (°)", standoff=5), row=2, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Yaw (°)", standoff=5), row=3, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Velocity x (m.s⁻¹)", standoff=5), row=1, col=3)
-        figPoseVel.update_yaxes(title=dict(text="Velocity y (m.s⁻¹)", standoff=5), row=2, col=3)
-        figPoseVel.update_yaxes(title=dict(text="Velocity z (m.s⁻¹)", standoff=5), row=3, col=3)
+        figPoseVel.update_yaxes(title=dict(text="Tilt x ≈ Roll [deg]", standoff=5), row=1, col=2)
+        figPoseVel.update_yaxes(title=dict(text="Tilt y ≈ Pitch [deg]", standoff=5), row=2, col=2)
+        figPoseVel.update_yaxes(title=dict(text="Yaw [deg]", standoff=5), row=3, col=2)
+        figPoseVel.update_yaxes(title=dict(text="Velocity x [m/s]", standoff=5), row=1, col=3)
+        figPoseVel.update_yaxes(title=dict(text="Velocity y [m/s]", standoff=5), row=2, col=3)
+        figPoseVel.update_yaxes(title=dict(text="Velocity z [m/s]", standoff=5), row=3, col=3)
 
 
-        figPoseVel.update_xaxes(title_text="Time (s)", row=3, col=1)
-        figPoseVel.update_xaxes(title_text="Time (s)", row=3, col=2)
-        figPoseVel.update_xaxes(title_text="Time (s)", row=3, col=3)
+        figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=1)
+        figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=2)
+        figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=3)
 
-
+        W = 1000
+        H = int(W/2.5) 
+        figPoseVel.update_layout(width=W, height=H)
         
         # Show the plot
         figPoseVel.show()
+        
 
-        figPoseVel.write_image(f'/tmp/poseAndVel.svg')
-        figPoseVel.write_image(f'/tmp/poseAndVel.pdf')
+        figPoseVel.write_image(f'/tmp/poseAndVel.svg', width=W, height=H)
+        figPoseVel.write_image(f'/tmp/poseAndVel.pdf', width=W, height=H)
