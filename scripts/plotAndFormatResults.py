@@ -657,6 +657,13 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         show_legend_traj = True
         row_for_mult = {1: 2, 2: 3, 3: 4} 
 
+        with open(f'{path_to_project}/../../observersInfos.yaml', 'r') as file:
+            try:
+                observersInfos_str = file.read()
+                observersInfos_yamlData = yaml.safe_load(observersInfos_str) 
+            except yaml.YAMLError as exc:
+                print(exc)
+
         for mult in cycle_mults:
             poses = {}
             for estimator in estimatorsList:
@@ -769,11 +776,16 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 )
 
             r = row_for_mult[mult]
+            
+
             for estimator in estimatorsList:
+                for observer in observersInfos_yamlData['observers']:
+                    if observer["abbreviation"] == estimator: 
+                        est_name = observer["name"]
                 leg = show_legend_traj
                 fig.add_trace(
                     go.Scatter(x=idx_range, y=poses[estimator]["tx"], mode="lines",
-                            line=dict(color=colors[estimator]), name=f"{estimator}",
+                            line=dict(color=colors[estimator]), name=f"{est_name}",
                             showlegend=leg),
                     row=r, col=1
                 )
