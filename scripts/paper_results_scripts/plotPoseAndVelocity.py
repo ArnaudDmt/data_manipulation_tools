@@ -21,8 +21,9 @@ zeros_row = np.zeros((1, 3))
 
 estimator_plot_args_default = {
 #    'KO': {'name': 'Kinetics Observer', 'lineWidth': 1},
-    'Tilt': {'name': 'Valinor', 'lineWidth': 1},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 1},
+#     'Tilt': {'name': 'Valinor', 'lineWidth': 1},
+    'WAIKO': {'name': 'WAIKO', 'lineWidth': 1},
+#     'Hartley': {'name': 'RI-EKF', 'lineWidth': 1},
     'Mocap': {'name': 'Ground truth', 'lineWidth': 1},
 }
 
@@ -111,9 +112,9 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
 
         observer_data = pd.read_csv(f'{path}/output_data/finalDataCSV.csv',  delimiter=';')
 
-        observer_data["t"] = observer_data["t"] - 130
+        # observer_data["t"] = observer_data["t"] - 130
 
-        startIndex = 26000
+        startIndex = 0
         observer_data = observer_data.truncate(before=startIndex)
 
         # Reset the index to start from 0
@@ -136,18 +137,23 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                                         'angVel': None}, \
                                 # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
                                 #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
-                                'KO': {  'pos': observer_data[['KO_position_x', 'KO_position_y', 'KO_position_z']].to_numpy(), \
-                                                        'ori': R.from_quat(observer_data[['KO_orientation_x', 'KO_orientation_y', 'KO_orientation_z', 'KO_orientation_w']].to_numpy()), \
-                                                        'linVel': observer_data[['KO_linVel_x', 'KO_linVel_y', 'KO_linVel_z']].to_numpy(), \
-                                                        'angVel': observer_data[['KO_angVel_x', 'KO_angVel_y', 'KO_angVel_z']].to_numpy()}, \
+                                # 'KO': {  'pos': observer_data[['KO_position_x', 'KO_position_y', 'KO_position_z']].to_numpy(), \
+                                #                         'ori': R.from_quat(observer_data[['KO_orientation_x', 'KO_orientation_y', 'KO_orientation_z', 'KO_orientation_w']].to_numpy()), \
+                                #                         'linVel': observer_data[['KO_linVel_x', 'KO_linVel_y', 'KO_linVel_z']].to_numpy(), \
+                                #                         'angVel': observer_data[['KO_angVel_x', 'KO_angVel_y', 'KO_angVel_z']].to_numpy()}, \
                                 # 'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
                                 #             'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()), \
                                 #             'linVel': observer_data[['KO_ZPC_velW_vx', 'KO_ZPC_velW_vy', 'KO_ZPC_velW_vz']].to_numpy(), \
                                 #             'angVel': observer_data[['KO_ZPC_velW_wx', 'KO_ZPC_velW_wy', 'KO_ZPC_velW_wz']].to_numpy()}, \
-                                'Tilt': {'pos': observer_data[['Tilt_position_x', 'Tilt_position_y', 'Tilt_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['Tilt_orientation_x', 'Tilt_orientation_y', 'Tilt_orientation_z', 'Tilt_orientation_w']].to_numpy()), \
-                                        'linVel': observer_data[['Tilt_linVel_x', 'Tilt_linVel_y', 'Tilt_linVel_z']].to_numpy(), \
-                                        'angVel': observer_data[['Tilt_angVel_x', 'Tilt_angVel_y', 'Tilt_angVel_z']].to_numpy()},
+                                # 'Tilt': {'pos': observer_data[['Tilt_position_x', 'Tilt_position_y', 'Tilt_position_z']].to_numpy(), \
+                                #         'ori': R.from_quat(observer_data[['Tilt_orientation_x', 'Tilt_orientation_y', 'Tilt_orientation_z', 'Tilt_orientation_w']].to_numpy()), \
+                                #         'linVel': observer_data[['Tilt_linVel_x', 'Tilt_linVel_y', 'Tilt_linVel_z']].to_numpy(), \
+                                #         'angVel': observer_data[['Tilt_angVel_x', 'Tilt_angVel_y', 'Tilt_angVel_z']].to_numpy()},
+
+                                'WAIKO': {'pos': observer_data[['WAIKO_position_x', 'WAIKO_position_y', 'WAIKO_position_z']].to_numpy(), \
+                                        'ori': R.from_quat(observer_data[['WAIKO_orientation_x', 'WAIKO_orientation_y', 'WAIKO_orientation_z', 'WAIKO_orientation_w']].to_numpy()), \
+                                        'linVel': observer_data[['WAIKO_linVel_x', 'WAIKO_linVel_y', 'WAIKO_linVel_z']].to_numpy(), \
+                                        'angVel': observer_data[['WAIKO_angVel_x', 'WAIKO_angVel_y', 'WAIKO_angVel_z']].to_numpy()},
 
                                 'Hartley': {'pos': observer_data[['Hartley_position_x', 'Hartley_position_y', 'Hartley_position_z']].to_numpy(), \
                                         'ori': R.from_quat(observer_data[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()), \
@@ -157,12 +163,13 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         
         # Velocity of Hartley (different as we already have the velocity of the IMU)
         # estimated velocity
-        linVelImu_Hartley_overlap = observer_data[['Hartley_IMU_linVel_x', 'Hartley_IMU_linVel_y', 'Hartley_IMU_linVel_z']].to_numpy()
-        quaternionsHartley_fb_overlap = observer_data[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()
-        rHartley_fb_overlap = R.from_quat(quaternionsHartley_fb_overlap)
-        rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
-        locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
-        estimatorsPoses["Hartley"]["linVel"] = locVelHartley_imu_estim
+        if "Hartley" in estimators:
+                linVelImu_Hartley_overlap = observer_data[['Hartley_IMU_linVel_x', 'Hartley_IMU_linVel_y', 'Hartley_IMU_linVel_z']].to_numpy()
+                quaternionsHartley_fb_overlap = observer_data[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()
+                rHartley_fb_overlap = R.from_quat(quaternionsHartley_fb_overlap)
+                rWorldImuHartley_overlap = rHartley_fb_overlap * rImuFb_overlap.inv()
+                locVelHartley_imu_estim = rWorldImuHartley_overlap.apply(linVelImu_Hartley_overlap, inverse=True)
+                estimatorsPoses["Hartley"]["linVel"] = locVelHartley_imu_estim
         
 
         # Velocity of the mocap (different as we only have the position)
@@ -179,10 +186,11 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         estimatorsPoses["Mocap"]["linVel"] = locVelMocap_imu_estim       
         
 
-        estimatorsPoses["Hartley"]["ori2"] = estimatorsPoses["Hartley"]["ori"].apply(np.array([0.0, 0.0, 1.0]), inverse=True) 
-        estimatorsPoses["Hartley"]["ori2"] = np.degrees(estimatorsPoses["Hartley"]["ori2"])
-        estimatorsPoses["Hartley"]["ori"] = estimatorsPoses["Hartley"]["ori"].as_euler('xyz')
-        estimatorsPoses["Hartley"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Hartley"]["ori"]))
+        if "Hartley" in estimators:
+                estimatorsPoses["Hartley"]["ori2"] = estimatorsPoses["Hartley"]["ori"].apply(np.array([0.0, 0.0, 1.0]), inverse=True) 
+                estimatorsPoses["Hartley"]["ori2"] = np.degrees(estimatorsPoses["Hartley"]["ori2"])
+                estimatorsPoses["Hartley"]["ori"] = estimatorsPoses["Hartley"]["ori"].as_euler('xyz')
+                estimatorsPoses["Hartley"]["ori"] = np.degrees(continuous_euler(estimatorsPoses["Hartley"]["ori"]))
                 
 
         estimatorsPoses["Mocap"]["ori2"] = estimatorsPoses["Mocap"]["ori"].apply(np.array([0.0, 0.0, 1.0]), inverse=True) 
@@ -195,8 +203,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         index_t_z_40 = 7990
         index_t_z_50 = 10001
 
-        index_t_yaw_200 = 39999
-        index_t_yaw_240 = 48001
+        index_t_yaw_200 = 49999
+        index_t_yaw_240 = 60001
 
         index_t_vel_139_5 = 27899
         index_t_vel_141_5 = 28301
@@ -259,8 +267,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
 
 
                 y_max_pos_y = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 1])
-                y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_z_40:index_t_z_50, 2])
-                y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_z_40:index_t_z_50, 2])
+                y_min_pos_z = np.min(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 2])
+                y_max_pos_z = np.max(estimatorsPoses[estimator]["pos"][index_t_yaw_200:index_t_yaw_240, 2])
                 
                 y_min_roll = np.min(estimatorsPoses[estimator]["ori2"][index_t_z_40:index_t_z_50, 0])
                 y_max_roll = np.max(estimatorsPoses[estimator]["ori2"][index_t_z_40:index_t_z_50, 0])
@@ -435,6 +443,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 # )
                 # )
 
+                
+
                 # # Add a rectangle to subplot (1,1) surrounding the inset plot
                 # figPoseVel.add_shape(
                 # type="rect",
@@ -475,21 +485,33 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 #     layer="above"  # Ensures the rectangle appears above the plot
                 # )
 
-                # # Add a rectangle to subplot (1,1) surrounding the inset plot
-                # figPoseVel.add_shape(
-                # type="rect",
-                # xref="x7",  # Absolute positioning on the x-axis of subplot (3,3)
-                # yref="y7",  # Absolute positioning on the y-axis of subplot (3,3)
-                # x0=rect_lims["pos_z"][0],  # Start of x-range
-                # x1=rect_lims["pos_z"][1],  # End of x-range
-                # y0=rect_lims["pos_z"][2],  # Start of y-range
-                # y1=rect_lims["pos_z"][3],  # End of y-range
-                # line=dict(color="grey", width=1),
-                # layer="above"  # Ensures the rectangle appears above the plot
-                # )
+                # Add a rectangle to subplot (1,1) surrounding the inset plot
+                figPoseVel.add_shape(
+                type="rect",
+                xref="x7",  # Absolute positioning on the x-axis of subplot (3,3)
+                yref="y7",  # Absolute positioning on the y-axis of subplot (3,3)
+                x0=rect_lims["pos_z"][0],  # Start of x-range
+                x1=rect_lims["pos_z"][1],  # End of x-range
+                y0=rect_lims["pos_z"][2],  # Start of y-range
+                y1=rect_lims["pos_z"][3],  # End of y-range
+                line=dict(color="grey", width=1),
+                layer="above"  # Ensures the rectangle appears above the plot
+                )
                 
 
-
+                if estimator != "Mocap":
+                        # Add the inset plot a  s an additional trace
+                        figPoseVel.add_trace(
+                        go.Scatter(
+                                x=observer_data["t"][index_t_yaw_200:index_t_yaw_240],
+                                y=estimatorsPoses[observerName]["pos"][index_t_yaw_200:index_t_yaw_240, 2],
+                                mode='lines',
+                                showlegend= False,
+                                line=dict(width=estimator_plot_args[observerName]["lineWidth"]/2, color=color_Observer),
+                                xaxis=f"x{axis_idxs['pos_z_inset']}",
+                                yaxis=f"y{axis_idxs['pos_z_inset']}",
+                        )
+                        )
                 
 
                 

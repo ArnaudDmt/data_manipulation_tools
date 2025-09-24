@@ -427,32 +427,34 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
     # contact_columns = [col for col in data_df.columns if col.endswith('_isSet')]
 
+    import re
+    def _pretty_contact_label(n):
+            return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', n)
+    
+    data_df_cycles = data_df.iloc[:6400]
+
     contact_columns = {
         col.split('_')[-2]: col
-        for col in data_df.columns
+        for col in data_df_cycles.columns
         if col.endswith('_isSet')
-        }
+    }
     if(writeFormattedData and len(contact_columns.keys()) > 0):
-        
 
         contact_transitions_init = {}
-
         for contact, col in contact_columns.items():
-            series = data_df[col].fillna("").astype(str)
+            series = data_df_cycles[col].fillna("").astype(str)
             prev = series.shift(1).fillna("").astype(str)
             transitions = (prev == "Set") & (series != "Set")
             contact_transitions_init[contact] = deque(series.index[transitions].tolist())
 
         contacts = list(contact_transitions_init.keys())
         intervals = []
-        
         contact_transitions = contact_transitions_init.copy()
 
-        # First phase: find when all contacts have been removed once
         removalIndex_contact_map = dict()
         for c in contacts:
             if not contact_transitions[c]:
-                break  # if any contact has no transition, we can't proceed
+                break
             removalIndex_contact_map[contact_transitions[c][0]] = c
 
         if len(removalIndex_contact_map) < len(contacts):
@@ -466,52 +468,44 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         })
 
         reference = removalIndex_contact_map[end_time]
-        
+
         for c in contacts:
-            while  contact_transitions[c][0] < end_time:
+            while contact_transitions[c][0] < end_time:
                 contact_transitions[c].popleft()
 
         currently_set_contacts = [
-                c for c in contacts
-                if data_df[contact_columns[c]].iloc[0] == "Set"
-            ]
+            c for c in contacts
+            if data_df_cycles[contact_columns[c]].iloc[0] == "Set"
+        ]
 
         while True:
             start_time = end_time
-            # removalIndex_contact_map = {end_time: removalIndex_contact_map[end_time]}
-
             removalIndex_contact_map = dict()
             success = False
             if reference is not None and contact_transitions[reference]:
                 currently_set_contacts = [
-                c for c in contacts
-                if data_df[contact_columns[c]].iloc[end_time] == "Set"
-            ]
-                
+                    c for c in contacts
+                    if data_df_cycles[contact_columns[c]].iloc[end_time] == "Set"
+                ]
                 index_found = None
                 success = False
                 other_contacts = [c for c in currently_set_contacts if c != reference]
                 if other_contacts:
                     for i, t in enumerate(contact_transitions[reference]):
                         if t <= start_time:
-                            continue  # Skip transitions before or at start_time
-
+                            continue
                         all_removed = True
                         for c in other_contacts:
                             transitions = contact_transitions.get(c, [])
-                            # Check if there is any transition for contact c strictly after start_time and at or before t
                             if not any(start_time < tc <= t for tc in transitions):
                                 all_removed = False
                                 break
-
                         if all_removed:
                             success = True
                             index_found = i
-                            break  # Found a valid time for the reference contact
-
+                            break
                 if success:
                     end_time = contact_transitions[reference][index_found]
-
 
             skipIter = False
             if reference == None or success == False:
@@ -526,13 +520,11 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     reference = removalIndex_contact_map[start_time]
                     success = True
                     skipIter = True
-            
+
             if skipIter:
                 continue
-
             if not success and not skipIter:
                 break
-            
 
             intervals.append({
                 'start_time': start_time,
@@ -541,7 +533,6 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             })
 
             nbRemaining = 0
-            
             for c in contacts:
                 while contact_transitions[c] and contact_transitions[c][0] < end_time:
                     contact_transitions[c].popleft()
@@ -554,28 +545,23 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         fig = go.Figure()
 
         def get_invariant_orthogonal_vector(Rhat: np.ndarray, Rtez: np.ndarray):
-                epsilon = 2.2204460492503131e-16
-                Rhat_Rtez = np.dot(Rhat, Rtez)
-                if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
-                    return np.array([1, 0, 0])
-                else:
-                    return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
-                
+            epsilon = 2.2204460492503131e-16
+            Rhat_Rtez = np.dot(Rhat, Rtez)
+            if np.all(np.abs(Rhat_Rtez[:2]) < epsilon):
+                return np.array([1, 0, 0])
+            else:
+                return np.array([Rhat_Rtez[1], -Rhat_Rtez[0], 0])
+
         def merge_tilt_with_yaw_axis_agnostic(Rtez: np.ndarray, R2: np.ndarray):
             ez = np.array([0, 0, 1])
             v1 = Rtez
-        
             m = get_invariant_orthogonal_vector(R2, Rtez)
             m = m / np.linalg.norm(m)
-
             ml = np.dot(R2.T, m)
-
             R_temp1 = np.column_stack((np.cross(m, ez), m, ez))
-
             R_temp2 = np.vstack((np.cross(ml, v1).T, ml.T, v1.T))
-
             return np.dot(R_temp1, R_temp2)
-        
+
         from plotly.subplots import make_subplots
 
         def _merge_consecutive_intervals(_intervals, k):
@@ -592,7 +578,6 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         final_position_errors = {estimator: [] for estimator in estimatorsList}
 
-        # Ensure d exists and seed for 1, 2, 3
         if 'd' not in locals():
             d = {1: {}}
         elif 1 not in d:
@@ -612,55 +597,98 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             3: _merge_consecutive_intervals(intervals, 3),
         }
 
+        t_series = data_df_cycles["t"]
+
         fig = make_subplots(
-            rows=4,
+            rows=5,
             cols=1,
             shared_xaxes=True,
-            subplot_titles=["Contact states", "1 cycle", "2 cycles", "3 cycles"]
+            subplot_titles=["Contact states", "Cumulative distance (reset every x m)", "1 cycle", "2 cycles", "3 cycles"]
         )
 
         import plotly.colors as pc
         interval_colors = pc.qualitative.Pastel
 
-        # Contact states subplot (row 1)
         for i_cs, (name, col) in enumerate(contact_columns.items()):
-            raw_state = (data_df[col] != "Set").astype(float)
-            y_max_cs = 1.0# - i_cs * 0.1
-            scaled_state = raw_state * y_max_cs
+            raw_state = (data_df_cycles[col] != "Set").astype(float)
+            scaled_state = raw_state * 1.0
+            legend_name = _pretty_contact_label(name)
             fig.add_trace(
                 go.Scatter(
-                    x=data_df.index,
+                    x=t_series,
                     y=scaled_state,
                     mode="lines",
-                    name=name,
+                    name=legend_name,
                     legendgroup="contacts",
                     showlegend=True,
-                    line=dict(dash="longdashdot") 
+                    line=dict(dash="longdashdot", width=3)
                 ),
                 row=1, col=1
             )
 
-        # Same colored areas across ALL subplots, based on base 'intervals'
+        x_meters_per_cycle = 0.5
+        pos_full = kinematics["Mocap"][mocapBody]["position"]
+        step_d = np.linalg.norm(pos_full[1:] - pos_full[:-1], axis=1)
+        cum_d = np.concatenate(([0.0], np.cumsum(step_d)))
+        cycle_idx = np.floor_divide(cum_d, x_meters_per_cycle).astype(int)
+        y_mod = np.mod(cum_d, x_meters_per_cycle)
+
+        t_vals = list(t_series)
+        x_plot = []
+        y_plot = []
+        distance_cycles = []
+        cur_cycle_start_t = t_vals[0]
+        for i in range(len(t_vals)):
+            if i > 0 and cycle_idx[i] != cycle_idx[i - 1]:
+                distance_cycles.append({'start_time': cur_cycle_start_t, 'end_time': t_vals[i]})
+                x_plot.append(None)
+                y_plot.append(None)
+                x_plot.append(t_vals[i])
+                y_plot.append(0.0)
+                cur_cycle_start_t = t_vals[i]
+            x_plot.append(t_vals[i])
+            y_plot.append(y_mod[i])
+
+        distance_cycles.append({'start_time': cur_cycle_start_t, 'end_time': t_vals[-1]})
+
+        fig.add_trace(
+            go.Scatter(x=x_plot, y=y_plot, mode="lines", name="Cumulative distance [m]"),
+            row=2, col=1
+        )
+        fig.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", row=2, col=1)
+
         for i_rect, interval in enumerate(intervals):
-            for r in [1, 2, 3, 4]:
+            x0t = t_series.iloc[interval["start_time"]]
+            x1t = t_series.iloc[interval["end_time"]]
+            for r in [1, 3, 4, 5]:
                 fig.add_vrect(
-                    x0=interval["start_time"],
-                    x1=interval["end_time"],
+                    x0=x0t,
+                    x1=x1t,
                     fillcolor=interval_colors[i_rect % len(interval_colors)],
                     opacity=0.3,
                     line_width=0,
                     row=r,
                     col=1
                 )
-        
+
+        for i_rect, interval in enumerate(distance_cycles):
+            fig.add_vrect(
+                x0=interval["start_time"],
+                x1=interval["end_time"],
+                fillcolor=interval_colors[i_rect % len(interval_colors)],
+                opacity=0.3,
+                line_width=0,
+                row=2,
+                col=1
+            )
 
         show_legend_traj = True
-        row_for_mult = {1: 2, 2: 3, 3: 4} 
+        row_for_mult = {1: 3, 2: 4, 3: 5}
 
         with open(f'{path_to_project}/../../observersInfos.yaml', 'r') as file:
             try:
                 observersInfos_str = file.read()
-                observersInfos_yamlData = yaml.safe_load(observersInfos_str) 
+                observersInfos_yamlData = yaml.safe_load(observersInfos_str)
             except yaml.YAMLError as exc:
                 print(exc)
 
@@ -668,7 +696,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             poses = {}
             for estimator in estimatorsList:
                 poses[estimator] = {"tx": [], "ty": [], "tz": [], "rz": [], "rx": [], "ry": []}
-            idx_range = []
+            x_time_range = []
             min_y = float("inf")
             max_y = -float("inf")
 
@@ -684,10 +712,9 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 ))
 
                 R_aligned_mocap = aligned_init_ori_mat_mocap * R_mocap[0].inv() * R_mocap
-                p_aligned_mocap = np.array([0, 0, 0]) + \
-                    (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(pos_mocap - pos_mocap[0])
+                p_aligned_mocap = np.array([0, 0, 0]) + (aligned_init_ori_mat_mocap * R_mocap[0].inv()).apply(pos_mocap - pos_mocap[0])
 
-                idx_range.extend(range(start_time, end_time))
+                x_time_range.extend(t_series.iloc[start_time:end_time].tolist())
                 poses["Mocap"]["tx"].extend(p_aligned_mocap[:, 0])
                 poses["Mocap"]["ty"].extend(p_aligned_mocap[:, 1])
                 poses["Mocap"]["tz"].extend(p_aligned_mocap[:, 2])
@@ -711,8 +738,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     ))
 
                     R_aligned_est = aligned_init_ori_mat_est * R_est[0].inv() * R_est
-                    p_aligned_est = np.array([0, 0, 0]) + \
-                        (aligned_init_ori_mat_est * R_est[0].inv()).apply(pos_est - pos_est[0])
+                    p_aligned_est = np.array([0, 0, 0]) + (aligned_init_ori_mat_est * R_est[0].inv()).apply(pos_est - pos_est[0])
 
                     poses[estimator]["tx"].extend(p_aligned_est[:, 0])
                     poses[estimator]["ty"].extend(p_aligned_est[:, 1])
@@ -743,28 +769,20 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     d[mult][estimator]["pos"].append(error_pos)
                     d[mult][estimator]["tilt"].append(tilt_error)
                     yaw_error = np.array(abs(R_error.as_euler("zxy", degrees=True)[0]))
-                    d[mult][estimator]["yaw"].append(yaw_error) 
+                    d[mult][estimator]["yaw"].append(yaw_error)
 
-                # Separator to avoid straight lines across windows
-                idx_range.append(None)
+                x_time_range.append(None)
                 for est in estimatorsList:
                     for k in ["tx", "ty", "tz", "rz", "rx", "ry"]:
                         poses[est][k].append(None)
 
-            y_low = min_y * 1.05
-            y_high = max_y * 1.05
-            xv = []
-            yv = []
-            for iv in intervals_by_mult[mult]:
-                xv += [iv["end_time"], iv["end_time"], None]
-                yv += [y_low, y_high, None]
-
             r = row_for_mult[mult]
             for iv in intervals_by_mult[mult]:
+                x0t = t_series.iloc[iv["start_time"]]
                 fig.add_shape(
                     type="line",
-                    x0=iv["start_time"],
-                    x1=iv["start_time"],
+                    x0=x0t,
+                    x1=x0t,
                     y0=0,
                     y1=1,
                     xref="x",
@@ -776,64 +794,114 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 )
 
             r = row_for_mult[mult]
-            
-
             for estimator in estimatorsList:
                 for observer in observersInfos_yamlData['observers']:
-                    if observer["abbreviation"] == estimator: 
+                    if observer["abbreviation"] == estimator:
                         est_name = observer["name"]
                 leg = show_legend_traj
                 fig.add_trace(
-                    go.Scatter(x=idx_range, y=poses[estimator]["tx"], mode="lines",
-                            line=dict(color=colors[estimator]), name=f"{est_name}",
-                            showlegend=leg),
+                    go.Scatter(
+                        x=x_time_range,
+                        y=poses[estimator]["tx"],
+                        mode="lines",
+                        line=dict(color=colors[estimator]),
+                        name=f"{est_name}",
+                        showlegend=leg
+                    ),
                     row=r, col=1
                 )
-                # fig.add_trace(
-                #     go.Scatter(x=idx_range, y=poses[estimator]["ty"], mode="lines",
-                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Y",
-                #             showlegend=False),
-                #     row=r, col=1
-                # )
-                # fig.add_trace(
-                #     go.Scatter(x=idx_range, y=poses[estimator]["tz"], mode="lines",
-                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Z",
-                #             showlegend=False),
-                #     row=r, col=1
-                # )
-                # fig.add_trace(
-                #     go.Scatter(x=idx_range, y=poses[estimator]["rx"], mode="lines",
-                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Roll",
-                #             showlegend=False),
-                #     row=r, col=1
-                # )
-                # fig.add_trace(
-                #     go.Scatter(x=idx_range, y=poses[estimator]["ry"], mode="lines",
-                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Pitch",
-                #             showlegend=False),
-                #     row=r, col=1
-                # )
-                # fig.add_trace(
-                #     go.Scatter(x=idx_range, y=poses[estimator]["rz"], mode="lines",
-                #             line=dict(color=colors[estimator]), name=f"{estimator} aligned Yaw",
-                #             showlegend=False),
-                #     row=r, col=1
-                # )
             fig.update_yaxes(title_text="Contact Bands", showticklabels=False, row=r, col=1)
             show_legend_traj = False
 
+        fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=1, col=1)
+        fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=2, col=1)
+
+        fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=1, col=1)
+        fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], title_text="Contact state", row=1, col=1)
+
+        fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
+        fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
+
+        for r in [1, 2, 3, 4, 5]:
+            fig.update_xaxes(showticklabels=True, ticks="outside", title_text="Time (s)", row=r, col=1)
+
         fig.update_layout(
-            title="Contact states and trajectories across cycle multiples",
-            xaxis=dict(title="Time Index"),
-            legend=dict(title="Trajectories"),
-            height=250 + 350 * 3
+            title="Contact states, cumulative distance, and trajectories across cycle multiples",
+            legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom"),
+            height=250 + 350 * 4
         )
 
         fig.show()
 
-
         with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
             pickle.dump(d, f)
+
+        import plotly.io as pio
+        pio.kaleido.scope.mathjax = None 
+
+        fig_row1 = go.Figure()
+        for name, col in contact_columns.items():
+            raw_state = (data_df_cycles[col] != "Set").astype(float)
+            scaled_state = raw_state * 1.0
+            legend_name = _pretty_contact_label(name)
+            fig_row1.add_trace(
+                go.Scatter(
+                    x=t_series,
+                    y=scaled_state,
+                    mode="lines",
+                    name=legend_name,
+                    legendgroup="contacts",
+                    showlegend=True,
+                    line=dict(dash="longdashdot", width=3)
+                )
+        )
+        for i_rect, interval in enumerate(intervals):
+            fig_row1.add_vrect(
+                x0=t_series.iloc[interval["start_time"]],
+                x1=t_series.iloc[interval["end_time"]],
+                fillcolor=interval_colors[i_rect % len(interval_colors)],
+                opacity=0.2,
+                line_width=0
+            )
+        fig_row1.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
+        fig_row1.update_yaxes(title_text="Contact state", tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
+        fig_row1.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
+
+        x_plot_export = []
+        y_plot_export = []
+        distance_cycles_export = []
+        cur_cycle_start_t_export = t_vals[0]
+        for i in range(len(t_vals)):
+            if i > 0 and cycle_idx[i] != cycle_idx[i - 1]:
+                distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[i]})
+                x_plot_export.append(None)
+                y_plot_export.append(None)
+                x_plot_export.append(t_vals[i])
+                y_plot_export.append(0.0)
+                cur_cycle_start_t_export = t_vals[i]
+            x_plot_export.append(t_vals[i])
+            y_plot_export.append(y_mod[i])
+        distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[-1]})
+
+        fig_row2 = go.Figure()
+        fig_row2.add_trace(go.Scatter(x=x_plot_export, y=y_plot_export, mode="lines", name="Cumulative distance [m]", line=dict(width=3, color="black")))
+        for i_rect, interval in enumerate(distance_cycles_export):
+            fig_row2.add_vrect(
+                x0=interval["start_time"],
+                x1=interval["end_time"],
+                fillcolor=interval_colors[i_rect % len(interval_colors)],
+                opacity=0.2,
+                line_width=0
+            )
+        fig_row2.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
+        fig_row2.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
+        fig_row2.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
+
+        pio.write_image(fig_row1, f"/tmp/contact_states.pdf", format="pdf", width=1200, height=600, scale=1)
+        pio.write_image(fig_row2, f"/tmp/cumulative_distance.pdf", format="pdf", width=1200, height=600, scale=1)
+
+
+
 
 
     ###############################  Criteria based on the local linear velocity  ###############################

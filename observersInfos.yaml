@@ -17,9 +17,9 @@ observers:
         contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_LeftHandForceSensor
       RightHand:
         contact_isSet: Observers_MainObserverPipeline_MCKineticsObserver_debug_contactState_isSet_RightHandForceSensor
-    lineWidth: 2
+    lineWidth: 1
   - abbreviation: Vanyte
-    name: Vanyte
+    name: VANYTE
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_MCVanytEstimator_FloatingBase_world_pose_tz]
@@ -59,14 +59,14 @@ observers:
         orientation: [Hartley_IMU_Orientation_x, Hartley_IMU_Orientation_y, Hartley_IMU_Orientation_z, Hartley_IMU_Orientation_w]
         linVel: [Hartley_IMU_Velocity_x, Hartley_IMU_Velocity_y, Hartley_IMU_Velocity_z]
         gyroBias: [Hartley_IMU_GyroBias_x, Hartley_IMU_GyroBias_y, Hartley_IMU_GyroBias_z]
-    lineWidth: 2
+    lineWidth: 1
   - abbreviation: Mocap
     name: Ground truth
     kinematics:
       FloatingBase:
         position: [Mocap_pos_x, Mocap_pos_y, Mocap_pos_z]
         orientation: [Mocap_ori_x, Mocap_ori_y, Mocap_ori_z, Mocap_ori_w]
-    lineWidth: 2
+    lineWidth: 1
   - abbreviation: Control
     name: Controller
     kinematics:

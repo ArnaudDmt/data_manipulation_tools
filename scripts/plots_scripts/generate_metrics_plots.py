@@ -64,12 +64,12 @@ with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
         print(exc)
 
 estimators_to_plot = [
-    'KO',
-    'Control',
+    # 'KO',
+    # 'Control',
     'WAIKO',
-    'Tilt',
+    # 'Tilt',
     
-    'Vanyte',
+    # 'Vanyte',
     'Hartley',
     
     # 'KineticsObserver',
@@ -78,7 +78,7 @@ estimators_to_plot = [
     # 'KO_ZPC',
     # 'KOWithoutWrenchSensors',
     
-    'Mocap',
+    # 'Mocap',
 ]
 
 
