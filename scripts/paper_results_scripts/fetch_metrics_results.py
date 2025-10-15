@@ -4,7 +4,7 @@ import os
 
 def to_camel_case_with_letters(snake_str):
     """
-    Converts a snake_case string to CamelCase and replaces numbers with letters.
+    Converts a snake_case string to CamelCase parts separated by underscores and replaces numbers with letters.
     Numbers are converted to their alphabetical equivalent: 1 -> A, 2 -> B, etc.
     """
     def number_to_letter(match):
@@ -20,7 +20,7 @@ def to_camel_case_with_letters(snake_str):
     
     # Split by underscores and capitalize each component
     components = string_with_letters.split('_')
-    return ''.join(x.capitalize() for x in components)
+    return '_'.join(x.capitalize() for x in components)
 
 
 
@@ -51,7 +51,7 @@ def format_Angle(value):
 abs_errors_path = "/tmp/relative_errors.yaml"
 relative_errors_path = "/tmp/relative_errors.yaml"
 vel_errors_path = "/tmp/velocity_errors.yaml"
-
+walkCycle_errors_path = "/tmp/errors_per_walk_cycle.yaml"
 
 
 scenarioName = input("Please give the name of the experimental scenario:")
@@ -62,10 +62,12 @@ scenarioName = input("Please give the name of the experimental scenario:")
 absErrorsFilter = {'abs_e_trans_x_y': 'transXY', 'abs_e_trans_z': 'transZ', 'abs_e_tilt': 'tilt', 'abs_e_ypr_0': 'yaw'}
 relErrorsFilter = {'rel_trans_x_y_norm': 'transXY', 'rel_trans_z': 'transZ', 'rel_tilt': 'tilt', 'rel_yaw': 'yaw'}
 velErrorsFilter = {'velXY_norm': 'xy', 'z': 'z', 'norm': 'norm'}
-
+walkCycleErrorsFilter = {'pos_lateral': 'transXY', 'pos_z': 'transZ'}
 
 desired_subdistances = []
 desired_subdistances.append(input("Please give the desired subdistance length:"))
+
+walkCycleLength = int(input("Please give the desired walk cycle length:"))
 
 #desired_subdistances = ["0.5000"]
 
@@ -93,7 +95,8 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                         formatted_value = format_PosVel(value)
 
                                     # Write the LaTeX definition with CamelCase
-                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                    #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                    latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
     if os.path.isfile(relative_errors_path):
         with open(relative_errors_path, "r") as relative_errors_file:
             relative_errors = yaml.safe_load(relative_errors_file)
@@ -115,7 +118,8 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                             formatted_value = format_PosVel(value)
                                         
                                         # Write the LaTeX definition with CamelCase
-                                        latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                        #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                        latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
 
     if os.path.isfile(abs_errors_path):
         with open(abs_errors_path, "r") as absolute_errors_file:
@@ -137,9 +141,35 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                         formatted_value = format_PosVel(value)
                                     
                                     # Write the LaTeX definition with CamelCase
-                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                    #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                    latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
+ 
+
+    if os.path.isfile(walkCycle_errors_path):
+        with open(walkCycle_errors_path, "r") as walkCycle_errors_file:
+            walkCycle_errors = yaml.safe_load(walkCycle_errors_file)
+            for nb, estimators in walkCycle_errors.items():
+                if(int(nb) == walkCycleLength):
+                    for estimator, variables in estimators.items():
+                        for var_name, metrics in variables.items():
+                            if(var_name in walkCycleErrorsFilter.keys()):
+                                for metric, value in metrics.items():
+                                    if(metric == 'meanAbs' or metric == 'std'):
+                                        # Construct the variable name
+                                        snake_case_var = f"{scenarioName}_{estimator}_walkCycleError_{walkCycleErrorsFilter[var_name]}_{metric}"
+                                        camel_case_var = to_camel_case_with_letters(snake_case_var)
+                                        
+                                        # Ensure the value is properly formatted as a float
+                                        if("tilt" in var_name or "yaw" in var_name):
+                                            formatted_value = format_Angle(value)
+                                        else:
+                                            formatted_value = format_PosVel(value)
+                                        
+                                        # Write the LaTeX definition with CamelCase
+                                        #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
+                                        latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
 
     
 
 
-print("LaTeX variables saved to metrics_results.tex.")
+print("LaTeX variables saved to metrics_results.txt.")
