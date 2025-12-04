@@ -40,6 +40,28 @@ observers:
       IMU:
         locLinVel: [Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_x, Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_y, Observers_MainObserverPipeline_MCWaiko_estimatedState_x1_z]
     lineWidth: 2
+  - abbreviation: WAIKO_NC
+    name: WAIKO-NC
+    kinematics:
+      FloatingBase:
+        position: [Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_tz]
+        orientation: [Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_qx, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_qy, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_qz, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_pose_qw]
+        linVel: [Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_vx, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_vy, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_vz]
+        angVel: [Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_wx, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_wy, Observers_MainObserverPipeline_WAIKONC_FloatingBase_world_vel_wz]
+      IMU:
+        locLinVel: [Observers_MainObserverPipeline_WAIKONC_estimatedState_x1_x, Observers_MainObserverPipeline_WAIKONC_estimatedState_x1_y, Observers_MainObserverPipeline_WAIKONC_estimatedState_x1_z]
+    lineWidth: 2
+  - abbreviation: WAIKO_FS
+    name: WAIKO_FS
+    kinematics:
+      FloatingBase:
+        position: [Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_tx, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_ty, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_tz]
+        orientation: [Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_qx, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_qy, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_qz, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_pose_qw]
+        linVel: [Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_vx, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_vy, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_vz]
+        angVel: [Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_wx, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_wy, Observers_MainObserverPipeline_MCWAIKO_FS_FloatingBase_world_vel_wz]
+      IMU:
+        locLinVel: [Observers_MainObserverPipeline_MCWAIKO_FS_estimatedState_x1_x, Observers_MainObserverPipeline_MCWAIKO_FS_estimatedState_x1_y, Observers_MainObserverPipeline_MCWAIKO_FS_estimatedState_x1_z]
+    lineWidth: 2
   - abbreviation: Tilt
     name: VALINOR
     kinematics:
@@ -94,12 +116,13 @@ observers:
         angVel: [Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wz]
     lineWidth: 2
 
-  - abbreviation: KO_ASC
-    name: KO-ASC
+  - abbreviation: KO_WWS
+    name: KO-WWS
     kinematics:
       FloatingBase:
-        position: [Observers_MainObserverPipeline_KOASC_mcko_fb_posW_tx, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_ty, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_tz]
-        orientation: [Observers_MainObserverPipeline_KOASC_mcko_fb_posW_qx, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_qy, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_qz, Observers_MainObserverPipeline_KOASC_mcko_fb_posW_qw]
-        linVel: [Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_vx, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_vy, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_vz]
-        angVel: [Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wz]
+        position: [Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_tx, Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_ty, Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_tz]
+        orientation: [Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_qx, Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_qy, Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_qz, Observers_MainObserverPipeline_KOWWS_mcko_fb_posW_qw]
+        linVel: [Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_vx, Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_vy, Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_vz]
+        angVel: [Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOWWS_mcko_fb_velW_wz]
     lineWidth: 2
+ 

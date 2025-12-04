@@ -20,7 +20,7 @@ def to_camel_case_with_letters(snake_str):
     
     # Split by underscores and capitalize each component
     components = string_with_letters.split('_')
-    return '_'.join(x.capitalize() for x in components)
+    return ''.join(x.capitalize() for x in components)
 
 
 
@@ -62,7 +62,7 @@ scenarioName = input("Please give the name of the experimental scenario:")
 absErrorsFilter = {'abs_e_trans_x_y': 'transXY', 'abs_e_trans_z': 'transZ', 'abs_e_tilt': 'tilt', 'abs_e_ypr_0': 'yaw'}
 relErrorsFilter = {'rel_trans_x_y_norm': 'transXY', 'rel_trans_z': 'transZ', 'rel_tilt': 'tilt', 'rel_yaw': 'yaw'}
 velErrorsFilter = {'velXY_norm': 'xy', 'z': 'z', 'norm': 'norm'}
-walkCycleErrorsFilter = {'pos_lateral': 'transXY', 'pos_z': 'transZ'}
+walkCycleErrorsFilter = {'pos_lateral': 'transXY', 'pos_z': 'transZ', 'yaw': 'yaw'}
 
 desired_subdistances = []
 desired_subdistances.append(input("Please give the desired subdistance length:"))
@@ -96,7 +96,7 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
 
                                     # Write the LaTeX definition with CamelCase
                                     #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
-                                    latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
+                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
     if os.path.isfile(relative_errors_path):
         with open(relative_errors_path, "r") as relative_errors_file:
             relative_errors = yaml.safe_load(relative_errors_file)
@@ -119,7 +119,7 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                         
                                         # Write the LaTeX definition with CamelCase
                                         #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
-                                        latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
+                                        latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
 
     if os.path.isfile(abs_errors_path):
         with open(abs_errors_path, "r") as absolute_errors_file:
@@ -142,7 +142,7 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                     
                                     # Write the LaTeX definition with CamelCase
                                     #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
-                                    latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
+                                    latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
  
 
     if os.path.isfile(walkCycle_errors_path):
@@ -158,7 +158,6 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                         # Construct the variable name
                                         snake_case_var = f"{scenarioName}_{estimator}_walkCycleError_{walkCycleErrorsFilter[var_name]}_{metric}"
                                         camel_case_var = to_camel_case_with_letters(snake_case_var)
-                                        
                                         # Ensure the value is properly formatted as a float
                                         if("tilt" in var_name or "yaw" in var_name):
                                             formatted_value = format_Angle(value)
@@ -167,9 +166,9 @@ with open("/tmp/metrics_results.tex", "w") as latex_file:
                                         
                                         # Write the LaTeX definition with CamelCase
                                         #latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
-                                        latex_file.write(f"{camel_case_var}_{formatted_value}\n") 
+                                        latex_file.write(f"\\newcommand{{\\{camel_case_var}}}{{{formatted_value}}}\n")
 
     
 
 
-print("LaTeX variables saved to metrics_results.txt.")
+print("LaTeX variables saved to metrics_results.tex.")

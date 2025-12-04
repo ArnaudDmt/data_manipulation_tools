@@ -64,21 +64,24 @@ with open(f'{cwd}/../../observersInfos.yaml', 'r') as file:
         print(exc)
 
 estimators_to_plot = [
-    # 'KO',
+    'KO',
     # 'Control',
     'WAIKO',
+    # 'WAIKO_NC',
+    # 'WAIKO_FS',
     # 'Tilt',
     
     # 'Vanyte',
     'Hartley',
     
-    # 'KineticsObserver',
+    # 'KO',
+    # 'KO_WWS',
     # 'KO_APC',
     # 'KO_ASC',
     # 'KO_ZPC',
     # 'KOWithoutWrenchSensors',
     
-    # 'Mocap',
+    'Mocap',
 ]
 
 
@@ -448,20 +451,23 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
         fig.add_trace(go.Scatter(x=mocapData['x'], y=mocapData['y'],
                         mode='lines',
-                        name=f"{expe}_{estimator_plot_args['Ground truth']['name']}", line_color=f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"))
+                        name=f"{expe}_{estimator_plot_args['Mocap']['name']}", line_color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"))
         
     fig.show()
 
 def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
+    import numpy as np
     fig = go.Figure()
 
     for expe in exps_to_merge:
         for estimator in estimatorsList:
             if estimator == "Controller": continue
-            data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle")
+            if estimator == "Mocap":
+                data = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
+            else:
+                data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle")
             color_rgba = f"rgba({int(colors[estimator][0]*255)}, {int(colors[estimator][1]*255)}, {int(colors[estimator][2]*255)}, 1)"
 
-            # Plot full trajectory
             fig.add_trace(go.Scatter3d(
                 x=data['x'], y=data['y'], z=data['z'],
                 mode='lines',
@@ -469,38 +475,36 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
                 line=dict(width=estimator_plot_args[estimator]['lineWidth'], color=color_rgba)
             ))
 
-            # Add Start and End markers
             fig.add_trace(go.Scatter3d(
-                x=[data['x'][0], data['x'].iloc[-1]],
-                y=[data['y'][0], data['y'].iloc[-1]],
-                z=[data['z'][0], data['z'].iloc[-1]],
+                x=[np.asarray(data['x'])[0], np.asarray(data['x'])[-1]],
+                y=[np.asarray(data['y'])[0], np.asarray(data['y'])[-1]],
+                z=[np.asarray(data['z'])[0], np.asarray(data['z'])[-1]],
                 mode='markers+text',
                 text=['Start', 'End'],
                 textposition='top center',
-                textfont=dict(size=10, color=color_rgba, weight ='bold'),
+                textfont=dict(size=10, color=color_rgba, weight='bold'),
                 marker=dict(size=2, color=color_rgba),
-                showlegend=False  # Don't duplicate in legend
+                showlegend=False
             ))
 
-        # Mocap trajectory
         mocapData = open_pickle(f"Projects/{expe}/output_data/evals/mocap_x_y_z_traj.pickle")
-        color_rgba = f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"
+        color_rgba = f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"
 
         fig.add_trace(go.Scatter3d(
             x=mocapData['x'], y=mocapData['y'], z=mocapData['z'],
             mode='lines',
-            name=f"{estimator_plot_args['Ground truth']['name']}",
+            name=f"{estimator_plot_args['Mocap']['name']}",
             line=dict(color=color_rgba)
         ))
 
         fig.add_trace(go.Scatter3d(
-            x=[mocapData['x'][0], mocapData['x'][-1]],
-            y=[mocapData['y'][0], mocapData['y'][-1]],
-            z=[mocapData['z'][0], mocapData['z'][-1]],
+            x=[np.asarray(mocapData['x'])[0], np.asarray(mocapData['x'])[-1]],
+            y=[np.asarray(mocapData['y'])[0], np.asarray(mocapData['y'])[-1]],
+            z=[np.asarray(mocapData['z'])[0], np.asarray(mocapData['z'])[-1]],
             mode='markers+text',
             text=['Start', 'End'],
             textposition='top center',
-            textfont=dict(size=10, color=color_rgba,  weight ='bold'),
+            textfont=dict(size=10, color=color_rgba, weight='bold'),
             marker=dict(size=2, color=color_rgba),
             showlegend=False
         ))
@@ -525,6 +529,7 @@ def plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors):
     fig.write_image("/tmp/trajectory_plot.svg")
 
 
+
 def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
     fig = go.Figure()
     f = open('/tmp/velocity_errors.yaml', 'w+')
@@ -544,7 +549,7 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
 
     # Create traces for boxplots and velocity plots
     for estimator in errorStats.keys():
-        for category in all_categories:
+        for category in all_categories: 
             if category not in errorStats[estimator]:
                 continue
             x_vals = []  # Collect x values (d_subTraj)
@@ -619,8 +624,8 @@ def plot_llve_statistics_as_boxplot(errorStats, colors, expe):
                 x=list(range(len(values))),  # Assuming the values are ordered by time
                 y=values,
                 mode='lines',
-                name=f"{estimator_plot_args['Ground truth']['name']} ({axis})",  # Include the axis name in the legend
-                line=dict(width=estimator_plot_args['Ground truth']['lineWidth'], color=f"rgba({int(colors['Ground truth'][0]*255)}, {int(colors['Ground truth'][1]*255)}, {int(colors['Ground truth'][2]*255)}, 1)"),
+                name=f"{estimator_plot_args['Mocap']['name']} ({axis})",  # Include the axis name in the legend
+                line=dict(width=estimator_plot_args['Mocap']['lineWidth'], color=f"rgba({int(colors['Mocap'][0]*255)}, {int(colors['Mocap'][1]*255)}, {int(colors['Mocap'][2]*255)}, 1)"),
                 visible=False  # Initially not visible
             )
 
@@ -684,8 +689,7 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
     
     # print(data.keys())
     for estimator in estimatorsList:
-        for cat in regroupedErrors[estimator].keys():
-            
+        for cat in regroupedErrors[estimator].keys(): 
             for axis in regroupedErrors[estimator][cat].keys():
                 regroupedErrors[estimator][cat][axis] = np.abs(regroupedErrors[estimator][cat][axis])
 
@@ -927,22 +931,28 @@ def main():
 
     colors = generate_turbo_subset_colors(estimatorsList)
 
-    # plot_llve(exps_to_merge, estimatorsList, colors)
+    
     
     # plot_absolute_errors_raw(exps_to_merge, estimatorsList, colors)
     
     # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
 
-    plot_relative_errors(exps_to_merge, estimatorsForErrors, colors)
+    # plot_relative_errors(exps_to_merge, estimatorsForErrors, colors)
 
-    plot_errors_per_walk_cycle(exps_to_merge, estimatorsForErrors, colors)
+    # plot_errors_per_walk_cycle(exps_to_merge, estimatorsForErrors, colors)
+
+    # plot_llve(exps_to_merge, estimatorsForErrors, colors)
 
     # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
     # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
+    
 
-    import plotMultipleTrajs
+    
     
     colors_to_plot = colors
+
+    # import plotMultipleTrajs
+    # plotMultipleTrajs.plot_multiple_trajs(estimators_to_plot, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
 
     # plotMultipleTrajs.plot_relative_trajs_video_distance(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
     # plotMultipleTrajs.plot_relative_trajs_video_temporal(estimatorsList, exps_to_merge, colors_to_plot, estimator_plot_args, 'Projects/')
@@ -953,8 +963,8 @@ def main():
     #plotExternalForceAndBias.computeExtWrenchError(exps_to_merge)
     
     if(len(exps_to_merge) == 1):
-        # import plotPoseAndVelocity
-        # plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
+        import plotPoseAndVelocity
+        plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses

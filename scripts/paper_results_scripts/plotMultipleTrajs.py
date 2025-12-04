@@ -36,17 +36,18 @@ default_exps = [
 ]
 
 default_estimators = [
-    'Control',
-    'Vanyte',
+    # 'Control',
+    # 'Vanyte',
     'Hartley',
     'KO',
+    'WAIKO',
     # 'KineticsObserver',
     # 'KO_APC',
     # 'KO_ASC',
     # 'KO_ZPC',
     # 'KOWithoutWrenchSensors',
-    'Tilt',
-    # 'Mocap',
+    # 'Tilt',
+    'Mocap',
 ]
 
 
@@ -54,12 +55,13 @@ default_estimators = [
 estimator_plot_args_default = {
     
     'Hartley': {'group': 1, 'lineWidth': 1, 'column_names':  ['RI-EKF_Position_x', 'RI-EKF_Position_y']},
-    'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
-    'Vanyte': {'group': 1, 'lineWidth': 1, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
+    # 'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
+    # 'Vanyte': {'group': 1, 'lineWidth': 1, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
     'Mocap': {'group': 0, 'lineWidth': 1, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
     'KO': {'group': 1, 'lineWidth': 1, 'column_names': ['KO_position_x', 'KO_position_y']},
+    # 'WAIKO': {'group': 1, 'lineWidth': 1, 'column_names': ['WAIKO_position_x', 'WAIKO_position_y']},
     
-    'Tilt': {'group': 1, 'lineWidth': 1, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
+    # 'Tilt': {'group': 1, 'lineWidth': 1, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
     #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
     #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
     # 'KO-ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},

@@ -182,7 +182,7 @@ else
 
         cd $outputDataPath
         echo " Converting to csv."
-        mc_bin_to_log logReplay.bin
+        mc_bin_to_log logReplay.bin 
     else
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found. Replaying the log with the observer."
@@ -249,7 +249,6 @@ else
             if ! $pluginWasActivated; then
                 sed -i '1d' $mc_rtc_yaml
             fi
-
         else
             echo "The log file of the controller does not exist or is not named as expected. Expected: $mcrtcLog."
             exit
@@ -260,7 +259,7 @@ fi
 
 ############################ Handling mocap's data ############################
 
-
+echo "WESH2"
 
 cd $cwd
 
@@ -268,8 +267,10 @@ HartleyOutputCSV="$outputDataPath/HartleyOutputCSV.csv"
 if [[ "$runFromZero" == "false" ]] && [[ -f "$HartleyOutputCSV" ]]; then
     echo "The csv file containing the results of Hartley's observer already exists. Working with this data."
 else
+    echo "WESH3"
     if $useHartley; then
-        hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
+        echo "WESH4"
+        hartleyRoutine=$(locate -b '\runLogsRoutine.sh' | grep Hartley)
         hartleyDir=$(dirname "$hartleyRoutine")
 
         cd "$hartleyDir"
@@ -285,9 +286,10 @@ else
         cd $cwd
 
         cp "$hartleyDir/data/HartleyOutput.csv" $HartleyOutputCSV
+        echo "WESH5"
     fi
 fi
-
+echo "WESH3"
 
 if [[ "$runFromZero" == "false" ]] && [[ -f "$lightData" ]]; then
     echo "The light version of the observer's data has already been extracted. Using the existing data."
@@ -327,6 +329,7 @@ else
     echo "Finished repairing the missing iterations."
     runScript=true
 fi
+
 
 cd $scriptsPath
 

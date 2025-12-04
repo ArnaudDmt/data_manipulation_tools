@@ -51,7 +51,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
             mocapBody = observers_infos_yamlData.get('mocapBody')
         except yaml.YAMLError as exc:
             print(exc)
-
+            
     if(estimatorsList == None):
         with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
             try:
@@ -60,6 +60,11 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 estimatorsList = set(observers_infos_yamlData.get('observers'))
             except yaml.YAMLError as exc:
                 print(exc)
+
+    # estimatorsList = set(["KO", "KO_ZPC", "Tilt", "WAIKO", "WAIKO_NC", "KO_WWS",  "Control", "Hartley", "Mocap"])
+    # estimatorsList = set(["KO", "KO_ZPC",  "KO_WWS",  "Hartley", "Mocap", "KOWithoutWrenchSensors"])
+    # estimatorsList = set(["KO", "KO_ZPC",  "KO_WWS",  "Hartley", "Mocap" ])
+ 
 
     if (colors == None):
         colors_t = px.colors.qualitative.Plotly  # Use Plotly's color palette
@@ -88,6 +93,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         kinematics["Mocap"][mocapBody]["R"] = R.from_quat(kinematics["Mocap"][mocapBody]["quaternions"])
         euler_angles_Mocap = kinematics["Mocap"][mocapBody]["R"].as_euler('xyz')
         kinematics["Mocap"][mocapBody]["euler_angles"] = continuous_euler(euler_angles_Mocap)
+    
+
     
     for estimator in estimatorsList:
         if estimator != "Hartley" and estimator != "Mocap":
@@ -362,7 +369,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         last_time = data_df['t'].max()
 
         # Filter the data for the first 3 seconds
-        df_first_3s = data_df[(data_df['t'] >= 0) & (data_df['t'] <= 3)]
+        df_first_3s = data_df[(data_df['t'] >= 0) & (data_df['t'] <= 5)]
 
         # Compute the average bias over the first 3 seconds
         average_bias_x_3 = df_first_3s['Accelerometer_angularVelocity_x'].mean()
@@ -373,7 +380,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         average_bias_z_tuple_3 = tuple(average_bias_z_3 for _ in range(len(data_df)))
 
         # Filter the data for the last 3 seconds
-        df_last_3s = data_df[(data_df['t'] >= last_time - 3) & (data_df['t'] <= last_time)]
+        df_last_3s = data_df[(data_df['t'] >= last_time - 5) & (data_df['t'] <= last_time)]
 
         # Compute the average bias over the last 3 seconds
         average_bias_x_last = df_last_3s['Accelerometer_angularVelocity_x'].mean()
@@ -384,14 +391,14 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         average_bias_z_tuple_last = tuple(average_bias_z_last for _ in range(len(data_df)))
 
         # Plotting the original data and the computed biases
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
-        # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_x'], mode='lines', name='measured_angVel_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_y'], mode='lines', name='measured_angVel_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df['Accelerometer_angularVelocity_z'], mode='lines', name='measured_angVel_z'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_3, mode='lines', name='measured_GyroBias_beginning_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_3, mode='lines', name='measured_GyroBias_beginning_y'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_3, mode='lines', name='measured_GyroBias_beginning_z'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_x_tuple_last, mode='lines', name='measured_GyroBias_end_x'))
+        fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_y_tuple_last, mode='lines', name='measured_GyroBias_end_y'))
         fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=average_bias_z_tuple_last, mode='lines', name='measured_GyroBias_end_z'))
 
         obs = []
@@ -407,8 +414,8 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         for estimator in estimatorsList:
             if estimator in obs:
-                # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_x'], mode='lines', name=f'{estimator}_gyroBias_x'))
-                # fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_y'], mode='lines', name=f'{estimator}_gyroBias_y'))
+                fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_x'], mode='lines', name=f'{estimator}_gyroBias_x'))
+                fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_y'], mode='lines', name=f'{estimator}_gyroBias_y'))
                 fig_gyroBias.add_trace(go.Scatter(x=data_df['t'], y=data_df[f'{estimator}_IMU_gyroBias_z'], mode='lines', name=f'{estimator}_gyroBias_z'))
         # Update layout
         fig_gyroBias.update_layout(
@@ -431,17 +438,21 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
     def _pretty_contact_label(n):
             return re.sub(r'(?<=[a-z])(?=[A-Z])', ' ', n)
     
-    data_df_cycles = data_df.iloc[:6400]
+    # data_df_cycles = data_df.iloc[:6400]
+    data_df_cycles = data_df 
 
     contact_columns = {
         col.split('_')[-2]: col
         for col in data_df_cycles.columns
         if col.endswith('_isSet')
     }
+    print(contact_columns)
+
     if(writeFormattedData and len(contact_columns.keys()) > 0):
 
         contact_transitions_init = {}
         for contact, col in contact_columns.items():
+            print(data_df_cycles[col])
             series = data_df_cycles[col].fillna("").astype(str)
             prev = series.shift(1).fillna("").astype(str)
             transitions = (prev == "Set") & (series != "Set")
@@ -449,8 +460,9 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         contacts = list(contact_transitions_init.keys())
         intervals = []
+        
         contact_transitions = contact_transitions_init.copy()
-
+        
         removalIndex_contact_map = dict()
         for c in contacts:
             if not contact_transitions[c]:
@@ -590,7 +602,7 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                 if estimator != "Mocap" and estimator not in d[_mult]:
                     d[_mult][estimator] = {'pos': [], 'tilt': [], 'yaw': []}
 
-        cycle_mults = [1, 2, 3]
+        cycle_mults = [1, 2]
         intervals_by_mult = {
             1: intervals,
             2: _merge_consecutive_intervals(intervals, 2),
@@ -599,32 +611,32 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         t_series = data_df_cycles["t"]
 
-        fig = make_subplots(
-            rows=5,
-            cols=1,
-            shared_xaxes=True,
-            subplot_titles=["Contact states", "Cumulative distance (reset every x m)", "1 cycle", "2 cycles", "3 cycles"]
-        )
+        # fig = make_subplots(
+        #     rows=5,
+        #     cols=1,
+        #     shared_xaxes=True,
+        #     subplot_titles=["Contact states", "Cumulative distance (reset every x m)", "1 cycle", "2 cycles", "3 cycles"]
+        # )
 
-        import plotly.colors as pc
-        interval_colors = pc.qualitative.Pastel
+        # import plotly.colors as pc
+        # interval_colors = pc.qualitative.Pastel
 
-        for i_cs, (name, col) in enumerate(contact_columns.items()):
-            raw_state = (data_df_cycles[col] != "Set").astype(float)
-            scaled_state = raw_state * 1.0
-            legend_name = _pretty_contact_label(name)
-            fig.add_trace(
-                go.Scatter(
-                    x=t_series,
-                    y=scaled_state,
-                    mode="lines",
-                    name=legend_name,
-                    legendgroup="contacts",
-                    showlegend=True,
-                    line=dict(dash="longdashdot", width=3)
-                ),
-                row=1, col=1
-            )
+        # for i_cs, (name, col) in enumerate(contact_columns.items()):
+        #     raw_state = (data_df_cycles[col] != "Set").astype(float)
+        #     scaled_state = raw_state * 1.0
+        #     legend_name = _pretty_contact_label(name)
+        #     fig.add_trace(
+        #         go.Scatter(
+        #             x=t_series,
+        #             y=scaled_state,
+        #             mode="lines",
+        #             name=legend_name,
+        #             legendgroup="contacts",
+        #             showlegend=True,
+        #             line=dict(dash="longdashdot", width=3)
+        #         ),
+        #         row=1, col=1
+        #     )
 
         x_meters_per_cycle = 0.5
         pos_full = kinematics["Mocap"][mocapBody]["position"]
@@ -651,39 +663,39 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
 
         distance_cycles.append({'start_time': cur_cycle_start_t, 'end_time': t_vals[-1]})
 
-        fig.add_trace(
-            go.Scatter(x=x_plot, y=y_plot, mode="lines", name="Cumulative distance [m]"),
-            row=2, col=1
-        )
-        fig.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", row=2, col=1)
+        # fig.add_trace(
+        #     go.Scatter(x=x_plot, y=y_plot, mode="lines", name="Cumulative distance [m]"),
+        #     row=2, col=1
+        # )
+        # fig.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", row=2, col=1)
 
-        for i_rect, interval in enumerate(intervals):
-            x0t = t_series.iloc[interval["start_time"]]
-            x1t = t_series.iloc[interval["end_time"]]
-            for r in [1, 3, 4, 5]:
-                fig.add_vrect(
-                    x0=x0t,
-                    x1=x1t,
-                    fillcolor=interval_colors[i_rect % len(interval_colors)],
-                    opacity=0.3,
-                    line_width=0,
-                    row=r,
-                    col=1
-                )
+        # for i_rect, interval in enumerate(intervals):
+        #     x0t = t_series.iloc[interval["start_time"]]
+        #     x1t = t_series.iloc[interval["end_time"]]
+        #     for r in [1, 3, 4, 5]:
+        #         fig.add_vrect(
+        #             x0=x0t,
+        #             x1=x1t,
+        #             fillcolor=interval_colors[i_rect % len(interval_colors)],
+        #             opacity=0.3,
+        #             line_width=0,
+        #             row=r,
+        #             col=1
+        #         )
 
-        for i_rect, interval in enumerate(distance_cycles):
-            fig.add_vrect(
-                x0=interval["start_time"],
-                x1=interval["end_time"],
-                fillcolor=interval_colors[i_rect % len(interval_colors)],
-                opacity=0.3,
-                line_width=0,
-                row=2,
-                col=1
-            )
+        # for i_rect, interval in enumerate(distance_cycles):
+        #     fig.add_vrect(
+        #         x0=interval["start_time"],
+        #         x1=interval["end_time"],
+        #         fillcolor=interval_colors[i_rect % len(interval_colors)],
+        #         opacity=0.3,
+        #         line_width=0,
+        #         row=2,
+        #         col=1
+        #     )
 
-        show_legend_traj = True
-        row_for_mult = {1: 3, 2: 4, 3: 5}
+        # show_legend_traj = True
+        # row_for_mult = {1: 3, 2: 4, 3: 5}
 
         with open(f'{path_to_project}/../../observersInfos.yaml', 'r') as file:
             try:
@@ -776,62 +788,62 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                     for k in ["tx", "ty", "tz", "rz", "rx", "ry"]:
                         poses[est][k].append(None)
 
-            r = row_for_mult[mult]
-            for iv in intervals_by_mult[mult]:
-                x0t = t_series.iloc[iv["start_time"]]
-                fig.add_shape(
-                    type="line",
-                    x0=x0t,
-                    x1=x0t,
-                    y0=0,
-                    y1=1,
-                    xref="x",
-                    yref="y domain",
-                    line=dict(dash="dash", width=1, color="black"),
-                    layer="above",
-                    row=r,
-                    col=1
-                )
+        #     r = row_for_mult[mult]
+        #     for iv in intervals_by_mult[mult]:
+        #         x0t = t_series.iloc[iv["start_time"]]
+        #         fig.add_shape(
+        #             type="line",
+        #             x0=x0t,
+        #             x1=x0t,
+        #             y0=0,
+        #             y1=1,
+        #             xref="x",
+        #             yref="y domain",
+        #             line=dict(dash="dash", width=1, color="black"),
+        #             layer="above",
+        #             row=r,
+        #             col=1
+        #         )
 
-            r = row_for_mult[mult]
-            for estimator in estimatorsList:
-                for observer in observersInfos_yamlData['observers']:
-                    if observer["abbreviation"] == estimator:
-                        est_name = observer["name"]
-                leg = show_legend_traj
-                fig.add_trace(
-                    go.Scatter(
-                        x=x_time_range,
-                        y=poses[estimator]["tx"],
-                        mode="lines",
-                        line=dict(color=colors[estimator]),
-                        name=f"{est_name}",
-                        showlegend=leg
-                    ),
-                    row=r, col=1
-                )
-            fig.update_yaxes(title_text="Contact Bands", showticklabels=False, row=r, col=1)
-            show_legend_traj = False
+        #     r = row_for_mult[mult]
+        #     for estimator in estimatorsList:
+        #         for observer in observersInfos_yamlData['observers']:
+        #             if observer["abbreviation"] == estimator:
+        #                 est_name = observer["name"]
+        #         leg = show_legend_traj
+        #         fig.add_trace(
+        #             go.Scatter(
+        #                 x=x_time_range,
+        #                 y=poses[estimator]["tx"],
+        #                 mode="lines",
+        #                 line=dict(color=colors[estimator]),
+        #                 name=f"{est_name}",
+        #                 showlegend=leg
+        #             ),
+        #             row=r, col=1
+        #         )
+        #     fig.update_yaxes(title_text="Contact Bands", showticklabels=False, row=r, col=1)
+        #     show_legend_traj = False
 
-        fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=1, col=1)
-        fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=2, col=1)
+        # fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=1, col=1)
+        # fig.add_shape(type="rect", xref="x domain", yref="y domain", x0=0, x1=1, y0=0, y1=1, fillcolor="white", line_width=0, layer="below", row=2, col=1)
 
-        fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=1, col=1)
-        fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], title_text="Contact state", row=1, col=1)
+        # fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=1, col=1)
+        # fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], title_text="Contact state", row=1, col=1)
 
-        fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
-        fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
+        # fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
+        # fig.update_yaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2, row=2, col=1)
 
-        for r in [1, 2, 3, 4, 5]:
-            fig.update_xaxes(showticklabels=True, ticks="outside", title_text="Time (s)", row=r, col=1)
+        # for r in [1, 2, 3, 4, 5]:
+        #     fig.update_xaxes(showticklabels=True, ticks="outside", title_text="Time (s)", row=r, col=1)
 
-        fig.update_layout(
-            title="Contact states, cumulative distance, and trajectories across cycle multiples",
-            legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom"),
-            height=250 + 350 * 4
-        )
+        # fig.update_layout(
+        #     title="Contact states, cumulative distance, and trajectories across cycle multiples",
+        #     legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom"),
+        #     height=250 + 350 * 4
+        # )
 
-        fig.show()
+        # fig.show()
 
         with open(f'{path_to_project}/output_data/evals/error_walk_cycle.pickle', 'wb') as f:
             pickle.dump(d, f)
@@ -839,66 +851,66 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
         import plotly.io as pio
         pio.kaleido.scope.mathjax = None 
 
-        fig_row1 = go.Figure()
-        for name, col in contact_columns.items():
-            raw_state = (data_df_cycles[col] != "Set").astype(float)
-            scaled_state = raw_state * 1.0
-            legend_name = _pretty_contact_label(name)
-            fig_row1.add_trace(
-                go.Scatter(
-                    x=t_series,
-                    y=scaled_state,
-                    mode="lines",
-                    name=legend_name,
-                    legendgroup="contacts",
-                    showlegend=True,
-                    line=dict(dash="longdashdot", width=3)
-                )
-        )
-        for i_rect, interval in enumerate(intervals):
-            fig_row1.add_vrect(
-                x0=t_series.iloc[interval["start_time"]],
-                x1=t_series.iloc[interval["end_time"]],
-                fillcolor=interval_colors[i_rect % len(interval_colors)],
-                opacity=0.2,
-                line_width=0
-            )
-        fig_row1.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
-        fig_row1.update_yaxes(title_text="Contact state", tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
-        fig_row1.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
+        # fig_row1 = go.Figure()
+        # for name, col in contact_columns.items():
+        #     raw_state = (data_df_cycles[col] != "Set").astype(float)
+        #     scaled_state = raw_state * 1.0
+        #     legend_name = _pretty_contact_label(name)
+        #     fig_row1.add_trace(
+        #         go.Scatter(
+        #             x=t_series,
+        #             y=scaled_state,
+        #             mode="lines",
+        #             name=legend_name,
+        #             legendgroup="contacts",
+        #             showlegend=True,
+        #             line=dict(dash="longdashdot", width=3)
+        #         )
+        # )
+        # for i_rect, interval in enumerate(intervals):
+        #     fig_row1.add_vrect(
+        #         x0=t_series.iloc[interval["start_time"]],
+        #         x1=t_series.iloc[interval["end_time"]],
+        #         fillcolor=interval_colors[i_rect % len(interval_colors)],
+        #         opacity=0.2,
+        #         line_width=0
+        #     )
+        # fig_row1.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
+        # fig_row1.update_yaxes(title_text="Contact state", tickmode="array", tickvals=[0, 1], ticktext=["Unset", "Set"], range=[-0.05, 1.05], showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
+        # fig_row1.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
 
-        x_plot_export = []
-        y_plot_export = []
-        distance_cycles_export = []
-        cur_cycle_start_t_export = t_vals[0]
-        for i in range(len(t_vals)):
-            if i > 0 and cycle_idx[i] != cycle_idx[i - 1]:
-                distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[i]})
-                x_plot_export.append(None)
-                y_plot_export.append(None)
-                x_plot_export.append(t_vals[i])
-                y_plot_export.append(0.0)
-                cur_cycle_start_t_export = t_vals[i]
-            x_plot_export.append(t_vals[i])
-            y_plot_export.append(y_mod[i])
-        distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[-1]})
+        # x_plot_export = []
+        # y_plot_export = []
+        # distance_cycles_export = []
+        # cur_cycle_start_t_export = t_vals[0]
+        # for i in range(len(t_vals)):
+        #     if i > 0 and cycle_idx[i] != cycle_idx[i - 1]:
+        #         distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[i]})
+        #         x_plot_export.append(None)
+        #         y_plot_export.append(None)
+        #         x_plot_export.append(t_vals[i])
+        #         y_plot_export.append(0.0)
+        #         cur_cycle_start_t_export = t_vals[i]
+        #     x_plot_export.append(t_vals[i])
+        #     y_plot_export.append(y_mod[i])
+        # distance_cycles_export.append({'start_time': cur_cycle_start_t_export, 'end_time': t_vals[-1]})
 
-        fig_row2 = go.Figure()
-        fig_row2.add_trace(go.Scatter(x=x_plot_export, y=y_plot_export, mode="lines", name="Cumulative distance [m]", line=dict(width=3, color="black")))
-        for i_rect, interval in enumerate(distance_cycles_export):
-            fig_row2.add_vrect(
-                x0=interval["start_time"],
-                x1=interval["end_time"],
-                fillcolor=interval_colors[i_rect % len(interval_colors)],
-                opacity=0.2,
-                line_width=0
-            )
-        fig_row2.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
-        fig_row2.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
-        fig_row2.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
+        # fig_row2 = go.Figure()
+        # fig_row2.add_trace(go.Scatter(x=x_plot_export, y=y_plot_export, mode="lines", name="Cumulative distance [m]", line=dict(width=3, color="black")))
+        # for i_rect, interval in enumerate(distance_cycles_export):
+        #     fig_row2.add_vrect(
+        #         x0=interval["start_time"],
+        #         x1=interval["end_time"],
+        #         fillcolor=interval_colors[i_rect % len(interval_colors)],
+        #         opacity=0.2,
+        #         line_width=0
+        #     )
+        # fig_row2.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, showticklabels=True, ticks="outside", title_text="Time (s)")
+        # fig_row2.update_yaxes(title_text=f"Distance (0–{x_meters_per_cycle} m)", showgrid=True, gridcolor="rgba(0,0,0,0.3)", gridwidth=1, zeroline=True, zerolinecolor="rgba(0,0,0,0.6)", zerolinewidth=2)
+        # fig_row2.update_layout(paper_bgcolor="white", plot_bgcolor="white", margin=dict(l=80, r=20, t=20, b=70), font=dict(size=25), legend=dict(orientation="h", x=0.0, y=1.06, xanchor="left", yanchor="bottom", bgcolor="rgba(0,0,0,0)", borderwidth=0, font=dict(size=25)))
 
-        pio.write_image(fig_row1, f"/tmp/contact_states.pdf", format="pdf", width=1200, height=600, scale=1)
-        pio.write_image(fig_row2, f"/tmp/cumulative_distance.pdf", format="pdf", width=1200, height=600, scale=1)
+        # pio.write_image(fig_row1, f"/tmp/contact_states.pdf", format="pdf", width=1200, height=600, scale=1)
+        # pio.write_image(fig_row2, f"/tmp/cumulative_distance.pdf", format="pdf", width=1200, height=600, scale=1)
 
 
 
@@ -977,11 +989,19 @@ def run(displayLogs, writeFormattedData, path_to_project, estimatorsList = None,
                             kinematics[estimator][vel_eval_body] = dict()
                         else:
                             prefix = f'{estimator}'
+                        print(estimator)
+                        print(prefix)
                         if f'{prefix}_locLinVel_x' in data_df.columns:
                             kinematics[estimator][vel_eval_body]["locLinVel"] = data_df[[prefix + '_locLinVel_x', prefix + '_locLinVel_y', prefix + '_locLinVel_z']].to_numpy()
+                        
                         elif f'{prefix}_linVel_x' in data_df.columns and f'{prefix}_orientation_x' in data_df.columns:
                             kinematics[estimator][vel_eval_body]["linVel"] = data_df[[prefix + '_linVel_x', prefix + '_linVel_y', prefix + '_linVel_z']].to_numpy()
                             kinematics[estimator][vel_eval_body]["locLinVel"] = kinematics[prefix][vel_eval_body]["R"].apply(kinematics[estimator][vel_eval_body]["linVel"], inverse=True)
+                        elif f'{estimator}_linVel_x' in data_df.columns and f'{estimator}_orientation_x' in data_df.columns:
+                            prefix = estimator
+                            kinematics[estimator][vel_eval_body]["linVel"] = data_df[[prefix + '_linVel_x', prefix + '_linVel_y', prefix + '_linVel_z']].to_numpy()
+                            kinematics[estimator][vel_eval_body]["locLinVel"] = kinematics[prefix][mocapBody]["R"].apply(kinematics[estimator][vel_eval_body]["linVel"], inverse=True)
+                            print("WESH")
                         else:
                             continue
 
