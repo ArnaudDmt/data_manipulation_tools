@@ -2,6 +2,8 @@ import sys
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import yaml
+from alive_progress import alive_bar
 
 from scipy.spatial.transform import Rotation as R
 from scipy.signal import butter,filtfilt
@@ -21,27 +23,17 @@ scriptName = "crossCorrelation"
 
 
 if(len(sys.argv) > 1):
-    timeStepInput = sys.argv[1]
-    if(len(sys.argv) > 2):
-        displayLogs = sys.argv[2].lower() == 'true'
-    if(len(sys.argv) > 4):
-        path_to_project = sys.argv[4]
-else:
-    timeStepInput = input("Please enter the timestep of the controller in milliseconds: ")
+    displayLogs = sys.argv[1].lower() == 'true'
+    if(len(sys.argv) > 3):
+        path_to_project = sys.argv[3]
 
-try:
-    # Check if the timestep was given in milliseconds
-    if(timeStepInput.isdigit()):
-        timeStep_ms = int(timeStepInput)
-        timeStep_s = float(timeStep_ms)/1000.0
-    else:
-        timeStep_s = float(timeStepInput)
-        timeStep_ms = int(timeStep_s*1000.0)
-    resample_str = f'{timeStep_ms}ms'
-except ValueError:
-    print(f"The input timestep is not valid: {timeStepInput}")
-    sys.exit(1)
-
+with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
+    try:
+        infos_yaml_str = file.read()
+        infos_yamlData = yaml.safe_load(infos_yaml_str)
+        timeStep_s = float(infos_yamlData.get("timeStep_s"))
+    except yaml.YAMLError as exc:
+        print(exc)
 
 output_csv_file_path = f'{path_to_project}/output_data/synchronizedMocapLimbData.csv'
 # Load the CSV files into pandas dataframes
@@ -152,6 +144,7 @@ if(displayLogs):
 
 ###############################  Local linear velocity of the mocapLimb in the world  ###############################
 
+
 # We compute the velocity of the mocapLimb in the world
 world_mocapLimb_Vel_x = np.diff(world_mocapLimb_Pos[:,0])/timeStep_s
 world_mocapLimb_Vel_y = np.diff(world_mocapLimb_Pos[:,1])/timeStep_s
@@ -179,7 +172,6 @@ world_ObserverLimb_Vel_y = np.insert(world_ObserverLimb_Vel_y, 0, 0.0, axis=0)
 world_ObserverLimb_Vel_z = np.insert(world_ObserverLimb_Vel_z, 0, 0.0, axis=0)
 world_ObserverLimb_Vel = np.stack((world_ObserverLimb_Vel_x, world_ObserverLimb_Vel_y, world_ObserverLimb_Vel_z), axis = 1)
 
-
 # Now we get the local linear velocity
 world_mocapLimb_LocVel = world_mocapLimb_Ori_R.apply(world_mocapLimb_Vel, inverse=True)
 world_RigidBody_LocVel = world_RigidBody_Ori_R.apply(world_RigidBody_Vel, inverse=True)
@@ -189,6 +181,16 @@ world_ObserverLimb_LocVel = world_ObserverLimb_Ori_R.apply(world_ObserverLimb_Ve
 if(displayLogs):
     # Plot of the resulting poses
     fig2 = go.Figure()
+
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,0], mode='lines', name='world_mocapLimb_Vel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,1], mode='lines', name='world_mocapLimb_Vel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_Vel[:,2], mode='lines', name='world_mocapLimb_Vel_z'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,0], mode='lines', name='world_RigidBody_Vel_x'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,1], mode='lines', name='world_RigidBody_Vel_y'))
+    fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_RigidBody_Vel[:,2], mode='lines', name='world_RigidBody_Vel_z'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,0], mode='lines', name='world_ObserverLimb_Vel_x'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,1], mode='lines', name='world_ObserverLimb_Vel_y'))
+    fig2.add_trace(go.Scatter(x=observer_data["t"], y=world_ObserverLimb_Vel[:,2], mode='lines', name='world_ObserverLimb_Vel_z'))
 
     fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,0], mode='lines', name='world_mocapLimb_LocVel_x'))
     fig2.add_trace(go.Scatter(x=mocapData["Time(Seconds)"], y=world_mocapLimb_LocVel[:,1], mode='lines', name='world_mocapLimb_LocVel_y'))
@@ -203,8 +205,6 @@ if(displayLogs):
     fig2.update_layout(title=f"{scriptName}: Local linear velocity before alignment")
     # Show the plotly figures
     fig2.show()
-
-
 
 
 ###############################  Cross correlation  ###############################
@@ -285,10 +285,13 @@ def realignData(data1, data2, data1_name, data2_name):
 
     # Find the index of the maximum value in the cross-correlation of the two signals
     max_cross_corr = 0
-    for i in range(data1.shape[1]):
-        crosscorr = np.correlate(data1[:,i], data2[:,i], mode='full')
-        if(np.argmax(crosscorr) > max_cross_corr):
-            max_index = np.argmax(crosscorr)
+    print("Computing the cross-correlation between mocap and observer data for each local linear velocit axis.")
+    with alive_bar(data1.shape[1]) as bar:
+        for i in range(data1.shape[1]):
+            crosscorr = np.correlate(data1[:,i], data2[:,i], mode='full')
+            if(np.argmax(crosscorr) > max_cross_corr):
+                max_index = np.argmax(crosscorr)
+            bar()
 
 
     # Shift the second observer_data file by the calculated index
@@ -322,9 +325,9 @@ def realignData(data1, data2, data1_name, data2_name):
 
     return data2, shift
 
-b, a = butter(2, 0.1, analog=False)
-world_mocapLimb_LocVel_filtered = filtfilt(b, a, world_mocapLimb_LocVel, axis=0)
-world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel_filtered, "world_ObserverLimb_LocVel", "world_mocapLimb_LocVel")
+# b, a = butter(2, 0.1, analog=False)
+# world_mocapLimb_LocVel_filtered = filtfilt(b, a, world_mocapLimb_LocVel, axis=0)
+world_mocapLimb_LocVel, shift = realignData(world_ObserverLimb_LocVel, world_mocapLimb_LocVel, "world_ObserverLimb_LocVel", "world_mocapLimb_LocVel")
 
 
 # Version which receives the shift to apply as an input
@@ -385,6 +388,14 @@ observer_data = observer_data[observer_data["is_virtual"] == False]
 
 observer_data = observer_data.drop(['is_virtual'], axis=1)
 
+
+
+overlap_mask = realignedMocapData['overlapTime'] == 1
+observer_data = observer_data[overlap_mask]
+realignedMocapData = realignedMocapData[overlap_mask]
+
+observer_data['t'] = observer_data['t'] - observer_data['t'].iloc[0]
+realignedMocapData["Time(Seconds)"] = realignedMocapData["Time(Seconds)"] - realignedMocapData["Time(Seconds)"].iloc[0]
 
 ###############################  Shifted poses retrieval  ###############################
 
@@ -451,9 +462,6 @@ if(displayLogs):
 
 
 
-
-
-
 #####################  Orientation and position difference wrt the initial frame  #####################
 
 
@@ -509,21 +517,29 @@ if(displayLogs):
     figTransfo.show()
 
 
-
 world_mocapLimb_Ori_quat = world_mocapLimb_Ori_R.as_quat()
-output_df = pd.DataFrame({'t': observer_data['t'], 'worldMocapLimbPos_x': world_mocapLimb_Pos[:,0], 'worldMocapLimbPos_y': world_mocapLimb_Pos[:,1], 'worldMocapLimbPos_z': world_mocapLimb_Pos[:,2], 'worldMocapLimbOri_qx': world_mocapLimb_Ori_quat[:,0], 'worldMocapLimbOri_qy': world_mocapLimb_Ori_quat[:,1], 'worldMocapLimbOri_qz': world_mocapLimb_Ori_quat[:,2], 'worldMocapLimbOri_qw': world_mocapLimb_Ori_quat[:,3], 'overlapTime': realignedMocapData['overlapTime']})
+
+observer_data['worldMocapLimbPos_x'] = world_mocapLimb_Pos[:, 0]
+observer_data['worldMocapLimbPos_y'] = world_mocapLimb_Pos[:, 1]
+observer_data['worldMocapLimbPos_z'] = world_mocapLimb_Pos[:, 2]
+observer_data['worldMocapLimbOri_qx'] = world_mocapLimb_Ori_quat[:, 0]
+observer_data['worldMocapLimbOri_qy'] = world_mocapLimb_Ori_quat[:, 1]
+observer_data['worldMocapLimbOri_qz'] = world_mocapLimb_Ori_quat[:, 2]
+observer_data['worldMocapLimbOri_qw'] = world_mocapLimb_Ori_quat[:, 3]
+
+
 
 
 # Save the DataFrame to a new CSV file
-if(len(sys.argv) > 3):
-    save_csv = sys.argv[3].lower()
+if(len(sys.argv) > 2):
+    save_csv = sys.argv[2].lower()
 else:
     save_csv = input("Do you want to save the data as a CSV file? (y/n): ")
     save_csv = save_csv.lower()
 
 
 if save_csv == 'y':
-    output_df.to_csv(output_csv_file_path, index=False, sep=';')
+    observer_data.to_csv(f'{path_to_project}/output_data/synchronizedObserversMocapData.csv', index=False, sep=';')
     print("Output CSV file has been saved to ", output_csv_file_path)
 else:
     print("Data not saved.")

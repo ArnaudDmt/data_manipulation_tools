@@ -120,6 +120,23 @@ fi
 bodyName=$(grep 'EnabledBody:' $projectConfig | grep -v '^#' | sed 's/EnabledBody://' | sed 's: ::g');
 
 
+if grep -v '^#' $projectConfig | grep -q "Body_vel_eval"; then
+    if [[ ! $(grep 'Body_vel_eval:' $projectConfig | grep -v '^#' | sed 's/Body_vel_eval://' | sed 's: ::g') ]]; then
+        echo "No body for the linear velocity evaluation was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+        read body;
+
+        sed -i "s/Body_vel_eval:/& $body/" $projectConfig
+    fi
+else
+    echo "No body for the linear velocity evaluation was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
+    read body;
+    if [ -s $projectConfig ]; then
+        awk -i inplace -v body="$body" 'FNR==1 {print "Body_vel_eval:", body}1' $projectConfig;
+    else
+        echo -e "\Body_vel_eval: $body" >> $projectConfig
+    fi
+fi
+
 
 # Changing the name of the project in the replay's configuration
 sed -i "/^\([[:space:]]*projectName: \).*/s//\1"$projectName"/" $replay_yaml
@@ -134,6 +151,22 @@ else
     exit
 fi
 
+mcrtcLog="$rawDataPath/controllerLog.bin"
+
+if [[ -f "$mcrtcLog" ]]; then
+  fileSize=$(stat -c%s "$mcrtcLog")
+  if (( fileSize > 8589934592 )); then
+    echo -e "${YELLOW}The log is larger than 8 GB. Keeping only the necessary data.${RESET}"
+
+    cd $rawDataPath
+
+    mv $mcrtcLog originalLog.bin
+    mc_bin_utils originalLog.bin controllerLog --keys "t" "qIn" "JointSensor*" "ground_Default*" "qOut*" "FloatingBase_*" "Accelerometer_*" "tauIn*" "RightFootForceSensor*" "LeftFootForceSensor*" "LeftHandForceSensor*" "RightHandForceSensor*" "alphaIn*" "ff*" "perf_GlobalRun"
+
+    heavy_log=true
+  fi
+fi
+
 
 ############################ Handling mc_rtc's log ############################
 
@@ -142,11 +175,15 @@ if [ -f "$logReplayCSV" ] && [[ "$runFromZero" == "false" ]]; then
     echo "The csv file of the replay with the observers has been found."
 else
     if [ -f "$logReplayBin" ] && [[ "$runFromZero" == "false" ]]; then
-        echo "The bin file of the replay with the observers has been found. Converting to csv."
+        cd $scriptsPath
+        echo "The bin file of the replay with the observers has been found. Removing useless columns."
+
+        eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+
         cd $outputDataPath
-        mc_bin_to_log "$outputDataPath/$logReplayBin"
+        echo " Converting to csv."
+        mc_bin_to_log logReplay.bin 
     else
-        mcrtcLog="$rawDataPath/controllerLog.bin"
         if [ -f "$mcrtcLog" ]; then
             echo "The log file of the controller was found. Replaying the log with the observer."
             if ! grep -q -E "^\s*update: true\s*$" "$replay_yaml"; then
@@ -198,14 +235,20 @@ else
             LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
             echo "Copying the replay's bin file ($LOG) to the output_data folder as logReplay.bin"
             mv $LOG $logReplayBin
+
+            cd $scriptsPath
+            echo "Removing useless columns from the replayed log."
+
+            eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+
             cd $outputDataPath
+            
             mc_bin_to_log logReplay.bin
             cd $cwd
 
             if ! $pluginWasActivated; then
                 sed -i '1d' $mc_rtc_yaml
             fi
-
         else
             echo "The log file of the controller does not exist or is not named as expected. Expected: $mcrtcLog."
             exit
@@ -216,7 +259,7 @@ fi
 
 ############################ Handling mocap's data ############################
 
-
+echo "WESH2"
 
 cd $cwd
 
@@ -224,8 +267,10 @@ HartleyOutputCSV="$outputDataPath/HartleyOutputCSV.csv"
 if [[ "$runFromZero" == "false" ]] && [[ -f "$HartleyOutputCSV" ]]; then
     echo "The csv file containing the results of Hartley's observer already exists. Working with this data."
 else
+    echo "WESH3"
     if $useHartley; then
-        hartleyRoutine=$(locate runLogsRoutine.sh | grep Hartley)
+        echo "WESH4"
+        hartleyRoutine=$(locate -b '\runLogsRoutine.sh' | grep Hartley)
         hartleyDir=$(dirname "$hartleyRoutine")
 
         cd "$hartleyDir"
@@ -241,15 +286,16 @@ else
         cd $cwd
 
         cp "$hartleyDir/data/HartleyOutput.csv" $HartleyOutputCSV
+        echo "WESH5"
     fi
 fi
-
+echo "WESH3"
 
 if [[ "$runFromZero" == "false" ]] && [[ -f "$lightData" ]]; then
     echo "The light version of the observer's data has already been extracted. Using the existing data."
 else
-    echo "Starting the extraction of the light version of the observer's data."
     cd $scriptsPath
+    echo "Starting the extraction of the light version of the observer's data."
     python extractLightReplayVersion.py "$projectPath"
     echo "Extraction of the light version of the observer's data completed."
     runScript=true
@@ -262,6 +308,7 @@ if [ ! -f "$outputDataPath/perf_GlobalRun_log.csv" ]; then
     mc_bin_to_log perf_GlobalRun_log.bin $outputDataPath/perf_GlobalRun_log.csv
     rm perf_GlobalRun_log.bin
 fi
+
 
 if [ -f "$outputDataPath/repairedSkipped_mc_rtc_iters.csv" ] && [[ "$runFromZero" == "false" ]] ; then
     if $debug; then
@@ -283,14 +330,19 @@ else
     runScript=true
 fi
 
-cd $cwd
+
+cd $scriptsPath
+
+heavy_log=true
+python initialize_datas.py "$timeStep" "$projectPath" "$heavy_log"
+
 
 if [ -f "$resampledMocapData" ]; then
     if $debug; then
         echo "Do you want to run again the mocap data's resampling with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
         case $rerunResample in
-            Yes ) cd $scriptsPath; python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
+            Yes ) cd $scriptsPath; python resampleMocapAndExtractPose.py "$displayLogs" "y" "$projectPath"; break;;
             No ) break;;
         esac
         done
@@ -298,23 +350,23 @@ if [ -f "$resampledMocapData" ]; then
         echo "The mocap's data has already been resampled. Using the existing data."
     fi
 else
-    echo "Starting the resampling of the mocap's signal."
     cd $scriptsPath
-    python resampleMocapAndExtractPose.py "$timeStep" "$displayLogs" "y" "$projectPath"
+
+    echo "Starting the resampling of the mocap's signal."
+    python resampleMocapAndExtractPose.py "$displayLogs" "y" "$projectPath"
     echo "Resampling of the mocap's signal completed."
     runScript=true
 fi
 
 cd $cwd
 
-
-if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
+if [ -f "$synchronizedObserversMocapData" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
     if $debug; then
         echo "Do you want to run again the temporal data alignement with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
             case $rerunResample in
                 Yes )   cd $scriptsPath;
-                        python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"; break;;
+                        python crossCorrelation.py "$displayLogs" "y" "$projectPath"; break;;
                 No ) break;;
             esac
         done
@@ -324,16 +376,16 @@ if [ -f "$synchronizedMocapLimbData" ] && ! $runScript && [[ "$runFromZero" == "
 else
     echo "Starting the cross correlation for temporal data alignement."
     cd $scriptsPath
-    python crossCorrelation.py "$timeStep" "$displayLogs" "y" "$projectPath"
+    python crossCorrelation.py "$displayLogs" "y" "$projectPath"
     echo "Temporal alignement of the mocap's data with the observer's data completed."
     runScript=true
 fi
 
 cd $cwd
 
-observerResultsCSV="$outputDataPath/observerResultsCSV.csv"
+finalDataCSV="$outputDataPath/finalDataCSV.csv"
 
-if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
+if [ -f "$finalDataCSV" ] && ! $runScript && [[ "$runFromZero" == "false" ]]; then
     if $debug; then
         echo "Do you want to run again the spatial data alignement with the dynamic plots?"
         select rerunResample in "No" "Yes"; do
@@ -341,7 +393,7 @@ if [ -f "$observerResultsCSV" ] && ! $runScript && [[ "$runFromZero" == "false" 
             Yes )   echo "Please enter the time at which you want the pose of the mocap and the one of the observer must match: "
                     read matchTime
                     cd $scriptsPath
-                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "$projectPath"; break;;
+                    python matchInitPose.py "$matchTime" "$displayLogs" "y" "$projectPath" ; break;;
             No ) break;;
         esac
         done
@@ -388,7 +440,7 @@ if [[ "$computeMetrics" == "true" ]]; then
         select recomputeMetrics in "No" "Yes"; do
             case "$recomputeMetrics" in
                 No )    cd "$scriptsPath"
-                        python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
+                        python plotAndFormatResults.py "$plotResults" "$projectPath" "False"; 
                         break;;
                 Yes )   cd "$scriptsPath"; source routine_scripts/computeMetrics.sh;
                         break;;
@@ -404,7 +456,7 @@ if [[ "$computeMetrics" == "true" ]]; then
 elif $plotResults; then
     echo "Plotting the observer results."; 
     cd "$scriptsPath"
-    python plotAndFormatResults.py "$timeStep" "$plotResults" "$projectPath" "False"; 
+    python plotAndFormatResults.py "$plotResults" "$projectPath" "False"; 
 fi
 
 

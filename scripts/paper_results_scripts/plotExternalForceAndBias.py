@@ -5,9 +5,12 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px  # For color palette generation
 
-import plotly.io as pio   
-pio.kaleido.scope.mathjax = None
+import plotly.io as pio
+import os
 
+# Tell webbrowser to use wslview
+os.environ["BROWSER"] = "wslview"
+pio.renderers.default = "browser"
 
 default_path = '.../Projects/HRP5_MultiContact_1'
 

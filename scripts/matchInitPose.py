@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.spatial.transform import Rotation as R
 import plotly.graph_objects as go
 import numba
+from alive_progress import alive_bar
 
 import yaml
 
@@ -30,10 +31,16 @@ if(len(sys.argv) > 1):
 else:
     matchTime = float(input("When do you want the mocap pose to match the observer's one? "))
 
-
+with open(f'{path_to_project}/output_data/observers_infos.yaml', 'r') as file:
+    try:
+        infos_yaml_str = file.read()
+        infos_yamlData = yaml.safe_load(infos_yaml_str)
+        timeStep_s = float(infos_yamlData.get("timeStep_s"))
+    except yaml.YAMLError as exc:
+        print(exc)
+        
 # Load the CSV files into pandas dataframes
-df_Observers = pd.read_csv(f'{path_to_project}/output_data/lightData.csv', delimiter=';')
-mocapData = pd.read_csv(f'{path_to_project}/output_data/synchronizedMocapLimbData.csv', delimiter=';')
+data_df = pd.read_csv(f'{path_to_project}/output_data/synchronizedObserversMocapData.csv', delimiter=';')
 
 
 
@@ -89,17 +96,14 @@ def merge_tilt_with_yaw_axis_agnostic(Rtez: np.ndarray, R2: np.ndarray):
 
 # Extracting the poses related to the mocap
 
-world_MocapLimb_Pos = np.array([mocapData['worldMocapLimbPos_x'], mocapData['worldMocapLimbPos_y'], mocapData['worldMocapLimbPos_z']]).T
-world_MocapLimb_Ori_R = R.from_quat(mocapData[["worldMocapLimbOri_qx", "worldMocapLimbOri_qy", "worldMocapLimbOri_qz", "worldMocapLimbOri_qw"]].values)
+world_MocapLimb_Pos = np.array([data_df['worldMocapLimbPos_x'], data_df['worldMocapLimbPos_y'], data_df['worldMocapLimbPos_z']]).T
+world_MocapLimb_Ori_R = R.from_quat(data_df[["worldMocapLimbOri_qx", "worldMocapLimbOri_qy", "worldMocapLimbOri_qz", "worldMocapLimbOri_qw"]].values)
 
 # Extracting the poses coming from mc_rtc
-world_RefObserverLimb_Pos = np.array([df_Observers['MocapAligner_worldBodyKine_position_x'], df_Observers['MocapAligner_worldBodyKine_position_y'], df_Observers['MocapAligner_worldBodyKine_position_z']]).T
-world_RefObserverLimb_Ori_R = R.from_quat(df_Observers[["MocapAligner_worldBodyKine_ori_x", "MocapAligner_worldBodyKine_ori_y", "MocapAligner_worldBodyKine_ori_z", "MocapAligner_worldBodyKine_ori_w"]].values)
+world_RefObserverLimb_Pos = np.array([data_df['MocapAligner_worldBodyKine_position_x'], data_df['MocapAligner_worldBodyKine_position_y'], data_df['MocapAligner_worldBodyKine_position_z']]).T
+world_RefObserverLimb_Ori_R = R.from_quat(data_df[["MocapAligner_worldBodyKine_ori_x", "MocapAligner_worldBodyKine_ori_y", "MocapAligner_worldBodyKine_ori_z", "MocapAligner_worldBodyKine_ori_w"]].values)
 # We get the inverse of the orientation as the inverse quaternion was stored
 world_RefObserverLimb_Ori_R = world_RefObserverLimb_Ori_R.inv()
-
-
-overlapIndex = mocapData['overlapTime']
 
 
 #####################  Orientation and position difference wrt the initial frame  #####################
@@ -158,22 +162,22 @@ initPosesAndTransfos["RefObserver"] = compute_orientation_position_difference(wo
 if(displayLogs):
     figInitPose = go.Figure()
 
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_euler_continuous"][:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
 
-    figInitPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_roll'))
-    figInitPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_pitch'))
-    figInitPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_yaw'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_roll'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_pitch'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_yaw'))
 
 
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_MocapLimb_Pos[:,0], mode='lines', name='world_MocapLimb_Pos_x'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_MocapLimb_Pos[:,1], mode='lines', name='world_MocapLimb_Pos_y'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_MocapLimb_Pos[:,2], mode='lines', name='world_MocapLimb_Pos_z'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_MocapLimb_Pos[:,0], mode='lines', name='world_MocapLimb_Pos_x'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_MocapLimb_Pos[:,1], mode='lines', name='world_MocapLimb_Pos_y'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_MocapLimb_Pos[:,2], mode='lines', name='world_MocapLimb_Pos_z'))
 
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,0], mode='lines', name='world_RefObserverLimb_Pos_x'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,1], mode='lines', name='world_RefObserverLimb_Pos_y'))
-    figInitPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,2], mode='lines', name='world_RefObserverLimb_Pos_z'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,0], mode='lines', name='world_RefObserverLimb_Pos_x'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,1], mode='lines', name='world_RefObserverLimb_Pos_y'))
+    figInitPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,2], mode='lines', name='world_RefObserverLimb_Pos_z'))
 
     figInitPose.update_layout(title=f"{scriptName}: Poses before matching")
 
@@ -184,22 +188,22 @@ if(displayLogs):
 
     figTransfoInit = go.Figure()
 
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["ori_transfo_euler_continuous"][:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
 
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_transfo_roll'))
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_transfo_pitch'))
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_transfo_yaw'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_transfo_roll'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_transfo_pitch'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_transfo_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_transfo_yaw'))
 
 
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
-    figTransfoInit.add_trace(go.Scatter(x=mocapData["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["Mocap"]["pos_transfo"][:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
 
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,0], mode='lines', name='world_RefObserverLimb_pos_transfo_x'))
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,1], mode='lines', name='world_RefObserverLimb_pos_transfo_y'))
-    figTransfoInit.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,2], mode='lines', name='world_RefObserverLimb_pos_transfo_z'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,0], mode='lines', name='world_RefObserverLimb_pos_transfo_x'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,1], mode='lines', name='world_RefObserverLimb_pos_transfo_y'))
+    figTransfoInit.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["pos_transfo"][:,2], mode='lines', name='world_RefObserverLimb_pos_transfo_z'))
 
     figTransfoInit.update_layout(title=f"{scriptName}: Transformations before matching")
 
@@ -212,16 +216,41 @@ if(displayLogs):
 
 
 # Find the index in the pandas dataframe that corresponds to the input time
-matchIndex = mocapData[mocapData['t'] == matchTime].index[0]
+matchIndex = data_df[data_df['t'] == matchTime].index[0]
 
 
 def get_mocap_pitch_offset_from_accelero():
-    ya = np.array(df_Observers[['Accelerometer_linearAcceleration_x', 'Accelerometer_linearAcceleration_y', 'Accelerometer_linearAcceleration_z']])
+    ya = np.array(data_df[['Accelerometer_linearAcceleration_x', 'Accelerometer_linearAcceleration_y', 'Accelerometer_linearAcceleration_z']])
 
     avg_interval = 10
-    Rt_ez_accelero = ya / np.linalg.norm(ya, axis = 1, keepdims=True)
-    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[:avg_interval], axis=0)
-    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[:avg_interval], axis=0)
+
+    # We look for the consecutive iterations during which the velocity of the body remains zero
+    # to be sure there is no acceleration and we can use the accelero to correct the tilt.
+    zeros_row = np.zeros((1, 3))
+    velMocap = np.diff(world_MocapLimb_Pos, axis=0)/timeStep_s
+    velMocap = np.vstack((zeros_row,velMocap))
+    locVelMocap = world_MocapLimb_Ori_R.apply(velMocap, inverse=True)
+    vel_norm = np.linalg.norm(locVelMocap, axis=1)
+
+    start_idx = None
+    min_avg_vel = float('inf') 
+
+    for i in range(len(vel_norm) - avg_interval + 1):
+        avg_vel = np.mean(vel_norm[i:i + avg_interval])
+        if avg_vel < min_avg_vel:
+            min_avg_vel = avg_vel
+            min_idx = i
+
+    # Use the interval with minimum average velocity
+    start_idx = min_idx
+    Rt_ez_accelero = ya / np.linalg.norm(ya, axis=1, keepdims=True)
+    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[start_idx:start_idx + avg_interval], axis=0)
+
+    start_time = start_idx * timeStep_s
+    end_time = (start_idx + avg_interval - 1) * timeStep_s
+    print(f"Minimum velocity average segment from t = {start_time:.3f}s to t = {end_time:.3f}s: Avg velocity = {min_avg_vel:.6f} m/s")
+    
+    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[start_idx:start_idx + avg_interval], axis=0)
 
     true_R_init_avg_quat = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero_avg, R.from_quat(init_mocap_avg_R_quat).as_matrix()))
     mocap_pitch_offset = R.from_quat(init_mocap_avg_R_quat).inv() * true_R_init_avg_quat
@@ -298,10 +327,6 @@ def compute_aligned_pose(
     # Define lower index for averaging, clamping to zero if negative
     lowerIndex = max(matchIndex - averageInterval, 0)
     
-    # Zero out overlap index entries up to matchIndex
-    overlapIndex = np.zeros_like(world_ObserverLimb_Pos, dtype=int)
-    overlapIndex[:matchIndex] = 0
-
     # Average positions around matchIndex
     world_ObserverLimb_Pos_avg = np.mean(world_ObserverLimb_Pos[lowerIndex:matchIndex + averageInterval], axis=0)
     world_RefObserverLimb_Pos_avg = np.mean(world_RefObserverLimb_Pos[lowerIndex:matchIndex + averageInterval], axis=0)
@@ -352,192 +377,89 @@ alignedPoses["Mocap"] =  compute_aligned_pose(
 alignedPoses["Mocap"]["aligned_orientation"] = alignedPoses["Mocap"]["aligned_orientation"] * mocap_pitch_offset
 new_world_MocapLimb_Ori_quat = alignedPoses["Mocap"]["aligned_orientation"].as_quat()
 
-mocapData['worldMocapLimbPos_x'] = alignedPoses["Mocap"]["aligned_position"][:,0]
-mocapData['worldMocapLimbPos_y'] = alignedPoses["Mocap"]["aligned_position"][:,1]
-mocapData['worldMocapLimbPos_z'] = alignedPoses["Mocap"]["aligned_position"][:,2]
-mocapData['worldMocapLimbOri_qx'] = new_world_MocapLimb_Ori_quat[:,0]
-mocapData['worldMocapLimbOri_qy'] = new_world_MocapLimb_Ori_quat[:,1]
-mocapData['worldMocapLimbOri_qz'] = new_world_MocapLimb_Ori_quat[:,2]
-mocapData['worldMocapLimbOri_qw'] = new_world_MocapLimb_Ori_quat[:,3]
 
-df_Observers['Mocap_pos_x'] = alignedPoses["Mocap"]["aligned_position"][:,0]
-df_Observers['Mocap_pos_y'] = alignedPoses["Mocap"]["aligned_position"][:,1]
-df_Observers['Mocap_pos_z'] = alignedPoses["Mocap"]["aligned_position"][:,2]
-df_Observers['Mocap_ori_x'] = new_world_MocapLimb_Ori_quat[:,0]
-df_Observers['Mocap_ori_y'] = new_world_MocapLimb_Ori_quat[:,1]
-df_Observers['Mocap_ori_z'] = new_world_MocapLimb_Ori_quat[:,2]
-df_Observers['Mocap_ori_w'] = new_world_MocapLimb_Ori_quat[:,3]
-df_Observers['Mocap_datasOverlapping'] = mocapData['overlapTime'].apply(lambda x: 'Datas overlap' if x == 1 else 'Datas not overlapping')
+data_df['Mocap_position_x'] = alignedPoses["Mocap"]["aligned_position"][:,0]
+data_df['Mocap_position_y'] = alignedPoses["Mocap"]["aligned_position"][:,1]
+data_df['Mocap_position_z'] = alignedPoses["Mocap"]["aligned_position"][:,2]
+data_df['Mocap_orientation_x'] = new_world_MocapLimb_Ori_quat[:,0]
+data_df['Mocap_orientation_y'] = new_world_MocapLimb_Ori_quat[:,1]
+data_df['Mocap_orientation_z'] = new_world_MocapLimb_Ori_quat[:,2]
+data_df['Mocap_orientation_w'] = new_world_MocapLimb_Ori_quat[:,3]
+
+# fetching the name of the body the mocap is attached to
+with open(f'{path_to_project}/projectConfig.yaml', 'r') as file:
+    try:
+        projConf_yaml_str = file.read()
+        projConf_yamlData = yaml.safe_load(projConf_yaml_str)
+        enabled_body = projConf_yamlData.get('EnabledBody')
+        robotName = projConf_yamlData.get('EnabledRobot')
+    except yaml.YAMLError as exc:
+        print(exc)
+
+# fetching the standardized name of the body
+with open('../markersPlacements.yaml', 'r') as file:
+    try:
+        markersPlacements_str = file.read()
+        markersPlacements_yamlData = yaml.safe_load(markersPlacements_str)
+        for robot in markers_yamlData['robots']:
+            # If the robot name matches
+            if robot['name'] == robotName:
+                # Iterate over the bodies of the robot
+                for body in robot['bodies']:
+                    # If the body name matches
+                    if body['name'] == enabled_body:
+                        mocapBody = body['standardized_name']
+
+    except yaml.YAMLError as exc:
+        print(exc)
+
+observersList = []
+
+with open('../observersInfos.yaml', 'r') as file:
+    try:
+        observersInfos_str = file.read()
+        observersInfos_yamlData = yaml.safe_load(observersInfos_str)
+        for observer in observersInfos_yamlData['observers']:
+            if observer["abbreviation"] != 'Mocap':
+                if mocapBody in observer['kinematics']:
+                    if observer['abbreviation'] + '_position_x' in data_df.columns:
+                        observersList.append(observer["abbreviation"])
+    except yaml.YAMLError as exc:
+        print(exc)
 
 
-if 'KO_posW_tx' in df_Observers.columns:
-    world_KOLimb_Pos = np.array([df_Observers['KO_posW_tx'], df_Observers['KO_posW_ty'], df_Observers['KO_posW_tz']]).T
-    world_KOLimb_Ori_R = R.from_quat(df_Observers[["KO_posW_qx", "KO_posW_qy", "KO_posW_qz", "KO_posW_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KOLimb_Ori_R = world_KOLimb_Ori_R.inv()
-    alignedPoses["KO"] =  compute_aligned_pose(
-        world_KOLimb_Pos, 
-        world_KOLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
+print("Matching the observer poses.")
+with alive_bar(len(observersList)) as bar:
+    for observerName in observersList:
+        world_ObsLimb_Pos = np.array([data_df[observerName + '_position_x'], data_df[observerName + '_position_y'], data_df[observerName + '_position_z']]).T
+        world_ObsLimb_Ori_R = R.from_quat(data_df[[observerName + '_orientation_x', observerName + '_orientation_y', observerName + '_orientation_z', observerName + '_orientation_w']].values)
+        # We get the inverse of the orientation as the inverse quaternion was stored
+        world_ObsLimb_Ori_R = world_ObsLimb_Ori_R.inv()
+        alignedPoses[observerName] =  compute_aligned_pose(
+            world_ObsLimb_Pos, 
+            world_ObsLimb_Ori_R, 
+            matchIndex,
+            averageInterval
+        )
 
-    new_world_KOLimb_Ori_quat = alignedPoses["KO"]["aligned_orientation"].as_quat()
-    df_Observers['KO_posW_tx'] = alignedPoses["KO"]["aligned_position"][:,0]
-    df_Observers['KO_posW_ty'] = alignedPoses["KO"]["aligned_position"][:,1]
-    df_Observers['KO_posW_tz'] = alignedPoses["KO"]["aligned_position"][:,2]
-    df_Observers['KO_posW_qx'] = new_world_KOLimb_Ori_quat[:,0]
-    df_Observers['KO_posW_qy'] = new_world_KOLimb_Ori_quat[:,1]
-    df_Observers['KO_posW_qz'] = new_world_KOLimb_Ori_quat[:,2]
-    df_Observers['KO_posW_qw'] = new_world_KOLimb_Ori_quat[:,3]
-if 'KO_APC_posW_tx' in df_Observers.columns:
-    world_KO_APCLimb_Pos = np.array([df_Observers['KO_APC_posW_tx'], df_Observers['KO_APC_posW_ty'], df_Observers['KO_APC_posW_tz']]).T
-    world_KO_APCLimb_Ori_R = R.from_quat(df_Observers[["KO_APC_posW_qx", "KO_APC_posW_qy", "KO_APC_posW_qz", "KO_APC_posW_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KO_APCLimb_Ori_R = world_KO_APCLimb_Ori_R.inv()
-    alignedPoses["KO_APC"] =  compute_aligned_pose(
-        world_KO_APCLimb_Pos, 
-        world_KO_APCLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
+        new_world_ObsLimb_Ori_quat = alignedPoses[observerName]["aligned_orientation"].as_quat()
+        data_df[observerName + '_position_x'] = alignedPoses[observerName]["aligned_position"][:,0]
+        data_df[observerName + '_position_y'] = alignedPoses[observerName]["aligned_position"][:,1]
+        data_df[observerName + '_position_z'] = alignedPoses[observerName]["aligned_position"][:,2]
+        data_df[observerName + '_orientation_x'] = new_world_ObsLimb_Ori_quat[:,0]
+        data_df[observerName + '_orientation_y'] = new_world_ObsLimb_Ori_quat[:,1]
+        data_df[observerName + '_orientation_z'] = new_world_ObsLimb_Ori_quat[:,2]
+        data_df[observerName + '_orientation_w'] = new_world_ObsLimb_Ori_quat[:,3]
 
-    new_world_KO_APCLimb_Ori_quat = alignedPoses["KO_APC"]["aligned_orientation"].as_quat()
-    df_Observers['KO_APC_posW_tx'] = alignedPoses["KO_APC"]["aligned_position"][:,0]
-    df_Observers['KO_APC_posW_ty'] = alignedPoses["KO_APC"]["aligned_position"][:,1]
-    df_Observers['KO_APC_posW_tz'] = alignedPoses["KO_APC"]["aligned_position"][:,2]
-    df_Observers['KO_APC_posW_qx'] = new_world_KO_APCLimb_Ori_quat[:,0]
-    df_Observers['KO_APC_posW_qy'] = new_world_KO_APCLimb_Ori_quat[:,1]
-    df_Observers['KO_APC_posW_qz'] = new_world_KO_APCLimb_Ori_quat[:,2]
-    df_Observers['KO_APC_posW_qw'] = new_world_KO_APCLimb_Ori_quat[:,3]
-if 'KO_ASC_posW_tx' in df_Observers.columns:
-    world_KO_ASCLimb_Pos = np.array([df_Observers['KO_ASC_posW_tx'], df_Observers['KO_ASC_posW_ty'], df_Observers['KO_ASC_posW_tz']]).T
-    world_KO_ASCLimb_Ori_R = R.from_quat(df_Observers[["KO_ASC_posW_qx", "KO_ASC_posW_qy", "KO_ASC_posW_qz", "KO_ASC_posW_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KO_ASCLimb_Ori_R = world_KO_ASCLimb_Ori_R.inv()
-    alignedPoses["KO_ASC"] =  compute_aligned_pose(
-        world_KO_ASCLimb_Pos, 
-        world_KO_ASCLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
-    
-    new_world_KO_ASCLimb_Ori_quat = alignedPoses["KO_ASC"]["aligned_orientation"].as_quat()
-    df_Observers['KO_ASC_posW_tx'] = alignedPoses["KO_ASC"]["aligned_position"][:,0]
-    df_Observers['KO_ASC_posW_ty'] = alignedPoses["KO_ASC"]["aligned_position"][:,1]
-    df_Observers['KO_ASC_posW_tz'] = alignedPoses["KO_ASC"]["aligned_position"][:,2]
-    df_Observers['KO_ASC_posW_qx'] = new_world_KO_ASCLimb_Ori_quat[:,0]
-    df_Observers['KO_ASC_posW_qy'] = new_world_KO_ASCLimb_Ori_quat[:,1]
-    df_Observers['KO_ASC_posW_qz'] = new_world_KO_ASCLimb_Ori_quat[:,2]
-    df_Observers['KO_ASC_posW_qw'] = new_world_KO_ASCLimb_Ori_quat[:,3]
-if 'KO_ZPC_posW_tx' in df_Observers.columns:
-    world_KO_ZPCLimb_Pos = np.array([df_Observers['KO_ZPC_posW_tx'], df_Observers['KO_ZPC_posW_ty'], df_Observers['KO_ZPC_posW_tz']]).T
-    world_KO_ZPCLimb_Ori_R = R.from_quat(df_Observers[["KO_ZPC_posW_qx", "KO_ZPC_posW_qy", "KO_ZPC_posW_qz", "KO_ZPC_posW_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KO_ZPCLimb_Ori_R = world_KO_ZPCLimb_Ori_R.inv()
-    alignedPoses["KO_ZPC"] =  compute_aligned_pose(
-        world_KO_ZPCLimb_Pos, 
-        world_KO_ZPCLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
+        bar()
 
-    new_world_KO_ZPCLimb_Ori_quat = alignedPoses["KO_ZPC"]["aligned_orientation"].as_quat()
-    df_Observers['KO_ZPC_posW_tx'] = alignedPoses["KO_ZPC"]["aligned_position"][:,0]
-    df_Observers['KO_ZPC_posW_ty'] = alignedPoses["KO_ZPC"]["aligned_position"][:,1]
-    df_Observers['KO_ZPC_posW_tz'] = alignedPoses["KO_ZPC"]["aligned_position"][:,2]
-    df_Observers['KO_ZPC_posW_qx'] = new_world_KO_ZPCLimb_Ori_quat[:,0]
-    df_Observers['KO_ZPC_posW_qy'] = new_world_KO_ZPCLimb_Ori_quat[:,1]
-    df_Observers['KO_ZPC_posW_qz'] = new_world_KO_ZPCLimb_Ori_quat[:,2]
-    df_Observers['KO_ZPC_posW_qw'] = new_world_KO_ZPCLimb_Ori_quat[:,3]
+if 'Hartley_IMU_position_x' in data_df.columns:
+    observersList.append('Hartley')
+    world_HartleyIMU_Pos = np.array([data_df['Hartley_IMU_position_x'], data_df['Hartley_IMU_position_y'], data_df['Hartley_IMU_position_z']]).T
+    world_HartleyIMU_Ori_R = R.from_quat(data_df[["Hartley_IMU_orientation_x", "Hartley_IMU_orientation_y", "Hartley_IMU_orientation_z", "Hartley_IMU_orientation_w"]].values)
 
-if 'KOWithoutWrenchSensors_posW_tx' in df_Observers.columns:
-    world_KOWithoutWrenchSensorsLimb_Pos = np.array([df_Observers['KOWithoutWrenchSensors_posW_tx'], df_Observers['KOWithoutWrenchSensors_posW_ty'], df_Observers['KOWithoutWrenchSensors_posW_tz']]).T
-    world_KOWithoutWrenchSensorsLimb_Ori_R = R.from_quat(df_Observers[["KOWithoutWrenchSensors_posW_qx", "KOWithoutWrenchSensors_posW_qy", "KOWithoutWrenchSensors_posW_qz", "KOWithoutWrenchSensors_posW_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_KOWithoutWrenchSensorsLimb_Ori_R = world_KOWithoutWrenchSensorsLimb_Ori_R.inv()
-    alignedPoses["KOWithoutWrenchSensors"] =  compute_aligned_pose(
-        world_KOWithoutWrenchSensorsLimb_Pos, 
-        world_KOWithoutWrenchSensorsLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
-
-    new_world_KOWithoutWrenchSensorsLimb_Ori_quat = alignedPoses["KOWithoutWrenchSensors"]["aligned_orientation"].as_quat()
-    df_Observers['KOWithoutWrenchSensors_posW_tx'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,0]
-    df_Observers['KOWithoutWrenchSensors_posW_ty'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,1]
-    df_Observers['KOWithoutWrenchSensors_posW_tz'] = alignedPoses["KOWithoutWrenchSensors"]["aligned_position"][:,2]
-    df_Observers['KOWithoutWrenchSensors_posW_qx'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,0]
-    df_Observers['KOWithoutWrenchSensors_posW_qy'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,1]
-    df_Observers['KOWithoutWrenchSensors_posW_qz'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,2]
-    df_Observers['KOWithoutWrenchSensors_posW_qw'] = new_world_KOWithoutWrenchSensorsLimb_Ori_quat[:,3]
-
-if 'Vanyte_pose_tx' in df_Observers.columns:
-    world_VanyteLimb_Pos = np.array([df_Observers['Vanyte_pose_tx'], df_Observers['Vanyte_pose_ty'], df_Observers['Vanyte_pose_tz']]).T
-    world_VanyteLimb_Ori_R = R.from_quat(df_Observers[["Vanyte_pose_qx", "Vanyte_pose_qy", "Vanyte_pose_qz", "Vanyte_pose_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_VanyteLimb_Ori_R = world_VanyteLimb_Ori_R.inv()
-    alignedPoses["Vanyte"] =  compute_aligned_pose(
-        world_VanyteLimb_Pos, 
-        world_VanyteLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
-
-    new_world_VanyteLimb_Ori_quat = alignedPoses["Vanyte"]["aligned_orientation"].as_quat()
-    df_Observers['Vanyte_pose_tx'] = alignedPoses["Vanyte"]["aligned_position"][:,0]
-    df_Observers['Vanyte_pose_ty'] = alignedPoses["Vanyte"]["aligned_position"][:,1]
-    df_Observers['Vanyte_pose_tz'] = alignedPoses["Vanyte"]["aligned_position"][:,2]
-    df_Observers['Vanyte_pose_qx'] = new_world_VanyteLimb_Ori_quat[:,0]
-    df_Observers['Vanyte_pose_qy'] = new_world_VanyteLimb_Ori_quat[:,1]
-    df_Observers['Vanyte_pose_qz'] = new_world_VanyteLimb_Ori_quat[:,2]
-    df_Observers['Vanyte_pose_qw'] = new_world_VanyteLimb_Ori_quat[:,3]
-if 'Tilt_pose_tx' in df_Observers.columns:
-    world_TiltLimb_Pos = np.array([df_Observers['Tilt_pose_tx'], df_Observers['Tilt_pose_ty'], df_Observers['Tilt_pose_tz']]).T
-    world_TiltLimb_Ori_R = R.from_quat(df_Observers[["Tilt_pose_qx", "Tilt_pose_qy", "Tilt_pose_qz", "Tilt_pose_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_TiltLimb_Ori_R = world_TiltLimb_Ori_R.inv()
-    alignedPoses["Tilt"] =  compute_aligned_pose(
-        world_TiltLimb_Pos, 
-        world_TiltLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
-
-    new_world_TiltLimb_Ori_quat = alignedPoses["Tilt"]["aligned_orientation"].as_quat()
-    df_Observers['Tilt_pose_tx'] = alignedPoses["Tilt"]["aligned_position"][:,0]
-    df_Observers['Tilt_pose_ty'] = alignedPoses["Tilt"]["aligned_position"][:,1]
-    df_Observers['Tilt_pose_tz'] = alignedPoses["Tilt"]["aligned_position"][:,2]
-    df_Observers['Tilt_pose_qx'] = new_world_TiltLimb_Ori_quat[:,0]
-    df_Observers['Tilt_pose_qy'] = new_world_TiltLimb_Ori_quat[:,1]
-    df_Observers['Tilt_pose_qz'] = new_world_TiltLimb_Ori_quat[:,2]
-    df_Observers['Tilt_pose_qw'] = new_world_TiltLimb_Ori_quat[:,3]
-if 'Controller_tx' in df_Observers.columns:
-    world_ControllerLimb_Pos = np.array([df_Observers['Controller_tx'], df_Observers['Controller_ty'], df_Observers['Controller_tz']]).T
-    world_ControllerLimb_Ori_R = R.from_quat(df_Observers[["Controller_qx", "Controller_qy", "Controller_qz", "Controller_qw"]].values)
-    # We get the inverse of the orientation as the inverse quaternion was stored
-    world_ControllerLimb_Ori_R = world_ControllerLimb_Ori_R.inv()
-    alignedPoses["Controller"] =  compute_aligned_pose(
-        world_ControllerLimb_Pos, 
-        world_ControllerLimb_Ori_R, 
-        matchIndex,
-        averageInterval
-    )
-
-    new_world_ControllerLimb_Ori_quat = alignedPoses["Controller"]["aligned_orientation"].as_quat()
-    df_Observers['Controller_tx'] = alignedPoses["Controller"]["aligned_position"][:,0]
-    df_Observers['Controller_ty'] = alignedPoses["Controller"]["aligned_position"][:,1]
-    df_Observers['Controller_tz'] = alignedPoses["Controller"]["aligned_position"][:,2]
-    df_Observers['Controller_qx'] = new_world_ControllerLimb_Ori_quat[:,0]
-    df_Observers['Controller_qy'] = new_world_ControllerLimb_Ori_quat[:,1]
-    df_Observers['Controller_qz'] = new_world_ControllerLimb_Ori_quat[:,2]
-    df_Observers['Controller_qw'] = new_world_ControllerLimb_Ori_quat[:,3]
-if 'Hartley_IMU_Position_x' in df_Observers.columns:
-    world_HartleyIMU_Pos = np.array([df_Observers['Hartley_IMU_Position_x'], df_Observers['Hartley_IMU_Position_y'], df_Observers['Hartley_IMU_Position_z']]).T
-    world_HartleyIMU_Ori_R = R.from_quat(df_Observers[["Hartley_IMU_Orientation_x", "Hartley_IMU_Orientation_y", "Hartley_IMU_Orientation_z", "Hartley_IMU_Orientation_w"]].values)
-
-    posImuFb = df_Observers[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
-    quaternions_rImuFb = df_Observers[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
+    posImuFb = data_df[['HartleyIEKF_imuFbKine_position_x', 'HartleyIEKF_imuFbKine_position_y', 'HartleyIEKF_imuFbKine_position_z']].to_numpy()
+    quaternions_rImuFb = data_df[['HartleyIEKF_imuFbKine_ori_x', 'HartleyIEKF_imuFbKine_ori_y', 'HartleyIEKF_imuFbKine_ori_z', 'HartleyIEKF_imuFbKine_ori_w']].to_numpy()
     rImuFb = R.from_quat(quaternions_rImuFb)
 
     world_Hartley_Pos = world_HartleyIMU_Pos + world_HartleyIMU_Ori_R.apply(posImuFb)
@@ -549,17 +471,31 @@ if 'Hartley_IMU_Position_x' in df_Observers.columns:
         averageInterval
     )
 
-    
     new_world_Hartley_Ori_quat = alignedPoses["Hartley"]["aligned_orientation"].as_quat()
-    df_Observers['Hartley_Position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
-    df_Observers['Hartley_Position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
-    df_Observers['Hartley_Position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
-    df_Observers['Hartley_Orientation_x'] = new_world_Hartley_Ori_quat[:,0]
-    df_Observers['Hartley_Orientation_y'] = new_world_Hartley_Ori_quat[:,1]
-    df_Observers['Hartley_Orientation_z'] = new_world_Hartley_Ori_quat[:,2]
-    df_Observers['Hartley_Orientation_w'] = new_world_Hartley_Ori_quat[:,3]
+    data_df['Hartley_position_x'] = alignedPoses["Hartley"]["aligned_position"][:,0]
+    data_df['Hartley_position_y'] = alignedPoses["Hartley"]["aligned_position"][:,1]
+    data_df['Hartley_position_z'] = alignedPoses["Hartley"]["aligned_position"][:,2]
+    data_df['Hartley_orientation_x'] = new_world_Hartley_Ori_quat[:,0]
+    data_df['Hartley_orientation_y'] = new_world_Hartley_Ori_quat[:,1]
+    data_df['Hartley_orientation_z'] = new_world_Hartley_Ori_quat[:,2]
+    data_df['Hartley_orientation_w'] = new_world_Hartley_Ori_quat[:,3]
 
 
+observersList.append("Mocap")
+class InlineListDumper(yaml.SafeDumper):
+    def represent_sequence(self, tag, sequence, flow_style=None):
+        # Use flow style (inline) only for top-level lists
+        return super().represent_sequence(tag, sequence, flow_style=True)
+    
+data = dict(
+    observers = observersList,
+    robot = robotName,
+    mocapBody = mocapBody,
+    timeStep_s = timeStep_s
+)
+
+with open(f'{path_to_project}/output_data/observers_infos.yaml', 'w') as outfile:
+    yaml.dump(data, outfile, Dumper=InlineListDumper, sort_keys=False)
 
 
 
@@ -575,22 +511,22 @@ if(displayLogs):
 
     figNewPose = go.Figure()
 
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_roll'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_pitch'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_yaw'))
 
-    figNewPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_roll'))
-    figNewPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_pitch'))
-    figNewPose.add_trace(go.Scatter(x=df_Observers["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_yaw'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,0], mode='lines', name='world_RefObserverLimb_Ori_roll'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,1], mode='lines', name='world_RefObserverLimb_Ori_pitch'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=initPosesAndTransfos["RefObserver"]["ori_euler_continuous"][:,2], mode='lines', name='world_RefObserverLimb_Ori_yaw'))
 
 
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=alignedPoses["Mocap"]["aligned_position"][:,0], mode='lines', name='world_MocapLimb_Pos_x'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=alignedPoses["Mocap"]["aligned_position"][:,1], mode='lines', name='world_MocapLimb_Pos_y'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=alignedPoses["Mocap"]["aligned_position"][:,2], mode='lines', name='world_MocapLimb_Pos_z'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=alignedPoses["Mocap"]["aligned_position"][:,0], mode='lines', name='world_MocapLimb_Pos_x'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=alignedPoses["Mocap"]["aligned_position"][:,1], mode='lines', name='world_MocapLimb_Pos_y'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=alignedPoses["Mocap"]["aligned_position"][:,2], mode='lines', name='world_MocapLimb_Pos_z'))
 
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,0], mode='lines', name='world_RefObserverLimb_Pos_x'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,1], mode='lines', name='world_RefObserverLimb_Pos_y'))
-    figNewPose.add_trace(go.Scatter(x=mocapData["t"], y=world_RefObserverLimb_Pos[:,2], mode='lines', name='world_RefObserverLimb_Pos_z'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,0], mode='lines', name='world_RefObserverLimb_Pos_x'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,1], mode='lines', name='world_RefObserverLimb_Pos_y'))
+    figNewPose.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Pos[:,2], mode='lines', name='world_RefObserverLimb_Pos_z'))
 
     figNewPose.update_layout(title=f"{scriptName}: Pose after matching")
 
@@ -617,22 +553,22 @@ if(displayLogs):
 
     figTransfo = go.Figure()
 
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_MocapLimb_Ori_transfo_roll'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_MocapLimb_Ori_transfo_pitch'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_MocapLimb_Ori_transfo_yaw'))
 
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_RefObserverLimb_Ori_transfo_roll'))
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_RefObserverLimb_Ori_transfo_pitch'))
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_RefObserverLimb_Ori_transfo_yaw'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,0], mode='lines', name='world_RefObserverLimb_Ori_transfo_roll'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,1], mode='lines', name='world_RefObserverLimb_Ori_transfo_pitch'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_Ori_transfo_euler_continuous[:,2], mode='lines', name='world_RefObserverLimb_Ori_transfo_yaw'))
 
 
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
-    figTransfo.add_trace(go.Scatter(x=mocapData["t"], y=new_world_MocapLimb_pos_transfo[:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_pos_transfo[:,0], mode='lines', name='world_MocapLimb_pos_transfo_x'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_pos_transfo[:,1], mode='lines', name='world_MocapLimb_pos_transfo_y'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=new_world_MocapLimb_pos_transfo[:,2], mode='lines', name='world_MocapLimb_pos_transfo_z'))
 
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_pos_transfo[:,0], mode='lines', name='world_RefObserverLimb_pos_transfo_x'))
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_pos_transfo[:,1], mode='lines', name='world_RefObserverLimb_pos_transfo_y'))
-    figTransfo.add_trace(go.Scatter(x=df_Observers["t"], y=world_RefObserverLimb_pos_transfo[:,2], mode='lines', name='world_RefObserverLimb_pos_transfo_z'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_pos_transfo[:,0], mode='lines', name='world_RefObserverLimb_pos_transfo_x'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_pos_transfo[:,1], mode='lines', name='world_RefObserverLimb_pos_transfo_y'))
+    figTransfo.add_trace(go.Scatter(x=data_df["t"], y=world_RefObserverLimb_pos_transfo[:,2], mode='lines', name='world_RefObserverLimb_pos_transfo_z'))
 
     figTransfo.update_layout(title=f"{scriptName}: Transformations after matching")
 
@@ -763,9 +699,8 @@ else:
 
 
 if save_csv == 'y':
-    mocapData.to_csv(f'{path_to_project}/output_data/resultMocapLimbData.csv', index=False, sep=';')
-    df_Observers.to_csv(f'{path_to_project}/output_data/observerResultsCSV.csv', index=False, sep=';')
-    print("Output CSV file has been saved to observerResultsCSV.csv")
+    data_df.to_csv(f'{path_to_project}/output_data/finalDataCSV.csv', index=False, sep=';')
+    print("Output CSV file has been saved to finalDataCSV.csv")
 else:
     print("Data not saved.")
 
