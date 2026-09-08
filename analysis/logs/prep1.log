@@ -1,0 +1,6 @@
+KO_TRO_2024_RHPS1_SLIPPAGE_1: estimator_library changed for KO_TRO_2024_RHPS1_SLIPPAGE_1; rerun prepare --force
++ ros2 run test_state_obs_ros2 bin_to_rosbag_kinetics.py --bin /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/logReplay_full.bin --out /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag --force --robot rhps1 --write-config /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/resolved_config.yaml --require-exact --observer-prefix Observers_MainObserverPipeline_MCKineticsObserver --mc-rtc-config /tmp/mc_rtc_convert_tyrvogdy/observers/MCKineticsObserver.yaml
+[INFO] [1788708107.703781112] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_WRITE.
+Wrote 20800 Kinetics inputs to /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag
+KO_TRO_2024_RHPS1_SLIPPAGE_1: prepared /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag
+Editable tuning: None

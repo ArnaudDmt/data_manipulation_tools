@@ -1,0 +1,7 @@
+recycled 12 of 829 earlier points as seeds (4 reserved for slippage robustness, best re-scores to J=+0.9297)
+screening skipped: seeding the full phase with 16 points
+/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:901: ExperimentalWarning: Argument ``multivariate`` is an experimental feature. The interface can change in the future.
+  sampler = self.optuna.samplers.TPESampler(seed=SEED, n_startup_trials=self.args.startup,
+/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:901: ExperimentalWarning: Argument ``group`` is an experimental feature. The interface can change in the future.
+  sampler = self.optuna.samplers.TPESampler(seed=SEED, n_startup_trials=self.args.startup,
+phase full: 220 trials on 13 datasets, 12 workers

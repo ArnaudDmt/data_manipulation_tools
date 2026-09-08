@@ -1,0 +1,116 @@
+screening skipped: seeding the full phase with 4 points
+phase full: 300 trials on 13 datasets, 8 workers
+  [full 0002] ok J=+1.9132 geomean=1.057 worst=1.776 wins=29/78 (1006s)
+  [full 0007] ok J=+5.2160 geomean=1.324 worst=4.792 wins=14/78 (1020s)
+  [full 0004] ok J=+12.8261 geomean=2.077 worst=18.179 wins=8/78 (1024s)
+  [full 0001] ok J=+6.6111 geomean=1.428 worst=5.897 wins=10/78 (1038s)
+  [full 0005] ok J=+1.9557 geomean=1.059 worst=1.775 wins=27/78 (1039s)
+  [full 0003] ok J=+1.9132 geomean=1.057 worst=1.776 wins=29/78 (1041s)
+  [full 0006] ok J=+4.8518 geomean=1.341 worst=7.428 wins=18/78 (1041s)
+  [full 0009] ok J=+7.8600 geomean=1.498 worst=8.154 wins=14/78 (891s)
+  [full 0010] ok J=+4.7241 geomean=1.239 worst=3.186 wins=23/78 (890s)
+  [full 0011] ok J=+4.2077 geomean=1.211 worst=4.577 wins=17/78 (868s)
+  [full 0014] ok J=+4.9645 geomean=1.355 worst=3.880 wins=14/78 (885s)
+  [full 0012] ok J=+5.6286 geomean=1.283 worst=6.296 wins=20/78 (889s)
+  [full 0013] ok J=+5.0285 geomean=1.275 worst=4.803 wins=16/78 (892s)
+Traceback (most recent call last):
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 838, in evaluate
+    ratios.update(velocity_ratios(directory, projects, self.velocities))
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 579, in velocity_ratios
+    local = estimated_local_velocity(pose, velocity, grid, settings)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 554, in estimated_local_velocity
+    rotation = Slerp(pose[:, 0], Rotation.from_quat(pose[:, 4:8]))(np.clip(grid, pose[0, 0], pose[-1, 0]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "_rotation.pyx", line 3694, in scipy.spatial.transform._rotation.Slerp.__init__
+ValueError: Times must be in strictly increasing order.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 1103, in <module>
+    main()
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 1077, in main
+    full = search.phase("full", datasets, args.full_trials, seeds=promoted)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 896, in phase
+    list(pool.map(one, range(remaining)))
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 892, in one
+    value = self.evaluate(dict(trial.params), projects, name)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 849, in evaluate
+    value, ratios = FAILURE_OBJECTIVE, {}
+                    ^^^^^^^^^^^^^^^^^
+NameError: name 'FAILURE_OBJECTIVE' is not defined
+recycled 8 of 13 earlier points as seeds (best re-scores to J=+1.9132)
+screening skipped: seeding the full phase with 12 points
+phase full: 287 trials on 13 datasets, 8 workers
+  [full 0001] ok J=+1.9557 geomean=1.059 worst=1.775 wins=27/78 (980s)
+  [full 0007] ok J=+1.9557 geomean=1.059 worst=1.775 wins=27/78 (1007s)
+  [full 0005] ok J=+1.9557 geomean=1.059 worst=1.775 wins=27/78 (1007s)
+  [full 0003] ok J=+1.9132 geomean=1.057 worst=1.776 wins=29/78 (1015s)
+  [full 0006] ok J=+4.2077 geomean=1.211 worst=4.577 wins=17/78 (1014s)
+  [full 0004] ok J=+1.9132 geomean=1.057 worst=1.776 wins=29/78 (1017s)
+  [full 0002] ok J=+1.9132 geomean=1.057 worst=1.776 wins=29/78 (1019s)
+  [full 0000] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (1810s)
+  [full 0009] ok J=+4.8518 geomean=1.341 worst=7.428 wins=18/78 (870s)
+  [full 0010] ok J=+4.9645 geomean=1.355 worst=3.880 wins=14/78 (875s)
+  [full 0013] ok J=+2.9774 geomean=1.105 worst=2.863 wins=26/78 (875s)
+  [full 0012] ok J=+1.6348 geomean=1.060 worst=1.973 wins=29/78 (881s)
+  [full 0011] ok J=+5.0285 geomean=1.275 worst=4.803 wins=16/78 (884s)
+  [full 0014] ok J=+2.4752 geomean=1.087 worst=2.936 wins=27/78 (884s)
+  [full 0015] ok J=+1.4946 geomean=1.049 worst=2.127 wins=34/78 (608s)
+  [full 0008] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (1810s)
+Traceback (most recent call last):
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 1115, in <module>
+    args.tracking / "MCKineticsObserver.yaml")
+
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 1089, in main
+    else:
+          
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 908, in phase
+    list(pool.map(one, range(remaining)))
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 619, in result_iterator
+    yield _result_or_cancel(fs.pop())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 317, in _result_or_cancel
+    return fut.result(timeout)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/lib/python3.12/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py", line 905, in one
+    study.tell(trial, value)
+  File "/home/arnaud/devel/src/data_manipulation_tools/.venv/lib/python3.12/site-packages/optuna/study/study.py", line 698, in tell
+    _tell_with_warning(
+  File "/home/arnaud/devel/src/data_manipulation_tools/.venv/lib/python3.12/site-packages/optuna/study/_tell.py", line 113, in _tell_with_warning
+    raise ValueError(f"Cannot tell a {frozen_trial.state.name} trial.")
+ValueError: Cannot tell a COMPLETE trial.
+recycled 8 of 264 earlier points as seeds (best re-scores to J=+1.3694)
+screening skipped: seeding the full phase with 12 points
+phase full: 27 trials on 13 datasets, 8 workers
+  [full 0005] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (31s)
+  [full 0002] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (31s)
+  [full 0000] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (32s)
+  [full 0004] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (31s)
+  [full 0007] failed J=+50.0000 geomean=nan worst=nan wins=0/1 (30s)

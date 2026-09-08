@@ -1,0 +1,120 @@
+=== RUN tuned_yaw100 ===
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration
+[INFO] [1788704530.859534768] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704530.900523798] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-22-11-089687-OMEN-Arnaud-3890736
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3890740]
+[INFO] [ros2-2]: process started with pid [3890741]
+[kinetics_observer_node-1] [WARN] [1788704531.148080586] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704531.148091519] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704531.159070168] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[kinetics_observer_node-1] [INFO] [1788704531.349452648] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[ros2-2] [WARN] [1788704531.400724318] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704531.400735351] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704531.419449982] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704531.420030668] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704531.423356518] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay'
+[ros2-2] [INFO] [1788704531.426530477] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704531.426543908] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704531.427335364] [rosbag2_recorder]: Topics discovery started.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3890801]
+[rosbag_publish_kinetics-3] [WARN] [1788704531.655994936] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704531.656007249] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] [INFO] [1788704531.862449158] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704531.862473601] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704531.862480484] [rosbag2_recorder]: Topics discovery stopped.
+[rosbag_publish_kinetics-3] [INFO] [1788704531.899195770] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704531.973950625] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100-a2f6ad1a50/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704532.074334932] [rosbag_publish_kinetics]: Started synchronized replay of 20800 inputs.
+[kinetics_observer_node-1] [INFO] [1788704532.083772487] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[kinetics_observer_node-1] [ERROR] [1788704532.111123539] [kinetics_observer]: Rejected input: input timestamps must increase
+Terminated
+=== FAIL tuned_yaw100 ===
+=== RUN tuned_yaw100_rp ===
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration
+[INFO] [1788704539.953907925] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704539.995273854] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-22-20-178632-OMEN-Arnaud-3890881
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3890884]
+[INFO] [ros2-2]: process started with pid [3890885]
+[kinetics_observer_node-1] [WARN] [1788704540.238256037] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704540.238266507] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704540.249705919] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704540.471759326] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704540.472311766] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704540.489985354] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704540.490349144] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704540.492852952] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/standalone_replay'
+[ros2-2] [INFO] [1788704540.494265451] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704540.494274598] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704540.494721870] [rosbag2_recorder]: Topics discovery started.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3890940]
+[rosbag_publish_kinetics-3] [WARN] [1788704540.754095771] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704540.754104661] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] [INFO] [1788704540.936263773] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704540.936284894] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704540.936287316] [rosbag2_recorder]: Topics discovery stopped.
+[rosbag_publish_kinetics-3] [INFO] [1788704540.963969187] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/KO_TRO_2024_RHPS1_SLIPPAGE_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704541.025424959] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704541.125949481] [rosbag_publish_kinetics]: Started synchronized replay of 20800 inputs.
+[kinetics_observer_node-1] [INFO] [1788704541.127174866] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[kinetics_observer_node-1] [INFO] [1788704542.467443792] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[rosbag_publish_kinetics-3] [INFO] [1788704542.503641595] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3890884]
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3890940]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[ros2-2] [INFO] [1788704543.120066673] [rosbag2_recorder]: Pausing recording.
+[ros2-2] [INFO] [1788704543.120149818] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[ros2-2] [INFO] [1788704543.122428862] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788704543.124698866] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [ros2-2]: process has finished cleanly [pid 3890885]
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 1.0
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 305/305 [100%] in 0.0s (604186.51/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+13.576447478176567
+0.012688605141895945
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 1.0
+number of samples = 0 
+Too few samples! Will not compute.
+Traceback (most recent call last):
+  File "/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py", line 189, in <module>
+    traj_list, mt_error = analyze_multiple_trials(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py", line 78, in analyze_multiple_trials
+    traj.compute_relative_errors(num_pairs = num_samples_rel_error)
+  File "/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/../src/rpg_trajectory_evaluation/trajectory.py", line 410, in compute_relative_errors
+    suc = suc and self.compute_relative_error_at_subtraj_len(l, num_pairs = num_pairs)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/../src/rpg_trajectory_evaluation/trajectory.py", line 360, in compute_relative_error_at_subtraj_len
+    _, e_trans, e_trans_z,  e_trans_x_y_norm, e_trans_perc, e_yaw, e_tilt, e_gravity, e_rot, e_rot_deg_per_m =\
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected 10, got 7)
+kinetics_eval: Command '['/home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python', '/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py', '/home/arnaud/devel/src/data_manipulation_tools/results/yw_tuned_yaw100_rp-37c82470a3/KO_TRO_2024_RHPS1_SLIPPAGE_1/eval', '--recalculate_errors', '--no_plot', '--estimator_name', 'Kinetics', '--predefined_sublengths', '1.0']' returned non-zero exit status 1.
+=== FAIL tuned_yaw100_rp ===
+=== YAWTEST DONE ===

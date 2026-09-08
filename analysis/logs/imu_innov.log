@@ -1,0 +1,11 @@
+state corrections per step, median while loaded
+If the accelerometer disagreed with the contact-driven base motion, the correction applied
+to linear velocity would rise during slip alongside the position correction.
+
+run                             base pos (mm)  linVel (mm/s)   gyroBias (rad/s)  ratio v/p
+nom  KO_TRO2024_RHPS1_1                0.1893         1.2998           8.14e-08       6.87
+nom  KO_TRO2024_RHPS1_3                0.1009         0.6876           6.62e-08       6.82
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_1         0.2729         2.3291           5.14e-07       8.53
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_2         0.2963         2.6005           5.48e-07       8.78
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_3         0.2990         2.5576           5.70e-07       8.55
+DONE

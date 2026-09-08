@@ -1,0 +1,9 @@
+# Make the visco-elastic law binding. contactForce/TorqueProcessVariance are the allowed per-step
+# deviation of the contact wrench from the visco-elastic prediction (the state dynamics overwrite
+# the wrench state with that prediction). At 1e4 / 2500 they are sigma = 100 N and 50 N.m against
+# sensor sigmas of 1 N and 0.03 N.m, so the filter discounts the model 100:1 in force and 1700:1
+# in torque and never corrects the state from a wrench disagreement. Set to sensor level so the
+# law actually constrains: slip (deflection mismatch), velocity (the damping term) and yaw (the
+# angular law) all flow through this channel.
+covariances:
+  contact_process: [1.0e-09, 1.0e-09, 1.0e-10, 0.0, 0.0, 1.0e-08, 1.0, 1.0, 1.0, 1.0e-03, 1.0e-03, 1.0e-03]

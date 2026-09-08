@@ -1,0 +1,53 @@
+/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:567: ExperimentalWarning: Argument ``multivariate`` is an experimental feature. The interface can change in the future.
+  sampler = self.optuna.samplers.TPESampler(seed=SEED, n_startup_trials=self.args.startup,
+/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:567: ExperimentalWarning: Argument ``group`` is an experimental feature. The interface can change in the future.
+  sampler = self.optuna.samplers.TPESampler(seed=SEED, n_startup_trials=self.args.startup,
+phase screen: 44 trials on 5 datasets, 12 workers
+  [screen 0157] ok J=+0.9780 geomean=1.203 worst=2.018 wins=5/30 (124s)
+  [screen 0158] ok J=+2.1826 geomean=1.323 worst=4.856 wins=3/30 (124s)
+  [screen 0165] ok J=+3.5895 geomean=1.465 worst=13.225 wins=7/30 (127s)
+  [screen 0160] ok J=+0.9838 geomean=1.210 worst=2.032 wins=4/30 (132s)
+  [screen 0166] ok J=+1.5562 geomean=1.177 worst=3.239 wins=7/30 (132s)
+  [screen 0159] ok J=+1.5880 geomean=1.158 worst=3.441 wins=8/30 (134s)
+  [screen 0161] ok J=+2.2528 geomean=1.274 worst=5.314 wins=8/30 (133s)
+  [screen 0164] ok J=+4.7077 geomean=1.873 worst=23.188 wins=3/30 (135s)
+  [screen 0162] ok J=+0.6226 geomean=1.102 worst=1.600 wins=9/30 (134s)
+  [screen 0156] failed J=+5.0000 geomean=nan worst=nan wins=0/1 (138s)
+  [screen 0163] ok J=+3.5484 geomean=1.839 worst=9.190 wins=5/30 (137s)
+  [screen 0167] ok J=+1.0465 geomean=1.159 worst=2.199 wins=8/30 (137s)
+  [screen 0168] ok J=+2.9755 geomean=1.345 worst=8.842 wins=7/30 (129s)
+  [screen 0169] ok J=+0.7382 geomean=1.124 worst=1.774 wins=9/30 (129s)
+  [screen 0170] ok J=+5.9060 geomean=2.087 worst=52.922 wins=4/30 (129s)
+  [screen 0171] ok J=+1.0761 geomean=1.193 worst=2.167 wins=7/30 (129s)
+  [screen 0172] ok J=+2.3409 geomean=1.668 worst=3.845 wins=5/30 (128s)
+  [screen 0173] ok J=+3.2279 geomean=1.394 worst=10.501 wins=7/30 (134s)
+  [screen 0179] ok J=+0.8751 geomean=1.165 worst=1.919 wins=6/30 (132s)
+  [screen 0176] ok J=+6.0971 geomean=3.982 worst=23.454 wins=2/30 (132s)
+  [screen 0177] ok J=+2.6338 geomean=1.323 worst=6.868 wins=6/30 (135s)
+  [screen 0178] ok J=+0.7651 geomean=1.159 worst=1.712 wins=7/30 (135s)
+  [screen 0174] ok J=+0.5437 geomean=1.084 worst=1.524 wins=10/30 (136s)
+  [screen 0175] ok J=+4.2650 geomean=1.543 worst=20.811 wins=8/30 (136s)
+  [screen 0180] ok J=+4.3412 geomean=2.009 worst=15.420 wins=1/30 (123s)
+  [screen 0182] ok J=+0.8327 geomean=1.130 worst=1.795 wins=7/30 (126s)
+  [screen 0181] ok J=+1.5429 geomean=1.194 worst=3.197 wins=8/30 (134s)
+  [screen 0183] ok J=+0.6627 geomean=1.083 worst=1.600 wins=8/30 (127s)
+  [screen 0184] ok J=+1.0623 geomean=1.198 worst=2.132 wins=8/30 (132s)
+  [screen 0187] ok J=+0.6541 geomean=1.148 worst=1.578 wins=9/30 (125s)
+  [screen 0191] ok J=+1.4391 geomean=1.256 worst=2.800 wins=9/30 (128s)
+  [screen 0185] ok J=+1.4626 geomean=1.358 worst=2.538 wins=5/30 (135s)
+  [screen 0189] ok J=+0.7073 geomean=1.114 worst=1.698 wins=9/30 (130s)
+  [screen 0188] ok J=+2.5634 geomean=1.529 worst=5.228 wins=5/30 (133s)
+  [screen 0190] ok J=+0.5590 geomean=1.065 worst=1.593 wins=10/30 (132s)
+  [screen 0186] ok J=+0.8353 geomean=1.177 worst=1.800 wins=6/30 (137s)
+  [screen 0192] ok J=+1.2754 geomean=1.218 worst=2.567 wins=6/30 (116s)
+  [screen 0193] ok J=+0.9548 geomean=1.203 worst=1.934 wins=6/30 (113s)
+  [screen 0195] ok J=+0.9683 geomean=1.161 worst=2.018 wins=8/30 (116s)
+  [screen 0194] ok J=+5.6353 geomean=1.879 worst=49.618 wins=5/30 (123s)
+  [screen 0197] ok J=+1.8873 geomean=1.230 worst=4.001 wins=7/30 (113s)
+  [screen 0196] ok J=+1.0576 geomean=1.220 worst=2.064 wins=4/30 (119s)
+  [screen 0199] ok J=+1.2114 geomean=1.281 worst=2.141 wins=3/30 (110s)
+  [screen 0198] ok J=+2.0706 geomean=1.224 worst=4.676 wins=8/30 (113s)
+phase screen done: best J=+0.5190 over 200 trials; promoting 13 points
+/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:565: FutureWarning: `restart_strategy` has been deprecated in v4.4.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v4.4.0. From v4.4.0 onward, `restart_strategy` automatically falls back to `None`. `restart_strategy` will be supported in OptunaHub.
+  sampler=self.optuna.samplers.CmaEsSampler(seed=SEED, restart_strategy="ipop"),
+phase full: 70 trials on 13 datasets, 12 workers

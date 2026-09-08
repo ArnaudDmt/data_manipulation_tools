@@ -1,0 +1,4 @@
+# Per-contact slip velocity state, evaluated with finite-difference Jacobians so the result does
+# not depend on the analytical blocks still being reconciled (median agreement 8.6e-5, worst 2.4%).
+settings:
+  use_finite_difference_jacobians: true

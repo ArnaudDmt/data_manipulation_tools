@@ -1,0 +1,15 @@
+
+=== rhps1     noise floor [std]     force N, moment N.m
+sensor                axis    floor std     variance
+LeftFootForceSensor   cx         0.0250    6.244e-04
+LeftFootForceSensor   cy         0.0382    1.462e-03
+LeftFootForceSensor   cz         0.0209    4.386e-04
+LeftFootForceSensor   fx         1.3340    1.780e+00
+LeftFootForceSensor   fy         0.8516    7.253e-01
+LeftFootForceSensor   fz         1.0440    1.090e+00
+RightFootForceSensor  cx         0.0269    7.213e-04
+RightFootForceSensor  cy         0.0334    1.113e-03
+RightFootForceSensor  cz         0.0300    9.016e-04
+RightFootForceSensor  fx         1.2040    1.450e+00
+RightFootForceSensor  fy         1.0907    1.190e+00
+RightFootForceSensor  fz         0.9446    8.922e-01

@@ -1,0 +1,21 @@
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_1   41 windows of 1 s
+  measured tan/normal ratio: p50 0.133  p75 0.144  p95 0.177  max 0.213
+  KO rel-trans err  low-sat    4.68 mm   high-sat   14.85 mm   (x3.18)
+  RI rel-trans err  low-sat   37.08 mm   high-sat   85.52 mm   (x2.31)
+  KO/RI ratio:   low-sat 0.126   high-sat 0.174   KO loses ground when saturated
+  corr(sat, KO-RI err) = -0.179
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_2   45 windows of 1 s
+  measured tan/normal ratio: p50 0.132  p75 0.137  p95 0.165  max 0.178
+  KO rel-trans err  low-sat   12.10 mm   high-sat   11.96 mm   (x0.99)
+  RI rel-trans err  low-sat   91.50 mm   high-sat  267.90 mm   (x2.93)
+  KO/RI ratio:   low-sat 0.132   high-sat 0.045   KO does NOT lose ground when saturated
+  corr(sat, KO-RI err) = -0.009
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_3   42 windows of 1 s
+  measured tan/normal ratio: p50 0.135  p75 0.150  p95 0.182  max 0.224
+  KO rel-trans err  low-sat   18.55 mm   high-sat   24.26 mm   (x1.31)
+  RI rel-trans err  low-sat   30.78 mm   high-sat  139.93 mm   (x4.55)
+  KO/RI ratio:   low-sat 0.602   high-sat 0.173   KO does NOT lose ground when saturated
+  corr(sat, KO-RI err) = -0.135

@@ -1,0 +1,20 @@
+=== HRP5P_LongWalk   angStiffness 1000 N.m/rad
+contact             |dTz| p50      p90  -> yaw p90 [deg]  |dTxy| p50
+LeftFootCenter          0.308    6.146            0.3521      12.942
+RightFootCenter         0.308    6.923            0.3967       4.611
+  [RHPS1 for comparison: p50 0.4-1.7, p90 8.5-11.9, yaw p90 0.67-0.94 deg]
+  [HRP5P MultiContact:   p50 0.7-1.1, p90 3.1-4.4,  yaw p90 0.18-0.25 deg]
+
+  --- 1 m sub-trajectories (n=16919)   overall ratio 1.015
+  residual quartile             KO yaw    RI yaw    ratio
+  Q1 (0.001-0.005)          0.2044    0.2078    0.983
+  Q2 (0.005-0.007)          0.2023    0.1970    1.027
+  Q3 (0.007-0.249)          0.1974    0.1911    1.033
+  Q4 (0.249-0.814)          0.2026    0.1988    1.019
+
+  --- 10 m sub-trajectories (n=16472)   overall ratio 0.488
+  residual quartile             KO yaw    RI yaw    ratio
+  Q1 (0.004-0.005)          0.2752    0.7109    0.387
+  Q2 (0.005-0.007)          0.2244    0.4896    0.458
+  Q3 (0.007-0.242)          0.2481    0.4690    0.529
+  Q4 (0.242-0.494)          0.2482    0.2827    0.878

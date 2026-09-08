@@ -1,0 +1,7 @@
+=== BASELINE (installed config, no calibration) ===
+Results: /home/arnaud/devel/src/data_manipulation_tools/results/WB_base-532f02dcf0
+Plotly report: /home/arnaud/devel/src/data_manipulation_tools/results/WB_base-532f02dcf0/report.html
+=== CALIBRATED ===
+Results: /home/arnaud/devel/src/data_manipulation_tools/results/WB_cal-d2deb1c710
+Plotly report: /home/arnaud/devel/src/data_manipulation_tools/results/WB_cal-d2deb1c710/report.html
+=== WB DONE ===

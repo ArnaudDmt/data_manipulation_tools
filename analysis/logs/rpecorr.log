@@ -1,0 +1,20 @@
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_1   1814 sub-trajectories of 1.0 m
+  RPE trans_xy RMSE   KO   17.43 mm   RI   31.67 mm   ratio 0.550   <-- benchmark KO 18.64 / RI 31.26 = 0.596
+  saturated fraction per sub-traj: p50 0.024  p90 0.038
+  low-saturation  KO   17.09  RI   31.58  ratio 0.541
+  high-saturation KO   17.77  RI   31.75  ratio 0.560
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_2   1988 sub-trajectories of 1.0 m
+  RPE trans_xy RMSE   KO   18.23 mm   RI   31.24 mm   ratio 0.584   <-- benchmark KO 18.64 / RI 31.26 = 0.596
+  saturated fraction per sub-traj: p50 0.020  p90 0.036
+  low-saturation  KO   18.91  RI   32.31  ratio 0.585
+  high-saturation KO   17.54  RI   30.13  ratio 0.582
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_3   1815 sub-trajectories of 1.0 m
+  RPE trans_xy RMSE   KO   19.67 mm   RI   30.20 mm   ratio 0.651   <-- benchmark KO 18.64 / RI 31.26 = 0.596
+  saturated fraction per sub-traj: p50 0.020  p90 0.038
+  low-saturation  KO   19.29  RI   31.75  ratio 0.607
+  high-saturation KO   20.05  RI   28.55  ratio 0.702
+
+POOLED slippage: KO 18.46 mm  RI 31.05 mm  ratio 0.595

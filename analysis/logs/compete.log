@@ -1,0 +1,30 @@
+
+=== KO_TRO2024_RHPS1_1
+  LeftFootCenter   inside-cone n= 46790   over-cone n=  7597
+    inside cone (<=0.4)    anchor corr     0.43 um   unmodeled-force corr    0.285 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    74.69 um   unmodeled-force corr    4.176 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x175.45    unmodeled force x14.63    deflection x  nan
+  RightFootCenter   inside-cone n= 45528   over-cone n=  6142
+    inside cone (<=0.4)    anchor corr     0.40 um   unmodeled-force corr    0.271 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    55.89 um   unmodeled-force corr    4.034 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x141.13    unmodeled force x14.88    deflection x  nan
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_1
+  LeftFootCenter   inside-cone n=  8350   over-cone n=  2251
+    inside cone (<=0.4)    anchor corr     9.25 um   unmodeled-force corr    1.714 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    87.65 um   unmodeled-force corr    3.899 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x 9.47    unmodeled force x 2.27    deflection x  nan
+  RightFootCenter   inside-cone n=  7099   over-cone n=  2133
+    inside cone (<=0.4)    anchor corr     5.59 um   unmodeled-force corr    1.172 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    37.64 um   unmodeled-force corr    3.841 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x 6.73    unmodeled force x 3.28    deflection x  nan
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_2
+  LeftFootCenter   inside-cone n=  8246   over-cone n=  2450
+    inside cone (<=0.4)    anchor corr    12.89 um   unmodeled-force corr    2.616 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    78.21 um   unmodeled-force corr    4.042 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x 6.07    unmodeled force x 1.55    deflection x  nan
+  RightFootCenter   inside-cone n=  6974   over-cone n=  2165
+    inside cone (<=0.4)    anchor corr    13.59 um   unmodeled-force corr    2.352 N   tangential deflection     nan mm
+    OVER cone  (>0.8)      anchor corr    44.07 um   unmodeled-force corr    4.437 N   tangential deflection     nan mm
+    growth over-cone / inside:   anchor x 3.24    unmodeled force x 1.89    deflection x  nan

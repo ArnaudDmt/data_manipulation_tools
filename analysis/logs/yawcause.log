@@ -1,0 +1,6 @@
+         yaw RPE rms   bias-injected yaw    corr    share
+KO            0.4492              0.0649   0.113    14.4%
+RI            0.4197              0.0204   0.249     4.9%
+
+  yaw RPE gap KO-RI  = 0.0295 deg
+  bias-injected gap  = 0.0444 deg

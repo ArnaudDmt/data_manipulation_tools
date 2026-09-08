@@ -1,0 +1,31 @@
+force/torque sensor noise, measured two ways
+  unloaded: std while the foot carries no load (fz < 10 N)
+  hf: std of consecutive differences / sqrt(2), i.e. the white part only
+
+run        foot       chan  unloaded sd      hf sd  n_unloaded
+RHPS1      RightFoot  cx         0.0634     0.3876       13157
+RHPS1      RightFoot  cy         0.0980     0.9672       13157
+RHPS1      RightFoot  cz         0.0573     0.2113       13157
+RHPS1      RightFoot  fx         2.6658     2.9517       13157
+RHPS1      RightFoot  fy         2.2611     1.7427       13157
+RHPS1      RightFoot  fz         1.9851     7.6925       13157
+RHPS1      LeftFoot   cx         0.0804     0.3530       13737
+RHPS1      LeftFoot   cy         0.1633     0.8088       13737
+RHPS1      LeftFoot   cz         0.0652     0.1899       13737
+RHPS1      LeftFoot   fx         3.2983     2.9835       13737
+RHPS1      LeftFoot   fy         1.7441     1.8472       13737
+RHPS1      LeftFoot   fz         3.2190     8.2083       13737
+HRP5P-MC   RightFoot  cx         0.0770     0.2395        1204
+HRP5P-MC   RightFoot  cy         0.0794     0.3976        1204
+HRP5P-MC   RightFoot  cz         0.1502     0.1504        1204
+HRP5P-MC   RightFoot  fx         1.7222     1.9927        1204
+HRP5P-MC   RightFoot  fy         2.1295     1.3555        1204
+HRP5P-MC   RightFoot  fz         1.8187     6.6175        1204
+HRP5P-MC   LeftFoot   cx         0.0907     0.2519        1447
+HRP5P-MC   LeftFoot   cy         0.0953     0.4628        1447
+HRP5P-MC   LeftFoot   cz         0.1090     0.1541        1447
+HRP5P-MC   LeftFoot   fx         1.9464     2.8281        1447
+HRP5P-MC   LeftFoot   fy         2.1515     1.3553        1447
+HRP5P-MC   LeftFoot   fz         1.9698     7.6422        1447
+
+config says: forceSensorVariance 1e0 -> sigma 1 N ; torqueSensorVariance 9e-4 -> sigma 0.03 N.m

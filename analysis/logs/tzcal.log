@@ -1,0 +1,26 @@
+
+=== rhps1     measured tau_z during single support [N.m]
+dataset                       foot         n  tau_z p50      p25      p75  |tau_z|/fz  tau_x p50  tau_y p50
+KO_TRO2024_RHPS1_1            LeftF    13646     -7.039  -10.173   -2.029      0.0122    -22.227      1.088
+KO_TRO2024_RHPS1_1            Right    13087      1.915   -4.014    7.156      0.0106     13.257     -0.630
+KO_TRO2024_RHPS1_2            LeftF    12194     -7.414  -10.024   -2.955      0.0125    -20.871      1.115
+KO_TRO2024_RHPS1_2            Right    11526      3.036   -2.067    7.286      0.0097     11.559      2.051
+KO_TRO2024_RHPS1_3            LeftF    12586     -6.826   -9.683   -1.831      0.0119    -20.664      1.324
+KO_TRO2024_RHPS1_3            Right    11659      1.829   -3.270    6.568      0.0092     12.728      0.069
+KO_TRO2024_RHPS1_4            LeftF    12798     -6.020   -9.151   -1.287      0.0109    -18.492     -0.005
+KO_TRO2024_RHPS1_4            Right    11461      2.635   -2.500    6.827      0.0089     12.283      2.875
+KO_TRO2024_RHPS1_5            LeftF    14018     -6.973  -10.039   -2.209      0.0119    -20.943      0.894
+KO_TRO2024_RHPS1_5            Right    13085      2.702   -2.270    6.820      0.0092     15.015      2.398
+KO_TRO_2024_RHPS1_SLIPPAGE_1  LeftF     5249     -4.847   -8.905    0.080      0.0101    -14.607     -4.081
+KO_TRO_2024_RHPS1_SLIPPAGE_1  Right     4196      1.972   -3.603    6.226      0.0092     11.697     -0.830
+
+=== hrp5_p     measured tau_z during single support [N.m]
+dataset                       foot         n  tau_z p50      p25      p75  |tau_z|/fz  tau_x p50  tau_y p50
+HRP5_MultiContact_1           LeftF     1234      0.847   -3.035    5.001      0.0041      8.146    -11.439
+HRP5_MultiContact_1           Right     1526     -2.184   -4.027   -0.806      0.0033     -8.870     -9.580
+HRP5_MultiContact_2           LeftF     1236      1.038   -2.944    5.014      0.0042      7.287    -10.395
+HRP5_MultiContact_2           Right     1522     -1.982   -4.009   -0.698      0.0031     -8.787     -9.760
+HRP5_MultiContact_3           LeftF     1231      0.484   -3.342    4.815      0.0041      5.963    -19.274
+HRP5_MultiContact_3           Right     1512     -1.919   -4.657   -0.686      0.0031     -9.659    -15.341
+HRP5_MultiContact_4           LeftF     1232      0.663   -2.951    4.483      0.0041      8.400    -13.285
+HRP5_MultiContact_4           Right     1516     -1.839   -3.828   -0.472      0.0030     -9.592    -11.264

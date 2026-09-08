@@ -1,0 +1,24 @@
+
+=== rhps1     unloaded sensor noise [std]      force N, moment N.m
+sensor                axis     raw std   high-passed std   -> variance
+LeftFootForceSensor   cx        0.1103            0.1095     1.198e-02
+LeftFootForceSensor   cy        0.2160            0.2140     4.580e-02
+LeftFootForceSensor   cz        0.0692            0.0672     4.515e-03
+LeftFootForceSensor   fx        3.3919            3.4212     1.170e+01
+LeftFootForceSensor   fy        1.7552            1.7681     3.126e+00
+LeftFootForceSensor   fz        3.6170            3.4497     1.190e+01
+RightFootForceSensor  cx        0.0778            0.0715     5.114e-03
+RightFootForceSensor  cy        0.1207            0.1179     1.389e-02
+RightFootForceSensor  cz        0.0643            0.0618     3.818e-03
+RightFootForceSensor  fx        2.8416            2.8476     8.109e+00
+RightFootForceSensor  fy        2.2126            2.2265     4.957e+00
+RightFootForceSensor  fz        2.1900            2.0388     4.157e+00
+
+=== hrp5_p     unloaded sensor noise [std]      force N, moment N.m
+sensor                axis     raw std   high-passed std   -> variance
+LeftHandForceSensor   cx        0.1951            0.1744     3.042e-02
+LeftHandForceSensor   cy        0.5430            0.1934     3.741e-02
+LeftHandForceSensor   cz        0.0570            0.0566     3.198e-03
+LeftHandForceSensor   fx        6.8738            1.9844     3.938e+00
+LeftHandForceSensor   fy        3.0085            1.6997     2.889e+00
+LeftHandForceSensor   fz        3.5030            1.9354     3.746e+00

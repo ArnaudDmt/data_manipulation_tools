@@ -1,0 +1,5 @@
+KO_TRO2024_RHPS1_3     windows= 210  slope = 0.9814   |error| median: raw   6.72 mm  after scale correction   6.37 mm   ->   5.2% of the error is the scale
+KO_TRO2024_RHPS1_1     windows= 235  slope = 0.9771   |error| median: raw   7.00 mm  after scale correction   6.50 mm   ->   7.1% of the error is the scale
+HRP5_MultiContact_1    windows=  35  slope = 0.9953   |error| median: raw   1.12 mm  after scale correction   1.09 mm   ->   2.4% of the error is the scale
+HRP5_MultiContact_3    windows=  35  slope = 0.9950   |error| median: raw   1.19 mm  after scale correction   1.16 mm   ->   2.4% of the error is the scale
+DONE

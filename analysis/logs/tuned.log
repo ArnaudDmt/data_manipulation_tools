@@ -1,0 +1,33 @@
+=== TUNED alpha=0.0 ===
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/configuration
+[INFO] [1788687328.024300634] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788687328.072118585] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-18-35-28-260954-OMEN-Arnaud-3871417
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3871420]
+[INFO] [ros2-2]: process started with pid [3871421]
+[kinetics_observer_node-1] [WARN] [1788687328.311075494] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788687328.311085707] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788687328.321251320] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[kinetics_observer_node-1] [INFO] [1788687328.510424816] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[ros2-2] [WARN] [1788687328.565582479] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788687328.566004085] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788687328.585379239] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788687328.585474558] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788687328.588977271] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/standalone_replay'
+[ros2-2] [INFO] [1788687328.590089473] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788687328.590267182] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788687328.590556915] [rosbag2_recorder]: Topics discovery started.
+[ros2-2] [INFO] [1788687328.696177774] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788687328.696197952] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788687328.696200439] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3871475]
+[rosbag_publish_kinetics-3] [WARN] [1788687328.831599446] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788687328.831609900] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788687328.863904680] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788687328.909750560] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/tuned0.0-4f57682748/HRP5_MultiContact_1/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788687329.010129701] [rosbag_publish_kinetics]: Started synchronized replay of 11151 inputs.
+[kinetics_observer_node-1] [INFO] [1788687329.017449317] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[kinetics_observer_node-1] [ERROR] [1788687329.058026680] [kinetics_observer]: Rejected input: input timestamps must increase

@@ -1,0 +1,4 @@
+  prediction restPos_W               finite   15255/20800   finite&set   15255   median xy    0.595
+  Valinor currentWorldContactKine    finite   15204/20800   finite&set   15204   median xy    0.462
+  Valinor refPose                    finite   15204/20800   finite&set   15204   median xy    0.462
+  state contact position             finite   15255/20800   finite&set   15255   median xy    0.595

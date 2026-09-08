@@ -1,0 +1,3 @@
+# Config trees copied for opt-in A/B runs are large and reproducible from the installed config
+# plus the values recorded in ../KINETICS_CONTEXT.md; keep the calibration one, drop the rest.
+configs/mufd/

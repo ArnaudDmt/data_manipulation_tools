@@ -1,0 +1,36 @@
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_1   206 windows of 1 s   dt=0.0050
+  window max ratio: p50 0.464  p90 0.569  max 0.748
+  windows with any sample >0.4: 146 of 206
+  overall  KO    8.09 mm   RI    9.39 mm   ratio 0.862   <-- sanity vs benchmark 0.60
+  displacement stratum             n hi/lo   KO/RI unsat   KO/RI sat
+  0.000-0.057 m                      32/36         0.596       0.948   worse
+  0.057-0.117 m                      58/10         1.182       0.906   better
+  0.117-0.286 m                      56/14         0.522       0.836   worse
+  no-saturation windows  KO    3.39  RI    4.29  ratio 0.790
+  saturated windows      KO    9.02  RI   10.49  ratio 0.860
+  --> KO LOSES ground when saturated
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_2   224 windows of 1 s   dt=0.0050
+  window max ratio: p50 0.446  p90 0.543  max 0.678
+  windows with any sample >0.4: 172 of 224
+  overall  KO   10.38 mm   RI   10.74 mm   ratio 0.966   <-- sanity vs benchmark 0.60
+  displacement stratum             n hi/lo   KO/RI unsat   KO/RI sat
+  0.000-0.067 m                      43/31         0.657       1.114   worse
+  0.067-0.125 m                       65/9         1.253       0.977   better
+  0.125-0.271 m                      64/12         1.214       0.849   better
+  no-saturation windows  KO    4.28  RI    6.97  ratio 0.615
+  saturated windows      KO   11.46  RI   11.83  ratio 0.969
+  --> KO LOSES ground when saturated
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_3   209 windows of 1 s   dt=0.0050
+  window max ratio: p50 0.414  p90 0.524  max 0.805
+  windows with any sample >0.4: 123 of 209
+  overall  KO   11.40 mm   RI   11.33 mm   ratio 1.006   <-- sanity vs benchmark 0.60
+  displacement stratum             n hi/lo   KO/RI unsat   KO/RI sat
+  0.000-0.073 m                      33/36         0.979       1.118   worse
+  0.073-0.133 m                      47/22         1.113       1.161   worse
+  0.133-0.256 m                      43/28         1.067       1.000   better
+  no-saturation windows  KO   10.36  RI   10.50  ratio 0.986
+  saturated windows      KO   12.25  RI   11.87  ratio 1.032
+  --> KO LOSES ground when saturated

@@ -1,0 +1,12 @@
+
+=== KO_TRO2024_RHPS1_1   (81792/81792 valid)          [all values in urad/s]
+  KO   (proc 1e-18)    start->end     339.7   peak-peak     847.5   |b|max     612.6   wander/s    8.64
+  RI-EKF (proc 1e-10)  start->end     260.9   peak-peak     327.4   |b|max     324.6   wander/s    2.24
+
+=== KO_TRO2024_RHPS1_3   (80813/80813 valid)          [all values in urad/s]
+  KO   (proc 1e-18)    start->end     280.6   peak-peak     823.1   |b|max     606.2   wander/s    7.44
+  RI-EKF (proc 1e-10)  start->end     221.0   peak-peak     292.6   |b|max     281.8   wander/s    1.41
+
+=== KO_TRO_2024_RHPS1_SLIPPAGE_1   (20800/20800 valid)          [all values in urad/s]
+  KO   (proc 1e-18)    start->end    1175.8   peak-peak    1474.3   |b|max    1186.6   wander/s   50.14
+  RI-EKF (proc 1e-10)  start->end    1196.9   peak-peak    1227.4   |b|max    1196.9   wander/s   26.50

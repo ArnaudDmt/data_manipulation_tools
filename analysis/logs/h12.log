@@ -1,0 +1,9 @@
+KO_TRO2024_RHPS1_3  (404 s, n=80813)
+   KO    yaw drift   +1.36 deg total | linear rate +1.591 deg/min | R2(linear)  0.48
+   RIEKF yaw drift -559.81 deg total | linear rate -97.994 deg/min | R2(linear)  0.78
+KO_TRO2024_RHPS1_1  (409 s, n=81792)
+   KO    yaw drift   -8.12 deg total | linear rate -0.554 deg/min | R2(linear)  0.10
+   RIEKF yaw drift -614.75 deg total | linear rate -95.421 deg/min | R2(linear)  0.78
+HRP5_MultiContact_1  (56 s, n=11151)
+   KO    yaw drift   -1.03 deg total | linear rate -1.254 deg/min | R2(linear)  0.67
+   RIEKF yaw drift  -29.14 deg total | linear rate -46.791 deg/min | R2(linear)  0.82

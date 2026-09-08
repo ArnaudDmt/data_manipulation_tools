@@ -1,0 +1,23 @@
+
+===== rhps1
+  KO_TRO2024_RHPS1_1             LeftF: 19.00deg (n=14304)   Right: 18.24deg (n=15212)
+  KO_TRO2024_RHPS1_2             LeftF: 18.58deg (n=13148)   Right: 17.86deg (n=13560)
+  KO_TRO2024_RHPS1_3             LeftF: 18.55deg (n=13009)   Right: 18.22deg (n=13496)
+  KO_TRO2024_RHPS1_4             LeftF: 18.98deg (n=13252)   Right: 18.20deg (n=13409)
+  KO_TRO2024_RHPS1_5             LeftF: 18.87deg (n=14243)   Right: 18.53deg (n=14636)
+  KO_TRO_2024_RHPS1_SLIPPAGE_1   LeftF: 19.45deg (n=5526)   Right: 18.67deg (n=5488)
+  KO_TRO_2024_RHPS1_SLIPPAGE_2   LeftF: 19.07deg (n=6460)   Right: 17.42deg (n=6491)
+  KO_TRO_2024_RHPS1_SLIPPAGE_3   LeftF: 18.48deg (n=5526)   Right: 17.58deg (n=5672)
+  POOLED LeftFootCenter     tilt 18.84 deg   rotvec_deg [+2.748 +18.613 +0.895]  n=85468
+  POOLED RightFootCenter    tilt 18.14 deg   rotvec_deg [-16.201 +8.165 +0.084]  n=87964
+
+===== hrp5_p
+  HRP5_MultiContact_1            LeftF:  2.92deg (n=1298)   Right:  6.19deg (n=1526)
+  HRP5_MultiContact_2            LeftF:  2.81deg (n=1298)   Right:  6.17deg (n=1522)
+  HRP5_MultiContact_3            LeftF:  2.85deg (n=1291)   Right:  6.06deg (n=1512)
+  HRP5_MultiContact_4            LeftF:  2.82deg (n=1297)   Right:  6.17deg (n=1516)
+  HRP5P_LongWalk                 LeftF:  2.36deg (n=380423)   Right:  2.00deg (n=383998)
+  POOLED LeftFootCenter     tilt  2.36 deg   rotvec_deg [-2.199 +0.870 +0.020]  n=385607
+  POOLED RightFootCenter    tilt  1.91 deg   rotvec_deg [+1.494 +1.188 -0.020]  n=390074
+
+written -> /tmp/claude-1000/-home-arnaud-devel-src-data-manipulation-tools/287daf9e-ad1c-4931-a07e-923142412c80/scratchpad/wrench_tilt.json

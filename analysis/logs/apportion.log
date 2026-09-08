@@ -1,0 +1,9 @@
+per-step state correction, horizontal magnitude, median over loaded samples (mm)
+run                            base pos   restpose  ratio base/rest   unmodF (N)
+nom  KO_TRO2024_RHPS1_1          0.0190     0.0003             57.7         0.32
+nom  KO_TRO2024_RHPS1_3          0.0126     0.0003             47.4         0.26
+nom  KO_TRO2024_RHPS1_5          0.0090     0.0003             33.9         0.22
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_1     0.2166     0.0390              5.6         2.07
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_2     0.2973     0.0593              5.0         3.03
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_3     0.2842     0.0505              5.6         2.81
+DONE

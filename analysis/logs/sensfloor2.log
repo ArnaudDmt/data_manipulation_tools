@@ -1,0 +1,21 @@
+
+=== hrp5_p     noise floor [std]     force N, moment N.m
+sensor                axis    floor std     variance
+LeftFootForceSensor   cx         0.0189    3.563e-04
+LeftFootForceSensor   cy         0.0322    1.037e-03
+LeftFootForceSensor   cz         0.0239    5.727e-04
+LeftFootForceSensor   fx         0.7177    5.151e-01
+LeftFootForceSensor   fy         0.4427    1.960e-01
+LeftFootForceSensor   fz         0.7353    5.406e-01
+LeftHandForceSensor   cx         0.0055    2.978e-05
+LeftHandForceSensor   cy         0.0056    3.152e-05
+LeftHandForceSensor   cz         0.0047    2.178e-05
+LeftHandForceSensor   fx         0.0912    8.318e-03
+LeftHandForceSensor   fy         0.0838    7.021e-03
+LeftHandForceSensor   fz         0.1314    1.726e-02
+RightFootForceSensor  cx         0.0215    4.613e-04
+RightFootForceSensor  cy         0.0300    8.998e-04
+RightFootForceSensor  cz         0.0277    7.683e-04
+RightFootForceSensor  fx         0.7645    5.845e-01
+RightFootForceSensor  fy         0.4818    2.321e-01
+RightFootForceSensor  fz         0.8603    7.401e-01

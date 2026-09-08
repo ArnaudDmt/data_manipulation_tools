@@ -1,0 +1,11 @@
+IMU measurement innovation |measured - predicted|, median over the run
+accelerometer in m/s^2, gyro in rad/s
+
+run                                accelero         gyro   contact force (N)
+nom  KO_TRO2024_RHPS1_1              2.5703      0.02212                 nan
+nom  KO_TRO2024_RHPS1_3              1.6732      0.01268                 nan
+nom  KO_TRO2024_RHPS1_5              0.9384      0.00350                 nan
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_1       3.9838      0.03887                 nan
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_2       4.2478      0.04389                 nan
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_3       4.3252      0.04283                 nan
+DONE

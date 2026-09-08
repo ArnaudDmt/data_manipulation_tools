@@ -1,0 +1,5 @@
+KO_TRO2024_RHPS1_3     yaw       error incr at transitions 3.484e-04  elsewhere 1.143e-05  ratio  30.47
+KO_TRO2024_RHPS1_3     position  error incr at transitions 2.265e-04  elsewhere 7.062e-06  ratio  32.08   | motion ratio 42.52  -> normalised   0.75
+HRP5_MultiContact_1    yaw       error incr at transitions 9.027e-05  elsewhere 1.457e-05  ratio   6.20
+HRP5_MultiContact_1    position  error incr at transitions 5.172e-05  elsewhere 2.735e-05  ratio   1.89   | motion ratio  4.11  -> normalised   0.46
+DONE

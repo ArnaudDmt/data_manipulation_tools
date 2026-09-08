@@ -1,0 +1,335 @@
+=== tuned_a0.0 group A ===
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/configuration
+[INFO] [1788704632.457516206] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704632.504588384] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-23-52-674509-OMEN-Arnaud-3891473
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3891476]
+[INFO] [ros2-2]: process started with pid [3891477]
+[kinetics_observer_node-1] [WARN] [1788704632.724125346] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704632.724134309] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704632.733566591] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704632.960404660] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704632.960418719] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704632.978161851] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704632.978431009] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704632.980902436] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/standalone_replay'
+[ros2-2] [INFO] [1788704632.982186193] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704632.982337284] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704632.982723899] [rosbag2_recorder]: Topics discovery started.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3891532]
+[rosbag_publish_kinetics-3] [WARN] [1788704633.238406228] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704633.238413185] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788704633.265712218] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_1/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[ros2-2] [INFO] [1788704633.290726119] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704633.290747564] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704633.290750040] [rosbag2_recorder]: Topics discovery stopped.
+[rosbag_publish_kinetics-3] [INFO] [1788704633.305567607] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704633.405873881] [rosbag_publish_kinetics]: Started synchronized replay of 11151 inputs.
+[kinetics_observer_node-1] [INFO] [1788704633.406893036] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[rosbag_publish_kinetics-3] [INFO] [1788704682.259977526] [rosbag_publish_kinetics]: Finished synchronized Kinetics replay.
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3891532]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[INFO] [kinetics_observer_node-1]: sending signal 'SIGINT' to process[kinetics_observer_node-1]
+[ros2-2] [INFO] [1788704682.877620340] [rosbag2_recorder]: Pausing recording.
+[ros2-2] [INFO] [1788704682.877698628] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[kinetics_observer_node-1] [INFO] [1788704682.878109500] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ros2-2] [INFO] [1788704682.879852885] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788704682.881151738] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3891476]
+[INFO] [ros2-2]: process has finished cleanly [pid 3891477]
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 0.3
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 11151/11151 [100%] in 0.0s (771506.71/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+3.0873455560081404
+3.0873455560081404
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 0.3
+number of samples = 8315 
+Computing relative errors |████████████████████████████████████████| 8315/8315 [100%] in 0.3s (30460.07/s) 
+...done.
+Saved relative error to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_1/eval/saved_results/traj_est/cached/cached_rel_err.pickle.
+Absolute errors are not available.
+===> MulTrajError: summarized 1 trajectories.
+- Successs indices: [0]
+Relative errors numbers:
+- 0.3: dict_keys(['rel_trans', 'rel_trans_perc', 'rel_trans_x_y_norm', 'rel_trans_z', 'rel_yaw', 'rel_rot', 'rel_gravity', 'rel_rot_deg_per_m']) 8315 samples
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_2/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/configuration
+[INFO] [1788704685.809214252] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_2/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704685.854410106] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_2/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-24-46-023318-OMEN-Arnaud-3891669
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3891672]
+[INFO] [ros2-2]: process started with pid [3891673]
+[kinetics_observer_node-1] [WARN] [1788704686.076468453] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704686.076479115] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704686.086354079] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704686.281712464] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704686.281725647] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704686.292532084] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704686.292541281] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704686.295454221] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/standalone_replay'
+[ros2-2] [INFO] [1788704686.296544157] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704686.296560342] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704686.296584848] [rosbag2_recorder]: Topics discovery started.
+[ros2-2] [INFO] [1788704686.399958822] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704686.399979665] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704686.399984035] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3891727]
+[rosbag_publish_kinetics-3] [WARN] [1788704686.591699338] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704686.591709550] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788704686.617743997] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_2/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704686.655212963] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704686.755650032] [rosbag_publish_kinetics]: Started synchronized replay of 10249 inputs.
+[kinetics_observer_node-1] [INFO] [1788704686.757061727] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[rosbag_publish_kinetics-3] [INFO] [1788704730.143388712] [rosbag_publish_kinetics]: Finished synchronized Kinetics replay.
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3891727]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[INFO] [kinetics_observer_node-1]: sending signal 'SIGINT' to process[kinetics_observer_node-1]
+[ros2-2] [INFO] [1788704730.763581786] [rosbag2_recorder]: Pausing recording.
+[ros2-2] [INFO] [1788704730.763638335] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[kinetics_observer_node-1] [INFO] [1788704730.763785091] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ros2-2] [INFO] [1788704730.765653016] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788704730.767122309] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3891672]
+[INFO] [ros2-2]: process has finished cleanly [pid 3891673]
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 0.3
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 10249/10249 [100%] in 0.0s (803469.13/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+3.1078877683488555
+3.1078877683488555
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 0.3
+number of samples = 8312 
+Computing relative errors |████████████████████████████████████████| 8312/8312 [100%] in 0.2s (33482.69/s) 
+...done.
+Saved relative error to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_2/eval/saved_results/traj_est/cached/cached_rel_err.pickle.
+Absolute errors are not available.
+===> MulTrajError: summarized 1 trajectories.
+- Successs indices: [0]
+Relative errors numbers:
+- 0.3: dict_keys(['rel_trans', 'rel_trans_perc', 'rel_trans_x_y_norm', 'rel_trans_z', 'rel_yaw', 'rel_rot', 'rel_gravity', 'rel_rot_deg_per_m']) 8312 samples
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_3/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/configuration
+[INFO] [1788704733.388301910] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_3/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704733.433830777] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_3/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-25-33-604293-OMEN-Arnaud-3891831
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3891834]
+[INFO] [ros2-2]: process started with pid [3891835]
+[kinetics_observer_node-1] [WARN] [1788704733.645939737] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704733.645948669] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704733.655918212] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704733.856367544] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704733.856384064] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704734.101375345] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704734.101498246] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704734.105376645] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/standalone_replay'
+[ros2-2] [INFO] [1788704734.106577983] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704734.106715675] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704734.106890395] [rosbag2_recorder]: Topics discovery started.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3891891]
+[rosbag_publish_kinetics-3] [WARN] [1788704734.157662895] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704734.157669792] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788704734.182914870] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_3/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[ros2-2] [INFO] [1788704734.212909624] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704734.213364658] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704734.213375282] [rosbag2_recorder]: Topics discovery stopped.
+[rosbag_publish_kinetics-3] [INFO] [1788704734.219114965] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704734.319597955] [rosbag_publish_kinetics]: Started synchronized replay of 10581 inputs.
+[kinetics_observer_node-1] [INFO] [1788704734.320523447] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[rosbag_publish_kinetics-3] [INFO] [1788704779.476941393] [rosbag_publish_kinetics]: Finished synchronized Kinetics replay.
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3891891]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[INFO] [kinetics_observer_node-1]: sending signal 'SIGINT' to process[kinetics_observer_node-1]
+[ros2-2] [INFO] [1788704780.094625874] [rosbag2_recorder]: Pausing recording.
+[ros2-2] [INFO] [1788704780.094696782] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[kinetics_observer_node-1] [INFO] [1788704780.094768718] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ros2-2] [INFO] [1788704780.096313542] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788704780.097337200] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3891834]
+[INFO] [ros2-2]: process has finished cleanly [pid 3891835]
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 0.3
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 10581/10581 [100%] in 0.0s (776474.49/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+3.0891413051418377
+3.0891413051418377
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 0.3
+number of samples = 8317 
+Computing relative errors |████████████████████████████████████████| 8317/8317 [100%] in 0.3s (30729.52/s) 
+...done.
+Saved relative error to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_3/eval/saved_results/traj_est/cached/cached_rel_err.pickle.
+Absolute errors are not available.
+===> MulTrajError: summarized 1 trajectories.
+- Successs indices: [0]
+Relative errors numbers:
+- 0.3: dict_keys(['rel_trans', 'rel_trans_perc', 'rel_trans_x_y_norm', 'rel_trans_z', 'rel_yaw', 'rel_rot', 'rel_gravity', 'rel_rot_deg_per_m']) 8317 samples
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_4/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/configuration
+[INFO] [1788704782.751899439] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_4/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704782.798898325] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_4/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-26-22-970367-OMEN-Arnaud-3891988
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3891991]
+[INFO] [ros2-2]: process started with pid [3891992]
+[kinetics_observer_node-1] [WARN] [1788704783.019728477] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704783.019736703] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704783.029350562] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704783.230283440] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704783.230297641] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704783.249722933] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704783.249922646] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704783.256305553] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/standalone_replay'
+[ros2-2] [INFO] [1788704783.257463408] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704783.257474085] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704783.257905375] [rosbag2_recorder]: Topics discovery started.
+[ros2-2] [INFO] [1788704783.358058829] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704783.358071310] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704783.358073618] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3892046]
+[rosbag_publish_kinetics-3] [WARN] [1788704783.524181004] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704783.524187914] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788704783.557710215] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5_MultiContact_4/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704783.591226062] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704784.191530310] [rosbag_publish_kinetics]: Started synchronized replay of 10438 inputs.
+[kinetics_observer_node-1] [INFO] [1788704784.192768250] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[rosbag_publish_kinetics-3] [INFO] [1788704828.590959658] [rosbag_publish_kinetics]: Finished synchronized Kinetics replay.
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3892046]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[INFO] [kinetics_observer_node-1]: sending signal 'SIGINT' to process[kinetics_observer_node-1]
+[ros2-2] [INFO] [1788704829.206577998] [rosbag2_recorder]: Pausing recording.
+[ros2-2] [INFO] [1788704829.206637287] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[kinetics_observer_node-1] [INFO] [1788704829.207359736] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ros2-2] [INFO] [1788704829.207953754] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788704829.209361620] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3891991]
+[INFO] [ros2-2]: process has finished cleanly [pid 3891992]
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 0.3
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 10438/10438 [100%] in 0.0s (723681.96/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+3.091668980427104
+3.091668980427104
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 0.3
+number of samples = 8310 
+Computing relative errors |████████████████████████████████████████| 8310/8310 [100%] in 0.3s (30514.42/s) 
+...done.
+Saved relative error to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5_MultiContact_4/eval/saved_results/traj_est/cached/cached_rel_err.pickle.
+Absolute errors are not available.
+===> MulTrajError: summarized 1 trajectories.
+- Successs indices: [0]
+Relative errors numbers:
+- 0.3: dict_keys(['rel_trans', 'rel_trans_perc', 'rel_trans_x_y_norm', 'rel_trans_z', 'rel_yaw', 'rel_rot', 'rel_gravity', 'rel_rot_deg_per_m']) 8310 samples
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/configuration
+[INFO] [1788704833.361363509] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788704833.399081214] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-06-23-27-13-565803-OMEN-Arnaud-3892279
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3892282]
+[INFO] [ros2-2]: process started with pid [3892283]
+[kinetics_observer_node-1] [WARN] [1788704833.615359050] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788704833.615368246] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788704833.625142352] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[ros2-2] [WARN] [1788704833.828792679] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788704833.828805658] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788704834.070593476] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788704834.070599551] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788704834.073676745] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/standalone_replay'
+[ros2-2] [INFO] [1788704834.074976555] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788704834.075120081] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788704834.075376810] [rosbag2_recorder]: Topics discovery started.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3892337]
+[rosbag_publish_kinetics-3] [WARN] [1788704834.121759110] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788704834.121766178] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] [INFO] [1788704834.183503864] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788704834.184434001] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788704834.184459520] [rosbag2_recorder]: Topics discovery stopped.
+[rosbag_publish_kinetics-3] [INFO] [1788704835.664137524] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704839.668749187] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/gA_tuned_a0.0-97abd03c8c/HRP5P_LongWalk/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788704839.769376339] [rosbag_publish_kinetics]: Started synchronized replay of 1474096 inputs.
+[kinetics_observer_node-1] [INFO] [1788704839.770300241] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).

@@ -1,0 +1,12 @@
+nom  KO_TRO2024_RHPS1_1
+   |measured| median 9.800 m/s^2
+   axis x: innovation mean  -0.0230  std  2.8971   -> noise dominates
+   axis y: innovation mean  +0.0471  std  2.6854   -> noise dominates
+   axis z: innovation mean  +0.0339  std  1.5499   -> noise dominates
+
+SLIP KO_TRO_2024_RHPS1_SLIPPAGE_1
+   |measured| median 9.808 m/s^2
+   axis x: innovation mean  -0.1033  std  3.2110   -> noise dominates
+   axis y: innovation mean  +0.2022  std  3.2726   -> noise dominates
+   axis z: innovation mean  +0.2722  std  1.6698   -> noise dominates
+

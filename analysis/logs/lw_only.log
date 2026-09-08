@@ -1,0 +1,83 @@
++ ros2 run test_state_obs_ros2 make_kinetics_config_bag.py --input-bag /home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag --config /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/resolved_config.yaml --out /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/configuration
+[INFO] [1788716580.608705730] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[INFO] [1788716580.646272380] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/configuration/configuration_0.db3' for READ_WRITE.
++ ros2 launch test_state_obs_ros2 test_kinetics_replay.launch.py input_bag:=/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag configuration_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/configuration output_bag:=/home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/standalone_replay startup_delay:=0.5 shutdown_delay:=0.5
+[INFO] [launch]: All log files can be found below /home/arnaud/.ros/log/2026-09-07-02-43-00-816732-OMEN-Arnaud-3920240
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [launch.user]: Recording estimated state to /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/standalone_replay
+[INFO] [kinetics_observer_node-1]: process started with pid [3920243]
+[INFO] [ros2-2]: process started with pid [3920244]
+[kinetics_observer_node-1] [WARN] [1788716580.857474306] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[kinetics_observer_node-1] [WARN] [1788716580.857481769] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[kinetics_observer_node-1] [INFO] [1788716580.865844244] [kinetics_observer]: Kinetics Observer ready; waiting for ~/configuration.
+[kinetics_observer_node-1] [INFO] [1788716581.054019785] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[ros2-2] [WARN] [1788716581.077765745] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[ros2-2] [WARN] [1788716581.077778058] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1788716581.089196350] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[ros2-2] [INFO] [1788716581.089209846] [rosbag2_recorder]: Event publisher thread: Started
+[ros2-2] [INFO] [1788716581.091817415] [rosbag2_recorder]: Starting recording to '/home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/standalone_replay'
+[ros2-2] [INFO] [1788716581.092768906] [rosbag2_recorder]: Listening for topics...
+[ros2-2] [INFO] [1788716581.092781992] [rosbag2_recorder]: Recording...
+[ros2-2] [INFO] [1788716581.093251885] [rosbag2_recorder]: Topics discovery started.
+[ros2-2] [INFO] [1788716581.197860401] [rosbag2_recorder]: Subscribed to topic '/kinetics_observer/estimated_state'
+[ros2-2] [INFO] [1788716581.197878251] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[ros2-2] [INFO] [1788716581.197881132] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [rosbag_publish_kinetics-3]: process started with pid [3920299]
+[rosbag_publish_kinetics-3] [WARN] [1788716581.361973135] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[rosbag_publish_kinetics-3] [WARN] [1788716581.361980517] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[rosbag_publish_kinetics-3] [INFO] [1788716582.880336276] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/Projects/HRP5P_LongWalk/output_data/kinetics_eval/input_bag/input_bag_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788716586.938112071] [rosbag2_storage]: Opened database '/home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/configuration/configuration_0.db3' for READ_ONLY.
+[rosbag_publish_kinetics-3] [INFO] [1788716587.038642012] [rosbag_publish_kinetics]: Started synchronized replay of 1474096 inputs.
+[kinetics_observer_node-1] [INFO] [1788716587.039475658] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
+[kinetics_observer_node-1] [ERROR] [1788716715.744916041] [kinetics_observer]: Rejected input: input timestamps must increase
+[rosbag_publish_kinetics-3] [INFO] [1788716849.037800805] [rosbag_publish_kinetics]: Finished synchronized Kinetics replay.
+[INFO] [rosbag_publish_kinetics-3]: process has finished cleanly [pid 3920299]
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[INFO] [kinetics_observer_node-1]: sending signal 'SIGINT' to process[kinetics_observer_node-1]
+[ros2-2] [INFO] [1788716849.818585679] [rosbag2_recorder]: Pausing recording.
+[kinetics_observer_node-1] [INFO] [1788716849.818918785] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ros2-2] [INFO] [1788716849.820976778] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[ros2-2] [INFO] [1788716849.822847105] [rosbag2_recorder]: Recording stopped
+[ros2-2] [INFO] [1788716849.824610011] [rosbag2_recorder]: Event publisher thread: Exited
+[INFO] [kinetics_observer_node-1]: process has finished cleanly [pid 3920243]
+[INFO] [ros2-2]: process has finished cleanly [pid 3920244]
+clipped 625715 estimate samples outside the ground-truth span
++ /home/arnaud/devel/src/data_manipulation_tools/scripts/../.venv/bin/python /home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval --recalculate_errors --no_plot --estimator_name Kinetics --predefined_sublengths 10.0
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:264: SyntaxWarning: invalid escape sequence '\%'
+  111, xlabel='Distance [m]', ylabel='Scale Drift [\%]',
+/home/arnaud/devel/src/data_manipulation_tools/rpg_trajectory_evaluation/scripts/analyze_trajectory_single.py:326: SyntaxWarning: invalid escape sequence '\%'
+  ylabel='Translation error [\%]')
+#### Start processing Kinetics
+To remove cached error in /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval/saved_results/traj_est/cached/cached_rel_err.pickle
+Cannot find file /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval/saved_results/traj_est/stamped_est_gt_matches.txt
+Find evaluation configuration, will overwrite default.
+The current evaluation configuration is {'align_type': 'posyaw', 'align_num_frames': -1}
+Loading stamped_groundtruth.txt and stamped_traj_estimate.txt...
+Loading trajectory data...
+Finding matches. |████████████████████████████████████████| 848381/848381 [100%] in 1.2s (682832.67/s) 
+Saved matching results to /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval/saved_results/traj_est/stamped_est_gt_matches.txt.
+320.7551175731035
+320.7551175731035
+...done.
+Use preset boxplot distances.
+Aliging the trajectory estimate to the groundtruth...
+Alignment type is posyaw.
+To align all frames.
+... trajectory alignment done.
+Finished loading trajectory.
+Computing the relative errors based on preset subtrajectory lengths...
+Computing relative error at sub-trajectory length 10.0
+number of samples = 411794 
+Computing relative errors |████████████████████████████████████████| 411794/411794 [100%] in 12.5s (32817.04/s) 
+...done.
+Saved relative error to /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/HRP5P_LongWalk/eval/saved_results/traj_est/cached/cached_rel_err.pickle.
+Absolute errors are not available.
+===> MulTrajError: summarized 1 trajectories.
+- Successs indices: [0]
+Relative errors numbers:
+- 10.0: dict_keys(['rel_trans', 'rel_trans_perc', 'rel_trans_x_y_norm', 'rel_trans_z', 'rel_yaw', 'rel_rot', 'rel_gravity', 'rel_rot_deg_per_m']) 411794 samples
+
+Results: /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f
+Plotly report: /home/arnaud/devel/src/data_manipulation_tools/results/W_LW-fe0939287f/report.html
+=== LW DONE ===
