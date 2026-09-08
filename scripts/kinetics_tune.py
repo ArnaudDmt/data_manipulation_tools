@@ -102,6 +102,9 @@ SLIP_METRICS = ("trans_xy", "yaw")
 # How much the nominal error may drift before robustness credit is withheld. 1% covers replay
 # jitter without admitting the degrade-the-nominal exploit.
 NOMINAL_TOLERANCE = 1.01
+# Distinct ROS domains to rotate through, well above any worker count. Kept inside 20..79 so the
+# ids stay in the range Linux handles without ephemeral-port collisions.
+DOMAIN_CYCLE = 60
 # Score for a trial that could not be evaluated at all. It has to sit above anything a real
 # configuration can score or the sampler would chase failures: with the weighted objective the
 # worst genuine trials reach roughly +21, so this is comfortably clear of them.
@@ -167,7 +170,12 @@ SPACE = (
     # three decades of extra freedom for free, because with no slip the visco-elastic
     # relation holds and the measurement pins it anyway -- and 1e-6 is where slip
     # robustness lives. Only 37 of those 1133 points landed here.
-    ("contact_process_position_xy", "contact_process", (0, 1), -7.0, -5.5),
+    # Widened both ways for the LongWalk round. This is the parameter the whole slip/drift trade
+    # runs through: the overlay's 3e-6 is 3000x the installed 1e-9, which buys RHPS1 translation
+    # (0.640 -> 0.556) and costs LongWalk vertical (1.308 -> 2.091) as the anchor wanders over
+    # 320 m. The old floor of 1e-7 could not even return to the installed value, so a search that
+    # finally sees LongWalk still could not undo the damage. Let it find the balance itself.
+    ("contact_process_position_xy", "contact_process", (0, 1), -9.5, -5.0),
     # The installed value is exactly 0, which pins the contact roll and pitch: with no process
     # covariance the filter cannot correct them. They are observable, so there is something to
     # correct, and every strong configuration found so far raises this by six to seven decades --
@@ -375,8 +383,11 @@ SENSOR_CALIBRATION = ()
 # Keeping them costs trials: 273 trials over 41 dimensions never beat a recycled seed, while the
 # ablations that found all of the above took twenty minutes each.
 MEASURED_INERT = (
-    "rhps1_linear_damping_ratio_xy", "rhps1_linear_damping_ratio_z",
-    "rhps1_angular_damping_ratio_xy", "rhps1_angular_damping_ratio_z",
+    # RHPS1's four damping ratios are NOT inert and are searchable again. Measured 2026-09-08:
+    # linear damping 150 -> 600 (zeta 0.057 -> 0.227, inside ZETA_RANGE all along) improves RHPS1
+    # translation 17.407 -> 16.062 mm on the walk and 20.550 -> 18.647 on slippage, ~8-9%, with
+    # yaw, tilt and vertical unchanged. It was the only gain in a ten-variant sweep of the whole
+    # contact model, and this list had locked it out. HRP5-P's four stay excluded, untested.
     "hrp5_p_linear_damping_ratio_xy", "hrp5_p_linear_damping_ratio_z",
     "hrp5_p_angular_damping_ratio_xy", "hrp5_p_angular_damping_ratio_z",
     "contact_process_orientation_rp",
@@ -1059,7 +1070,13 @@ class Search:
         with self.lock:
             index = self.counter
             self.counter += 1
-        domain = self.args.domain_base + (index % self.args.workers)
+        # Cycle over far more domains than workers. With `index % workers` a trial shares its
+        # domain with trial N+workers, so one hung replay leaves a publisher that feeds the next
+        # trial on that domain another dataset's inputs until it times out too -- they pile up and
+        # the domain is dead for the rest of the run. Measured: 20 of 256 trials lost that way,
+        # every failure on domains 60-62 and later 83-84. A long rest between reuses lets the
+        # sweeper clear a domain before it comes round again.
+        domain = self.args.domain_base + (index % max(self.args.workers, DOMAIN_CYCLE))
         label = f"{self.args.prefix}-{phase}-{index:04d}"
         overlay = overlay_from(self.base, self.widths, point, self.flexibility)
         started = time.time()
@@ -1335,7 +1352,7 @@ def main():
     parser.add_argument("--popsize", type=int, default=0,
                         help="CMA-ES generation size. 0 keeps the historical 2x workers; set it\nequal to --workers once the space is small enough for 4+3*ln(n) to fit in one wave.")
     parser.add_argument("--startup", type=int, default=30, help="Random trials before TPE takes over")
-    parser.add_argument("--domain-base", type=int, default=60)
+    parser.add_argument("--domain-base", type=int, default=20)
     # Trials take ~1000 s on all thirteen datasets, so 1800 s is generous while capping what a
     # hung replay costs. It used to be 3600.
     parser.add_argument("--timeout", type=int, default=1800)
