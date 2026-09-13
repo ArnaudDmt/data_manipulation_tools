@@ -1,0 +1,5 @@
+# The evaluation output lives here: 7 GB of trajectory dumps and per-sub-trajectory caches, which
+# must never reach the repository. What the paper actually reports is distilled into
+# ../results_summary/ by scripts/paper_pipeline/distill.py, losslessly.
+*
+!.gitignore

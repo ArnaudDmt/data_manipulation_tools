@@ -1,0 +1,95 @@
+covariances:
+  contact_initial_new:
+  - 5.0e-06
+  - 5.0e-06
+  - 2.0e-06
+  - 0.0002
+  - 0.0002
+  - 0.0002
+  - 0.5
+  - 0.5
+  - 0.5
+  - 0.0009
+  - 0.0009
+  - 0.0009
+  contact_process:
+  - 1.0e-05
+  - 1.0e-05
+  - 1.0e-09
+  - 1.0e-08
+  - 1.0e-08
+  - 0.0001
+  - 900.0
+  - 900.0
+  - 900.0
+  - 225.0
+  - 225.0
+  - 225.0
+  gyro_bias_initial:
+  - 1.0e-08
+  - 1.0e-08
+  - 1.0e-08
+  gyro_bias_process:
+  - 1.0e-18
+  - 1.0e-18
+  - 1.0e-18
+  state_angular_velocity_process:
+  - 1.0e-10
+  - 1.0e-10
+  - 1.0e-10
+  state_linear_velocity_process:
+  - 1.0e-08
+  - 1.0e-08
+  - 1.0e-08
+  state_orientation_process:
+  - 1.0e-11
+  - 1.0e-11
+  - 1.0e-11
+  state_position_process:
+  - 1.0e-09
+  - 1.0e-09
+  - 1.0e-09
+  unmodeled_wrench_process:
+  - 4.0
+  - 4.0
+  - 4.0
+  - 4.0
+  - 4.0
+  - 4.0
+per_robot:
+  hrp5_p:
+    contact_model:
+      angular_damping:
+      - 1.7000000000000002
+      - 1.7000000000000002
+      - 1.7000000000000002
+      angular_stiffness:
+      - 100.0
+      - 100.0
+      - 100.0
+      linear_damping:
+      - 15.0
+      - 15.0
+      - 15.0
+      linear_stiffness:
+      - 30000.0
+      - 30000.0
+      - 30000.0
+  rhps1:
+    contact_model:
+      angular_damping:
+      - 1.7000000000000002
+      - 1.7000000000000002
+      - 1.7000000000000002
+      angular_stiffness:
+      - 72.7
+      - 72.7
+      - 72.7
+      linear_damping:
+      - 15.0
+      - 15.0
+      - 15.0
+      linear_stiffness:
+      - 3000.0
+      - 3000.0
+      - 3000.0
