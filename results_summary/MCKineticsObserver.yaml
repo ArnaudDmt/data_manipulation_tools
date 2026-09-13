@@ -51,8 +51,8 @@ ekfStateProcessVariances:
   stateLinVelProcessVariance: [1e-08, 1e-08, 1e-08]
   stateAngVelProcessVariance: [1e-10, 1e-10, 1e-10]
   gyroBiasProcessVariance: [1e-18, 1e-18, 1e-18] # [1e-12,1e-12,1e-12]
-  unmodeledForceProcessVariance: [4, 4, 4]
-  unmodeledTorqueProcessVariance: [4, 4, 4]
+  unmodeledForceProcessVariance: [0.09, 0.09, 0.09]
+  unmodeledTorqueProcessVariance: [0.09, 0.09, 0.09]
   contactPositionProcessVariance: [1e-05, 1e-05, 1e-09] # [0.25e-4, 1.0e-4, 1e-8] # 1e-12: equivalent to 0.2mm in one second for dt = 0.005
   contactOrientationProcessVariance: [1e-08, 1e-08, 0.0001]  # [0.0,0.0,0.0] # [1e-8,1e-8,1e-8] # 0.00121847 # square of 2 degrees # 0.000304618 # square of 1 degree
   contactForceProcessVariance: [900, 900, 900]

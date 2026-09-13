@@ -39,6 +39,9 @@ def main(sources):
         output.append("")
         output.append("% Measured on the retained configuration, not present in the previous file.")
         output.extend(f"\\newcommand{{\\{name}}}{{{new[name]}}}" for name in sorted(missing))
+    # The paper file is edited in place; keep the version this run replaced.
+    backup = PAPER.with_suffix(PAPER.suffix + ".before-" + __import__("time").strftime("%Y%m%d-%H%M"))
+    backup.write_text(PAPER.read_text())
     PAPER.write_text("\n".join(output) + "\n")
     print(f"replaced {len(used)} macros, appended {len(missing)}")
     stale = sorted({match.group(2) for line in PAPER.read_text().splitlines()

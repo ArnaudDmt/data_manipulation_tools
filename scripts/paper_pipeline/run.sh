@@ -39,10 +39,20 @@ case "$stage" in
   metrics) run_metrics ;;
   figures) run_figures ;;
   all)
-    run_replay  || { echo "ABANDON a l'etage replay"; exit 1; }
-    run_routine || { echo "ABANDON a l'etage routine"; exit 1; }
-    run_metrics || { echo "ABANDON a l'etage metrics"; exit 1; }
-    run_figures || { echo "ABANDON a l'etage figures"; exit 1; }
+    # Stages are attempted even after a failure, except where one genuinely needs another:
+    # metrics needs data from replay or routine, figures need the routine stage's outputs.
+    # overnight.sh expresses the same dependencies with the smoke test in front.
+    failed=""
+    run_replay  || failed="$failed replay"
+    run_routine || failed="$failed routine"
+    case "$failed" in
+      *replay*routine*) echo "metrics et figures sautes: aucun etage de donnees n'a abouti" ;;
+      *routine*)        run_metrics || failed="$failed metrics"
+                        echo "figures sautees: l'etage routine a echoue" ;;
+      *)                run_metrics || failed="$failed metrics"
+                        run_figures || failed="$failed figures" ;;
+    esac
+    [ -z "$failed" ] || { echo "etages en echec:$failed"; exit 1; }
     ;;
   *) echo "etage inconnu: $stage (replay | routine | metrics | figures | all)"; exit 1 ;;
 esac

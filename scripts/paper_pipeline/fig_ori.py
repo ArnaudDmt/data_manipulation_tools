@@ -12,5 +12,7 @@ also_write_pdf()
 headless()
 import plotContactPoses
 
+# Without the palette the function falls back to its own defaults -- a violet Kinetics Observer
+# and a black mocap -- which is not what the rest of the paper uses.
 plotContactPoses.plotContactRestPoses(
-    path=f"{ROOT}/Projects/HRP5_MultiContact_ContactInitOriError")
+    colors=COLORS, path=f"{ROOT}/Projects/HRP5_MultiContact_ContactInitOriError")

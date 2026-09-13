@@ -78,7 +78,7 @@ def velocities():
         truth = pickle.load(mocap.open("rb"))["estimate"]
         error = {a: np.abs(np.asarray(estimate[a]) - np.asarray(truth[a])) for a in "xyz"}
         out.setdefault(variant, {}).setdefault(project, {})[prefix] = {
-            "xy": moments(np.linalg.norm(np.stack([error["x"], error["y"]], -1), -1)),
+            "xy": moments(np.linalg.norm(np.stack([error["x"], error["y"]], axis=-1), axis=-1)),
             "z": moments(error["z"])}
     return out
 

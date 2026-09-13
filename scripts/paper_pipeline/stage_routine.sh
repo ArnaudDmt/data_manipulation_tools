@@ -12,6 +12,10 @@ WORK="$ROOT/results/paper-rebuild"
 cd "$ROOT" || exit 1
 wanted=${1:-all}
 
+# A variant left installed -- a hidden hand, a 30 deg orientation error -- silently
+# contaminates every later tick, so restore the retained tuning whatever happens.
+trap 'env/bin/python "$HERE/variant_install.py" clean >/dev/null 2>&1' EXIT INT TERM
+
 mapfile -t plan < <(env/bin/python - "$wanted" <<'PY'
 import sys
 sys.path.insert(0, "scripts/paper_pipeline")
@@ -27,7 +31,9 @@ PY
 for line in "${plan[@]}"; do
   IFS=$'\t' read -r name argument datasets <<< "$line"
   echo "############ variante $name ($argument)"
-  env/bin/python "$HERE/variant_install.py" "$argument" || exit 1
+  if ! env/bin/python "$HERE/variant_install.py" "$argument"; then
+    echo "[$name] INSTALLATION ECHOUEE, variante ignoree"; continue
+  fi
   store="$WORK/runs/$name"
   for p in $datasets; do
     echo "================ $name / $p"

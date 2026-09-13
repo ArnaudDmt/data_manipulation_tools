@@ -49,6 +49,13 @@ VARIANTS = {
     "orierror":   ("orierror30", ORI_ERROR,              None),
 }
 
+# Analysis variant, not a paper table: the retained tuning with the constrained contact process
+# covariance switched off and NOTHING else changed. KO-ZPC conflates that switch with a zero
+# contact process covariance, and at zero the switch is inert (covMv = M.0.M' = 0), so the two
+# contributions have never been separated. KO -> noconstraint measures the projector M alone;
+# noconstraint -> KO-ZPC measures the process covariance alone. Replay only, no figure.
+ANALYSIS_REPLAY_LABELS = {"noconstraint": "var-noconstraint"}
+
 # The flexibility ablation writes its own macro category, suffixed, on two categories only.
 FLEX_SUFFIX = {"flexdiv10": "b", "flexmul10": "c"}
 FLEX_CATEGORIES = ["Multicontact", "Slippingodometry"]
@@ -65,7 +72,6 @@ REPLAY_LABELS = {"clean": "var-clean-ref", "zpc": "var-zpc", "pc": "var-pc",
 # observer pipeline, so both estimators come out of a single tick. It is deliberately limited to
 # the one short dataset whose figure needs it: two instances re-register their logger keys every
 # iteration, which is harmless over 11k iterations and produced a 37.8 GB runaway on LongWalk.
-NEEDS_KOZPC = {"HRP5_MultiContact_1"}
 CONTROLLER = Path.home() / ".config/mc_rtc/controllers/Passthrough.yaml"
 
 # --- figures ----------------------------------------------------------------------------------
@@ -74,17 +80,38 @@ CONTROLLER = Path.home() / ".config/mc_rtc/controllers/Passthrough.yaml"
 # The trajectory script names its output after the project's group rather than after the figure,
 # hence the pattern rather than a fixed name.
 FIGURES = {
-    "multicontact-odom-traj": ("fig_traj.py HRP5_MultiContact_1", "trajectories_*.pdf"),
-    "slipping-odom-traj":     ("fig_traj.py KO_TRO_2024_RHPS1_SLIPPAGE_1", "trajectories_*.pdf"),
-    "friends-traj":           ("fig_traj.py KO_TRO2024_RHPS1_1", "trajectories_*.pdf"),
+    # The trajectory figures do not all carry the same curves: KO-ZPC is drawn where the
+    # comparison is the point, and it costs a second observer instance at tick time (NEEDS_KOZPC
+    # below is derived from exactly these lists, so the two can never disagree).
+    "multicontact-odom-traj": ("fig_traj.py HRP5_MultiContact_1 KO,KO_ZPC,Hartley,Control,Mocap",
+                               "trajectories_*.pdf"),
+    "slipping-odom-traj":     ("fig_traj.py KO_TRO_2024_RHPS1_SLIPPAGE_1 KO,KO_ZPC,Hartley,Control,Mocap",
+                               "trajectories_*.pdf"),
+    "friends-traj":           ("fig_traj.py KO_TRO2024_RHPS1_1 KO,Hartley,Control,Mocap",
+                               "trajectories_*.pdf"),
     "traj_hrp5_long":         ("fig_longwalk.py", "traj_hrp5_long.pdf"),
     "poseAndVel":             ("fig_posevel.py", "poseAndVel.pdf"),
     "extForces":              ("fig_wrench.py", "extForces.pdf"),
     "rightFoot_yaw":          ("fig_yaw.py", "rightFoot_yaw.pdf"),
-    "RightFootRoll":          ("fig_ori.py", "RightFootRoll.pdf"),
+    # plotContactRestPoses calls exit(0) right after writing its two SVGs, before its own
+    # PDF line, so the main panel is what comes out -- mirrored to PDF by also_write_pdf.
+    # The published figure is that panel alone; the inset is composed by hand.
+    "RightFootRoll":          ("fig_ori.py", "rightFoot_rest_roll_main.pdf"),
 }
 
 # Figures the paper ships that no script here produces. Listed so the export stage carries them
 # through instead of silently dropping them, and so the gap stays visible.
 STATIC_FIGURES = ["compute_time", "framesAndVars", "KineticsObserver", "summary", "viscoFeet",
                   "friends", "tilesOnFloor", "multiContactExpe"]
+
+
+def _needs_kozpc():
+    """Projects whose figure asks for the KO-ZPC curve, read off FIGURES itself."""
+    wanted = set()
+    for command, _ in FIGURES.values():
+        parts = command.split()
+        if len(parts) >= 3 and "KO_ZPC" in parts[2]:
+            wanted.add(parts[1])
+    return wanted
+
+NEEDS_KOZPC = _needs_kozpc()

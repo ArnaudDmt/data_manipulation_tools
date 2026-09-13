@@ -8,7 +8,9 @@ from generate_metrics_plots import estimator_plot_args
 import plotMultipleTrajs
 
 project = sys.argv[1]
-wanted = ["KO", "KO_ZPC", "Hartley", "Control", "Mocap"]
+# The curve list comes from the manifest: not every trajectory figure carries KO-ZPC, and drawing
+# it where the dataset was not ticked with the second observer instance fails on a missing column.
+wanted = sys.argv[2].split(",") if len(sys.argv) > 2 else ["KO", "Hartley", "Control", "Mocap"]
 plotMultipleTrajs.plot_multiple_trajs(
     wanted, [project], COLORS,
     {name: dict(estimator_plot_args[name]) for name in wanted},

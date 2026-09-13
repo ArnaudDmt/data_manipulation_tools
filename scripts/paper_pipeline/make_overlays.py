@@ -32,6 +32,12 @@ DELTAS = {
         "covariances": [("contact_process", slice(0, 6), 0.0)],
         "settings": {"with_adaptative_contact_process_covariance": False},
     },
+    "var-noconstraint": {
+        # The retained tuning untouched, with only the constrained process covariance switched
+        # off: this isolates the projector M, which KO-ZPC cannot because its zero process
+        # covariance annihilates both code paths.
+        "settings": {"with_adaptative_contact_process_covariance": False},
+    },
     "var-flex-div10": {"per_robot_from": "results/var-flex-div10-overlay.yaml"},
     "var-flex-mul10": {"per_robot_from": "results/var-flex-mul10-overlay.yaml"},
 }
@@ -79,6 +85,26 @@ def build(label, delta, covariances):
     return overlay
 
 
+# The pinContacts variant cannot be expressed as a covariance overlay -- it changes the state
+# dimension, so it runs from a standalone observer configuration. That file used to be a frozen
+# copy, which is how it kept the previous disturbance-wrench process while every overlay followed
+# the new one. Derived here for the same reason, and by the same rule.
+STANDALONE = {"pc": "pinContacts: true\n\n"}
+
+
+def write_standalone():
+    for name, prelude in STANDALONE.items():
+        target = m.WORK / f"configs/{name}/MCKineticsObserver.yaml"
+        if not target.exists():
+            print(f"  {name}: {target} absent, ignore")
+            continue
+        backup = m.WORK / "overlays-previous" / f"{name}-MCKineticsObserver.yaml"
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        backup.write_text(target.read_text())
+        target.write_text(prelude + RETAINED.read_text())
+        print(f"ecrit configs/{name}/MCKineticsObserver.yaml (config retenue + {prelude.strip()})")
+
+
 def main():
     covariances = retained_covariances()
     print("=== covariances lues dans la config retenue ===")
@@ -95,6 +121,7 @@ def main():
         target.write_text(yaml.safe_dump(overlay, sort_keys=True))
         changed = [f"{f}{a}" for f, a, _ in delta.get("covariances", [])]
         print(f"ecrit {target.name}" + (f"  (delta: {', '.join(changed)})" if changed else ""))
+    write_standalone()
 
 
 if __name__ == "__main__":

@@ -49,6 +49,10 @@ keys=$(cd scripts && ../env/bin/python lightenOutputBin.py "$proj" "$stage") || 
 eval scripts/routine_scripts/lightenBin.sh "$stage" "$out/logReplay.bin" $keys > /dev/null \
   || { echo "[$p] LIGHTEN FAILED"; exit 1; }
 
+# The re-ticked log is 23 GB for LongWalk and is never read again once lightened. Over the 58
+# chains of a full rebuild, keeping them fills the disk.
+rm -f "$stage"
+
 step "mc_bin_to_log"
 ( cd "$out" && rm -f logReplay.csv && mc_bin_to_log logReplay.bin ) > /dev/null 2>&1 \
   || { echo "[$p] BIN_TO_LOG FAILED"; exit 1; }

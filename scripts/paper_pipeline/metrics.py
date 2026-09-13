@@ -29,13 +29,25 @@ ANGLES = {"Tilt", "Yaw"}
 
 
 def latest_variant_dir(label):
-    """results/var-<label>-<hash>/ -- the hash changes with the configuration, so resolve it."""
+    """results/var-<label>-<hash>/ -- the hash changes with the configuration, so resolve it.
+
+    Newest COMPLETE one, not merely newest: a run that aborted leaves a directory holding just its
+    configuration, and taking it on recency alone makes every table fail on a missing cache.
+    """
     candidates = sorted((m.ROOT / "results").glob(f"{label}-*"),
-                        key=lambda p: p.stat().st_mtime)
+                        key=lambda p: p.stat().st_mtime, reverse=True)
     candidates = [c for c in candidates if c.is_dir()]
     if not candidates:
         raise SystemExit(f"aucun repertoire de resultats pour {label}")
-    return candidates[-1]
+    for candidate in candidates:
+        if all((candidate / project / "eval/saved_results/traj_est/cached/cached_rel_err.pickle").exists()
+               for project in m.ALL):
+            if candidate is not candidates[0]:
+                print(f"  {label}: {candidates[0].name} incomplet, on retient {candidate.name}",
+                      file=sys.stderr)
+            return candidate
+    raise SystemExit(f"aucun repertoire complet pour {label} "
+                     f"(essayes: {', '.join(c.name for c in candidates)})")
 
 
 def pool(arrays):
@@ -110,7 +122,7 @@ def velocity_macros():
             # nothing to do with the estimator.
             mocap = estimate(source / "mocap_loc_vel.pickle")
             error = {a: np.abs(np.asarray(values[a]) - np.asarray(mocap[a])) for a in "xyz"}
-            xy.append(np.linalg.norm(np.stack([error["x"], error["y"]], -1), -1))
+            xy.append(np.linalg.norm(np.stack([error["x"], error["y"]], axis=-1), axis=-1))
             z.append(error["z"])
         return {"EstimateXy": pool(xy), "EstimateZ": pool(z)}
 
@@ -191,18 +203,30 @@ def main():
         print("  (--force pour passer outre)", file=sys.stderr)
         raise SystemExit(1)
     MACROS.mkdir(parents=True, exist_ok=True)
-    written = []
+    written, failed = [], []
 
-    rpe, rpe_report = rpe_macros()
-    (MACROS / "relerror.tex").write_text("\n".join(rpe) + "\n")
-    written.append(MACROS / "relerror.tex")
+    # The three families are independent: relative errors come from the replay stage, velocities
+    # and the disturbance wrench from the routine one. A stage that did not run must cost only
+    # its own family, not the whole file.
+    def attempt(name, function, default):
+        try:
+            return function()
+        except Exception as error:
+            failed.append(f"{name}: {type(error).__name__}: {error}")
+            print(f"\n=== {name}: ECHEC ({type(error).__name__}: {error}) ===", file=sys.stderr)
+            return default
+
+    rpe, rpe_report = attempt("erreurs relatives", rpe_macros, ([], []))
+    if rpe:
+        (MACROS / "relerror.tex").write_text("\n".join(rpe) + "\n")
+        written.append(MACROS / "relerror.tex")
     print(f"\n=== erreurs relatives ({len(rpe)} macros) ===")
     print(f"{'categorie':20} {'estimateur':24} {'trans_xy':>10} {'yaw':>8} {'tilt':>8}")
     for category, estimator, values in rpe_report:
         print(f"{category:20} {estimator:24} {values['Transxy'][0]:10.3f} "
               f"{values['Yaw'][0]:8.2f} {values['Tilt'][0]:8.2f}")
 
-    velocity, velocity_report, missing = velocity_macros()
+    velocity, velocity_report, missing = attempt("vitesses", velocity_macros, ([], [], []))
     if velocity:
         (MACROS / "velerror.tex").write_text("\n".join(velocity) + "\n")
         written.append(MACROS / "velerror.tex")
@@ -213,7 +237,7 @@ def main():
     for item in missing:
         print(f"  MANQUANT {item}", file=sys.stderr)
 
-    wrench, wrench_report, trials = wrench_macros()
+    wrench, wrench_report, trials = attempt("wrench", wrench_macros, ([], [], 0))
     if wrench:
         (MACROS / "extwrench.tex").write_text("\n".join(wrench) + "\n")
         written.append(MACROS / "extwrench.tex")
@@ -224,12 +248,22 @@ def main():
         print("\n=== wrench de perturbation: aucun essai, variante hidehand non rejouee ===",
               file=sys.stderr)
 
+    if failed:
+        # Partial success is still success: the families that ran are written and installed.
+        # Reported loudly so the gap is visible in the log and in the tables.
+        print(f"ATTENTION {len(failed)} famille(s) de metriques en echec:", file=sys.stderr)
+        for item in failed:
+            print(f"  {item}", file=sys.stderr)
     if "--no-install" in sys.argv:
         print(f"\n{len(written)} fichiers de macros ecrits sous {MACROS} (pas d'installation)")
-        return
+        return 0 if written else 1
+    if not written:
+        print("\naucune macro produite, le papier n'est pas touche", file=sys.stderr)
+        return 1
     merge = Path(__file__).resolve().parent / "merge_macros.py"
     subprocess.run([sys.executable, str(merge), *map(str, written)], check=True)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

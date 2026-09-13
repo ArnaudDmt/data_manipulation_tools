@@ -41,17 +41,25 @@ echo "[$(stamp)] prepare --force"
   > "$WORK/replay_prepare.log" 2>&1
 n=$(grep -c ": prepared" "$WORK/replay_prepare.log")
 echo "[$(stamp)] prepare: $n/$count"
-[ "$n" -eq "$count" ] || { echo "ABANDON: preparation incomplete"; tail -8 "$WORK/replay_prepare.log"; exit 1; }
+# A partial preparation still lets the prepared datasets be scored; only a total failure is fatal.
+if [ "$n" -ne "$count" ]; then
+  echo "AVERTISSEMENT: preparation incomplete ($n/$count), on continue sur ce qui est pret"
+  tail -5 "$WORK/replay_prepare.log"
+  [ "$n" -gt 0 ] || { echo "ABANDON: aucun dataset prepare"; exit 1; }
+fi
 
 echo "[$(stamp)] reference : la configuration retenue elle-meme"
 .venv/bin/python scripts/kinetics_eval.py --projects "$ALL" \
   run --label var-clean-ref --no-plots --no-open --no-latest 2>&1 | grep -E "^Results:|Traceback|Error"
 
-for v in zpc flex-div10 flex-mul10; do
+# noconstraint is an analysis variant (the projector M alone); it rides the same prepared caches.
+for v in zpc noconstraint flex-div10 flex-mul10; do
   echo "[$(stamp)] variante $v"
+  # One variant failing must not cost the others: they are independent runs over the same caches.
   .venv/bin/python scripts/kinetics_eval.py --projects "$ALL" \
     --covariance-overlay "results/var-$v-overlay.yaml" \
-    run --label "var-$v" --no-plots --no-open --no-latest 2>&1 | grep -E "^Results:|Traceback|Error"
+    run --label "var-$v" --no-plots --no-open --no-latest 2>&1 | grep -E "^Results:|Traceback|Error" \
+    || echo "[$v] ECHEC, on passe a la suivante"
 done
 
 # pinContacts changes the state dimension, so it cannot ride the shared cache.

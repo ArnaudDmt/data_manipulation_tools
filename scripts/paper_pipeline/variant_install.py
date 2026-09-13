@@ -10,16 +10,24 @@ from pathlib import Path
 
 CONFIG = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver.yaml"
 ROBOTS = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver"
-REFERENCE = Path(__file__).resolve().parents[2] / "results/var-clean-ref-f0b7eff088/MCKineticsObserver.yaml"
+# The retained tuning, kept with the pipeline. It must NOT point into results/var-clean-ref-*:
+# that is an OUTPUT of the replay stage whose directory hash changes with the configuration.
+REFERENCE = Path(__file__).resolve().parents[2] / "results/paper-rebuild/configs/clean/MCKineticsObserver.yaml"
 PRISTINE = Path(__file__).resolve().parents[2] / "results/paper-rebuild/pristine"
 FLEX_KEYS = ("linStiffness", "angStiffness", "linDamping", "angDamping")
 
 
 def snapshot():
-    """Keep one untouched copy of the retained tuning, robot files included."""
+    """Keep an untouched copy of the retained tuning, robot files included.
+
+    Refreshed whenever the reference is newer. The snapshot used to be taken once and kept
+    forever, so changing the retained tuning would have left every variant silently running the
+    previous one -- restore() reinstalls this copy before each variant.
+    """
     PRISTINE.mkdir(parents=True, exist_ok=True)
-    if not (PRISTINE / "MCKineticsObserver.yaml").exists():
-        shutil.copy(REFERENCE, PRISTINE / "MCKineticsObserver.yaml")
+    kept = PRISTINE / "MCKineticsObserver.yaml"
+    if not kept.exists() or REFERENCE.stat().st_mtime > kept.stat().st_mtime:
+        shutil.copy(REFERENCE, kept)
         for robot in ("hrp5_p", "rhps1"):
             shutil.copy(ROBOTS / f"{robot}.yaml", PRISTINE / f"{robot}.yaml")
 
