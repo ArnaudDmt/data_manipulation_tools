@@ -46,17 +46,48 @@ def filterColumns(dataframe, partial_pattern, exact_patterns):
 
     return filtered_columns
 
-# Load the CSV files into pandas dataframes
-replayData = pd.read_csv(input_csv_file_path, delimiter=';')
+# Read the header alone to decide which columns are wanted, then load only those. Loading the
+# whole file first and subsetting afterwards costs the full width in memory: HRP5P_LongWalk is
+# 1.47M rows, and once the lightening kept a few more channel families its CSV reached 19 GB,
+# which exhausted 62 GB of RAM and took the machine down.
+header = pd.read_csv(input_csv_file_path, delimiter=';', nrows=0)
+light_columns = filterColumns(header, partial_pattern, exact_patterns)
+replayData_light = pd.read_csv(input_csv_file_path, delimiter=';', usecols=light_columns)
+# usecols does not preserve the order asked for; restore it so downstream positional use holds.
+replayData_light = replayData_light[light_columns]
 
-light_columns = filterColumns(replayData, partial_pattern, exact_patterns)
-replayData_light = replayData[light_columns].copy()
-
-if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'HartleyIEKF_imuFbKine_position_x' in replayData:
+if os.path.isfile(f'{path_to_project}/output_data/HartleyOutputCSV.csv') and 'HartleyIEKF_imuFbKine_position_x' in header.columns:
     dfHartley = pd.read_csv(f'{path_to_project}/output_data/HartleyOutputCSV.csv', delimiter=';')
     dfHartley=dfHartley.set_index(['t']).add_prefix('Hartley_').reset_index()
 
-    replayData_light = pd.merge(replayData_light, dfHartley, on ='t')
+    # The parser emits exactly one row per log row, in order, and stamps `t` from its own counter.
+    # So the two columns name the same instants but not the same floating-point values: the log's
+    # time carries accumulated representation error (2699.0419999) where the parser's is written
+    # rounded (2699.042). Joining on the raw float matched only while the two happened to agree
+    # bit for bit and silently dropped everything after the first mismatch -- 13% of
+    # HRP5P_LongWalk, whose evaluation window was cut by 249 s without any warning. Row order is
+    # the relation that actually holds, so use it, and check the clocks agree to within half a
+    # period rather than trusting them as a key.
+    if len(dfHartley) == len(replayData_light):
+        times = replayData_light['t'].to_numpy()
+        step = pd.Series(times).diff().median()
+        drift = abs(dfHartley['t'].to_numpy() - times).max()
+        if drift > step / 2:
+            raise RuntimeError(
+                f"HartleyOutputCSV.csv and the log have the same length but their clocks differ by "
+                f"up to {drift:.6g} s, more than half a period ({step / 2:.6g} s); they are not the "
+                "same run")
+        for column in (name for name in dfHartley.columns if name != 't'):
+            replayData_light[column] = dfHartley[column].to_numpy()
+    else:
+        # Different lengths mean the two are not row-aligned; fall back to a tolerant time join so
+        # the mismatch shows up as missing rows rather than as a silent truncation.
+        print(f"WARNING HartleyOutputCSV.csv has {len(dfHartley)} rows for {len(replayData_light)} "
+              "log rows; joining on time with a half-period tolerance")
+        step = replayData_light['t'].diff().median()
+        replayData_light = pd.merge_asof(replayData_light.sort_values('t'),
+                                         dfHartley.sort_values('t'), on='t',
+                                         direction='nearest', tolerance=step / 2)
 
 
 def rename_observers_columns():
