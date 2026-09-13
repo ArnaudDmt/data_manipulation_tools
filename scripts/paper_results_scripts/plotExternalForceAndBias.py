@@ -1,3 +1,4 @@
+import paper_colors
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -25,9 +26,11 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 
 
 estimator_plot_args = {
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 7},
-    'Hartley': {'name': 'RI-EKF', 'lineWidth': 5},
-    'GroundTruth': {'name': 'Gound truth', 'lineWidth': 5}
+    # Thinner than they were: at 7 and 5 the estimate swallowed the ground truth wherever the two
+    # agree, which is most of the figure.
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
+    'Hartley': {'name': 'RI-EKF', 'lineWidth': 3},
+    'GroundTruth': {'name': 'Gound truth', 'lineWidth': 3}
 }
 
 
@@ -109,8 +112,8 @@ def plotGyroBias(colors = None, path = default_path):
         )
 
         # Add traces for x-axis bias
-        color_Hartley = f'rgba({colors["Hartley"][0]}, {colors["Hartley"][1]}, {colors["Hartley"][2]}, 1)'
-        color_Kinetics = f'rgba({colors["KineticsObserver"][0]}, {colors["KineticsObserver"][1]}, {colors["KineticsObserver"][2]}, 1)'
+        color_Hartley = paper_colors.rgba(colors, "Hartley")
+        color_Kinetics = paper_colors.rgba(colors, "KineticsObserver")
         color_Gt = "black"
 
         figBias.add_trace(go.Scatter(
@@ -316,8 +319,8 @@ def plotExtWrench(colors = None, path = default_path):
         
                 return colors
         
-        color_Kinetics = f'rgba({colors["KineticsObserver"][0]}, {colors["KineticsObserver"][1]}, {colors["KineticsObserver"][2]}, 1)'
-        color_Gt = f'rgba({colors["Mocap"][0]}, {colors["Mocap"][1]}, {colors["Mocap"][2]}, 1)'
+        color_Kinetics = paper_colors.rgba(colors, "KineticsObserver")
+        color_Gt = paper_colors.rgba(colors, "Mocap")
 
         colors2 = generate_turbo_subset_colors('rainbow', contacts_area_when_set)
 

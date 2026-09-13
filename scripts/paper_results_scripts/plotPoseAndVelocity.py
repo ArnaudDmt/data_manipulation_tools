@@ -1,8 +1,10 @@
+import paper_colors
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
+from matplotlib.ticker import MaxNLocator
 import plotly.express as px  # For color palette generation
 from scipy.spatial.transform import Rotation as R
 from scipy.signal import butter,filtfilt
@@ -20,8 +22,12 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 zeros_row = np.zeros((1, 3))
 
 estimator_plot_args_default = {
-#    'KO': {'name': 'Kinetics Observer', 'lineWidth': 1},
-    
+    # Line 51 intersects the requested estimators with these keys, so anything missing here is
+    # silently dropped from the figure rather than reported.
+    'KO': {'name': 'Kinetics Observer', 'lineWidth': 1},
+    'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 1},
+    'KO_WWS': {'name': 'KO-PC', 'lineWidth': 1},
+    'Control': {'name': 'Control', 'lineWidth': 1},
     'WAIKO': {'name': 'WAIKO', 'lineWidth': 1},
     'Tilt': {'name': 'Valinor', 'lineWidth': 1},
     'WAIKO_NC': {'name': 'WAIKO_NC', 'lineWidth': 1},
@@ -68,6 +74,27 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         vel_x_inset = dict(cell=(1,3), l=0.27, w= 0.25, b= 0.60, h= 0.40)
         vel_y_inset = dict(cell=(2,3), l=0.27, w= 0.25, b= 0.70, h= 0.40)
         vel_z_inset = dict(cell=(3,3), l=0.27, w= 0.25, b= 0.70, h= 0.45)
+
+        # Which panels carry a zoom, and on what: (series, component, row, col). Position is left
+        # out -- it drifts monotonically and a zoom adds nothing -- while orientation and velocity
+        # oscillate at step frequency and are unreadable at full span.
+        INSET_TARGETS = {
+            'ori_roll_inset':  ('ori', 0, 1, 2),
+            'ori_pitch_inset': ('ori', 1, 2, 2),
+            'vel_x_inset':     ('linVel', 0, 1, 3),
+            'vel_y_inset':     ('linVel', 1, 2, 3),
+            'vel_z_inset':     ('linVel', 2, 3, 3),
+        }
+        # Window each zoom covers, in seconds of the trial's own clock. Stated absolutely
+        # rather than as a span around a computed centre: the interesting stretch was
+        # chosen by eye on the data, and nothing in the code can rediscover it.
+        INSET_RANGE = {'ori_roll_inset': (226.4, 236.1),
+                       'ori_pitch_inset': (226.4, 236.1),
+                       # The velocity oscillates at step frequency: over the full 44 s the cycles
+                       # merge, so its zoom stops at 142 s and keeps a handful of steps readable.
+                       'vel_x_inset': (139.42, 141.6),
+                       'vel_y_inset': (139.42, 141.6),
+                       'vel_z_inset': (139.42, 141.6)}
 
         axis_idxs = dict()
         idx = 9
@@ -116,7 +143,13 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
 
         # observer_data["t"] = observer_data["t"] - 130
 
-        startIndex = 0
+        # The robot stands still for the first two minutes; keeping that stretch squeezes the
+        # walk into the right half of every panel. Cut at the first real displacement rather than
+        # at a hard-coded index, which would not survive a change of trial.
+        _mocap = observer_data[["Mocap_position_x", "Mocap_position_y"]].to_numpy()
+        _moved = np.linalg.norm(_mocap - _mocap[0], axis=1) > 0.05
+        _lead = int(round(5.0 / np.median(np.diff(observer_data["t"].to_numpy()[:1000]))))
+        startIndex = max(int(np.argmax(_moved)) - _lead, 0) if _moved.any() else 0
         observer_data = observer_data.truncate(before=startIndex)
 
         # Reset the index to start from 0
@@ -133,40 +166,25 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         linVelFbImu_overlap = rImuFb_overlap.apply(np.cross(angVelImuFb_overlap, posImuFb_overlap), inverse=True) - rImuFb_overlap.apply(linVelImuFb_overlap, inverse=True)
 
 
-        estimatorsPoses = { 'Mocap': {'pos': observer_data[['Mocap_position_x', 'Mocap_position_y', 'Mocap_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['Mocap_orientation_x', 'Mocap_orientation_y', 'Mocap_orientation_z', 'Mocap_orientation_w']].to_numpy()), \
-                                        'linVel': None, \
-                                        'angVel': None}, \
-                                # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
-                                #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
-                                # 'KO': {  'pos': observer_data[['KO_position_x', 'KO_position_y', 'KO_position_z']].to_numpy(), \
-                                #                         'ori': R.from_quat(observer_data[['KO_orientation_x', 'KO_orientation_y', 'KO_orientation_z', 'KO_orientation_w']].to_numpy()), \
-                                #                         'linVel': observer_data[['KO_linVel_x', 'KO_linVel_y', 'KO_linVel_z']].to_numpy(), \
-                                #                         'angVel': observer_data[['KO_angVel_x', 'KO_angVel_y', 'KO_angVel_z']].to_numpy()}, \
-                                # 'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
-                                #             'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy()), \
-                                #             'linVel': observer_data[['KO_ZPC_velW_vx', 'KO_ZPC_velW_vy', 'KO_ZPC_velW_vz']].to_numpy(), \
-                                #             'angVel': observer_data[['KO_ZPC_velW_wx', 'KO_ZPC_velW_wy', 'KO_ZPC_velW_wz']].to_numpy()}, \
-                                'Tilt': {'pos': observer_data[['Tilt_position_x', 'Tilt_position_y', 'Tilt_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['Tilt_orientation_x', 'Tilt_orientation_y', 'Tilt_orientation_z', 'Tilt_orientation_w']].to_numpy()), \
-                                        'linVel': observer_data[['Tilt_linVel_x', 'Tilt_linVel_y', 'Tilt_linVel_z']].to_numpy(), \
-                                        'angVel': observer_data[['Tilt_angVel_x', 'Tilt_angVel_y', 'Tilt_angVel_z']].to_numpy()},
-
-                                'WAIKO': {'pos': observer_data[['WAIKO_position_x', 'WAIKO_position_y', 'WAIKO_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['WAIKO_orientation_x', 'WAIKO_orientation_y', 'WAIKO_orientation_z', 'WAIKO_orientation_w']].to_numpy()), \
-                                        'linVel': observer_data[['WAIKO_linVel_x', 'WAIKO_linVel_y', 'WAIKO_linVel_z']].to_numpy(), \
-                                        'angVel': observer_data[['WAIKO_angVel_x', 'WAIKO_angVel_y', 'WAIKO_angVel_z']].to_numpy()},
-                                
-                                'WAIKO_NC': {'pos': observer_data[['WAIKO_NC_position_x', 'WAIKO_NC_position_y', 'WAIKO_NC_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['WAIKO_NC_orientation_x', 'WAIKO_NC_orientation_y', 'WAIKO_NC_orientation_z', 'WAIKO_NC_orientation_w']].to_numpy()), \
-                                        'linVel': observer_data[['WAIKO_NC_linVel_x', 'WAIKO_NC_linVel_y', 'WAIKO_NC_linVel_z']].to_numpy(), \
-                                        'angVel': observer_data[['WAIKO_NC_angVel_x', 'WAIKO_NC_angVel_y', 'WAIKO_NC_angVel_z']].to_numpy()},
-
-                                'Hartley': {'pos': observer_data[['Hartley_position_x', 'Hartley_position_y', 'Hartley_position_z']].to_numpy(), \
-                                        'ori': R.from_quat(observer_data[['Hartley_orientation_x', 'Hartley_orientation_y', 'Hartley_orientation_z', 'Hartley_orientation_w']].to_numpy()), \
-                                        'linVel': None, \
-                                        'angVel': None}
-                                }
+        # Build only the estimators this run logged. The hardcoded dict this replaces was edited
+        # by hand for whichever comparison was last made -- the Kinetics Observer was commented
+        # out and VALINOR left active -- so it raised KeyError on any run not containing exactly
+        # those observers.
+        estimatorsPoses = {}
+        available = set(observer_data.columns)
+        for name in ('Mocap', 'KO', 'KO_ZPC', 'KO_WWS', 'Hartley', 'Tilt', 'WAIKO', 'WAIKO_NC', 'Control'):
+            position = [f'{name}_position_{axis}' for axis in 'xyz']
+            orientation = [f'{name}_orientation_{axis}' for axis in 'xyzw']
+            if not set(position + orientation) <= available:
+                continue
+            entry = {'pos': observer_data[position].to_numpy(),
+                     'ori': R.from_quat(observer_data[orientation].to_numpy()),
+                     'linVel': None, 'angVel': None}
+            for kind in ('linVel', 'angVel'):
+                columns = [f'{name}_{kind}_{axis}' for axis in 'xyz']
+                if set(columns) <= available:
+                    entry[kind] = observer_data[columns].to_numpy()
+            estimatorsPoses[name] = entry
         
         # Velocity of Hartley (different as we already have the velocity of the IMU)
         # estimated velocity
@@ -339,8 +357,25 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         #         rect_lims["vel_z"][3] = y_max_vel_z if rect_lims["vel_z"][3] is None else max(rect_lims["vel_z"][3], y_max_vel_z)
 
 
+        # One window per zoom, taken well inside the walk so the robot is at steady pace.
+        _time = observer_data["t"].to_numpy()
+        INSET_WINDOW = {name: (int(np.searchsorted(_time, lo)), int(np.searchsorted(_time, hi)))
+                        for name, (lo, hi) in INSET_RANGE.items()}
+
+        for _name, (_series, _component, _row, _col) in INSET_TARGETS.items():
+            _lo, _hi = INSET_WINDOW[_name]
+            _n = (_row - 1) * 3 + _col
+            _values = np.concatenate([estimatorsPoses[e][_series][_lo:_hi, _component]
+                                      for e in estimators if estimatorsPoses[e].get(_series) is not None])
+            _pad = 0.12 * (np.nanmax(_values) - np.nanmin(_values) or 1.0)
+            figPoseVel.add_shape(
+                type="rect", xref=f"x{_n}", yref=f"y{_n}",
+                x0=_time[_lo], x1=_time[_hi - 1],
+                y0=np.nanmin(_values) - _pad, y1=np.nanmax(_values) + _pad,
+                line=dict(color="grey", width=1), layer="above")
+
         def plotPoseAndVel(observerName):
-                color_Observer = f'rgba({colors[observerName][0]}, {colors[observerName][1]}, {colors[observerName][2]}, 1)'
+                color_Observer = paper_colors.rgba(colors, observerName)
                 figPoseVel.add_trace(
                 go.Scatter(
                         x=observer_data["t"],
@@ -376,7 +411,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 figPoseVel.add_trace(
                 go.Scatter(
                         x=observer_data["t"],
-                        y=estimatorsPoses[observerName]["ori2"][:, 0],
+                        y=estimatorsPoses[observerName]["ori"][:, 0],
                         mode="lines",showlegend= False,
                         line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
                 ),
@@ -387,7 +422,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 figPoseVel.add_trace(
                 go.Scatter(
                         x=observer_data["t"],
-                        y=estimatorsPoses[observerName]["ori2"][:, 1],
+                        y=estimatorsPoses[observerName]["ori"][:, 1],
                         mode="lines",showlegend= False,
                         line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
                 ),
@@ -398,7 +433,11 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 figPoseVel.add_trace(
                 go.Scatter(
                         x=observer_data["t"],
-                        y=estimatorsPoses[observerName]["ori2"][:, 2],
+                        # ori2 is the gravity direction. Its x and y components approximate roll and
+                        # pitch for small tilts, which is what the two panels above plot, but its z
+                        # component is ~1 for an upright robot and np.degrees turned that into a flat
+                        # 57.3 "yaw". The yaw is the third unwrapped Euler angle, already in degrees.
+                        y=estimatorsPoses[observerName]["ori"][:, 2],
                         mode="lines",showlegend= False,
                         line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
                 ),
@@ -802,6 +841,95 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                 if estimator in estimator_plot_args and estimator in estimatorsPoses.keys():
                         plotPoseAndVel(estimator)
 
+
+        # The nine inset axes are declared above but nothing was ever drawn into them: the code
+        # that did is commented out further down, pinned to sample indices of an older trial.
+        # Fill the ones that earn their place here, after every main trace exists -- traces are
+        # drawn in the order added, so a white patch laid now hides the main curves behind each
+        # zoom, and the zoom's own curves go on top of it.
+        INSET_TICKS = {}
+        drawn = [e for e in estimators
+                 if e in estimator_plot_args and e in estimatorsPoses.keys()]
+        for inset_name, (series, component, row, col) in INSET_TARGETS.items():
+                lo, hi = INSET_WINDOW[inset_name]
+                span = [estimatorsPoses[e][series][lo:hi, component] for e in drawn
+                        if estimatorsPoses[e].get(series) is not None]
+                if not span:
+                        continue
+                flat = np.concatenate(span)
+                low, high = float(np.nanmin(flat)), float(np.nanmax(flat))
+                pad = 0.05 * ((high - low) or 1.0)
+                x0, x1 = float(observer_data["t"].iloc[lo]), float(observer_data["t"].iloc[hi - 1])
+                figPoseVel.add_trace(go.Scatter(
+                        x=[x0, x1, x1, x0], y=[low - pad, low - pad, high + pad, high + pad],
+                        fill="toself", fillcolor="white", mode="lines", line=dict(width=0),
+                        hoverinfo="skip", showlegend=False,
+                        xaxis=f"x{axis_idxs[inset_name]}", yaxis=f"y{axis_idxs[inset_name]}"))
+
+                # The axis grid is painted under every trace, so the white backing above buries
+                # it; layer="above traces" does not lift an inset's grid either. Draw it as
+                # traces between the backing and the curves, and pin the ticks to the same values.
+                ylo, yhi = low - pad, high + pad
+                # Whole seconds only, and never rotated: fractional labels on a window a few
+                # seconds wide did not fit and plotly tipped them on their side.
+                xticks = MaxNLocator(4, integer=True).tick_values(x0, x1)
+                yticks = MaxNLocator(4).tick_values(ylo, yhi)
+                xticks = [v for v in xticks if x0 <= v <= x1]
+                yticks = [v for v in yticks if ylo <= v <= yhi]
+                for v in xticks:
+                        figPoseVel.add_trace(go.Scatter(
+                                x=[v, v], y=[ylo, yhi], mode="lines", hoverinfo="skip",
+                                line=dict(color="lightgrey", width=1), showlegend=False,
+                                xaxis=f"x{axis_idxs[inset_name]}", yaxis=f"y{axis_idxs[inset_name]}"))
+                for v in yticks:
+                        figPoseVel.add_trace(go.Scatter(
+                                x=[x0, x1], y=[v, v], mode="lines", hoverinfo="skip",
+                                line=dict(color="lightgrey", width=1), showlegend=False,
+                                xaxis=f"x{axis_idxs[inset_name]}", yaxis=f"y{axis_idxs[inset_name]}"))
+                INSET_TICKS[inset_name] = (xticks, yticks, (x0, x1), (ylo, yhi))
+                for e in drawn:
+                        if estimatorsPoses[e].get(series) is None:
+                                continue
+                        figPoseVel.add_trace(go.Scatter(
+                                x=observer_data["t"][lo:hi],
+                                y=estimatorsPoses[e][series][lo:hi, component],
+                                mode="lines", showlegend=False,
+                                line=dict(width=estimator_plot_args[e]["lineWidth"],
+                                          color=paper_colors.rgba(colors, e)),
+                                xaxis=f"x{axis_idxs[inset_name]}",
+                                yaxis=f"y{axis_idxs[inset_name]}"))
+
+        # The lines that pinned these ranges are commented out further down, so every panel was
+        # left to plotly's autorange and its generous padding.
+        PANEL_SOURCES = {(1, 1): ('pos', 0), (2, 1): ('pos', 1), (3, 1): ('pos', 2),
+                         (1, 2): ('ori', 0), (2, 2): ('ori', 1), (3, 2): ('ori', 2),
+                         (1, 3): ('linVel', 0), (2, 3): ('linVel', 1), (3, 3): ('linVel', 2)}
+        for (prow, pcol), (pseries, pcomp) in PANEL_SOURCES.items():
+                pspan = [estimatorsPoses[e][pseries][:, pcomp] for e in drawn
+                         if estimatorsPoses[e].get(pseries) is not None]
+                if not pspan:
+                        continue
+                pflat = np.concatenate(pspan)
+                plow, phigh = float(np.nanmin(pflat)), float(np.nanmax(pflat))
+                ppad = 0.04 * ((phigh - plow) or 1.0)
+                figPoseVel.update_yaxes(range=[plow - ppad, phigh + ppad], row=prow, col=pcol)
+
+        for inset_name in INSET_TARGETS:
+                if inset_name not in INSET_TICKS:
+                        continue
+                xticks, yticks, xrange, yrange = INSET_TICKS[inset_name]
+                tick = dict(family="Times New Roman", size=9, color="black")
+                figPoseVel.update_layout({
+                        f"xaxis{axis_idxs[inset_name]}": dict(
+                                gridcolor="lightgrey", zerolinecolor="lightgrey",
+                                linecolor="dimgrey", mirror=True, showline=True,
+                                ticks="outside", tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=xticks, tickangle=0,
+                                range=list(xrange)),
+                        f"yaxis{axis_idxs[inset_name]}": dict(
+                                gridcolor="lightgrey", zerolinecolor="lightgrey",
+                                linecolor="dimgrey", mirror=True, showline=True,
+                                ticks="outside", tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=yticks, range=list(yrange))})
+
         # Calculate y-axis limits
         def calculate_limits(*datas):
                 # Finding the axis limits linked to the max spike
@@ -852,8 +980,8 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         figPoseVel.update_yaxes(title=dict(text="Translation z [m]", standoff=10), row=3, col=1)
         # figPoseVel.update_yaxes(title=dict(text="Roll (°)", standoff=5), row=1, col=2)
         # figPoseVel.update_yaxes(title=dict(text="Pitch (°)", standoff=5), row=2, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Tilt x ≈ Roll [deg]", standoff=5), row=1, col=2)
-        figPoseVel.update_yaxes(title=dict(text="Tilt y ≈ Pitch [deg]", standoff=5), row=2, col=2)
+        figPoseVel.update_yaxes(title=dict(text="Roll [deg]", standoff=5), row=1, col=2)
+        figPoseVel.update_yaxes(title=dict(text="Pitch [deg]", standoff=5), row=2, col=2)
         figPoseVel.update_yaxes(title=dict(text="Yaw [deg]", standoff=5), row=3, col=2)
         figPoseVel.update_yaxes(title=dict(text="Velocity x [m/s]", standoff=5), row=1, col=3)
         figPoseVel.update_yaxes(title=dict(text="Velocity y [m/s]", standoff=5), row=2, col=3)

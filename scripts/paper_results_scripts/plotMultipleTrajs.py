@@ -1,3 +1,4 @@
+import paper_colors
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
@@ -53,22 +54,15 @@ default_estimators = [
 
 # # Define columns for each estimator
 estimator_plot_args_default = {
-    
-    'Hartley': {'group': 1, 'lineWidth': 1, 'column_names':  ['RI-EKF_Position_x', 'RI-EKF_Position_y']},
-    # 'Control': {'group': 1, 'lineWidth': 2, 'column_names': ['Controller_tx', 'Controller_ty']},
-    # 'Vanyte': {'group': 1, 'lineWidth': 1, 'column_names': ['Vanyte_position_x', 'Vanyte_position_y']},
-    'Mocap': {'group': 0, 'lineWidth': 1, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
+    # Declaration order sets the legend and the drawing order of the figures.
     'KO': {'group': 1, 'lineWidth': 1, 'column_names': ['KO_position_x', 'KO_position_y']},
-    # 'WAIKO': {'group': 1, 'lineWidth': 1, 'column_names': ['WAIKO_position_x', 'WAIKO_position_y']},
-    
-    # 'Tilt': {'group': 1, 'lineWidth': 1, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
-    #'KO_APC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_APC_posW_tx', 'KO_APC_posW_ty']},
-    #'KO_ASC': {'group': 2, 'lineWidth': 2, 'column_names': ['KO_ASC_posW_tx', 'KO_ASC_posW_ty']},
-    # 'KO-ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty']},
-    #'KOWithoutWrenchSensors': {'group': 1, 'lineWidth': 2, 'column_names': ['KOWithoutWrenchSensors_posW_tx', 'KOWithoutWrenchSensors_posW_ty']},
-    
-    
+    'Hartley': {'group': 1, 'lineWidth': 1, 'column_names':  ['Hartley_position_x', 'Hartley_position_y']},
+    'Control': {'group': 1, 'lineWidth': 2, 'dash': '8px,4px', 'column_names': ['Control_position_x', 'Control_position_y']},
+    'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_position_x', 'KO_ZPC_position_y']},
+    'Tilt': {'group': 1, 'lineWidth': 1, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
+    'Mocap': {'group': 0, 'lineWidth': 1, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
 }
+
 def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):    
     estimators = list(set(estimators).intersection(estimator_plot_args.keys()).intersection(estimator_plot_args_default.keys())) 
         
@@ -112,7 +106,10 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
         xmaxs = []
         ymins = []
         ymaxs = []
-        combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
+        # Drawn back to front: the declared order is the reading order, so reversing it here
+        # puts the ground truth down first and the estimators on top of it.
+        combined_estimators = [e for e in reversed(order)
+                               if e in all_groups[0]["estimators"] + all_groups[group]["estimators"]]
         
         for estimator in combined_estimators:
             for e in range(len(exps)):
@@ -130,10 +127,13 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
     
     for group in list(filter(lambda x: x != 0, all_groups.keys())):
         fig = go.Figure()
-        combined_estimators = all_groups[0]["estimators"] + all_groups[group]["estimators"]
+        # Drawn back to front: the declared order is the reading order, so reversing it here
+        # puts the ground truth down first and the estimators on top of it.
+        combined_estimators = [e for e in reversed(order)
+                               if e in all_groups[0]["estimators"] + all_groups[group]["estimators"]]
         for estimator in combined_estimators:
             estimatorName = estimator_plot_args[estimator]["name"]
-            color = colors[estimator]
+            color = paper_colors.resolve(colors, estimator)
 
             # Process each CSV for the current estimator
             for e in xys[estimator].keys():
@@ -143,13 +143,15 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
                         # Use transparent_color in the line color
                         fig.add_trace(go.Scatter(
                             x=xys[estimator][e][0], y=xys[estimator][e][1],
-                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2),
+                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2,
+                                                    dash=estimator_plot_args[estimator].get('dash')),
                             name=f'{estimatorName}', showlegend=True))
                     else:
                         transparent_color = f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
                         fig.add_trace(go.Scatter(
                             x=xys[estimator][e][0], y=xys[estimator][e][1],
-                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2),
+                            mode='lines', line=dict(color=transparent_color, width=estimator_plot_args[estimator]['lineWidth'] + 2,
+                                                    dash=estimator_plot_args[estimator].get('dash')),
                             name=f'{estimatorName}', showlegend=True))
                 else:
                     if(estimator == 'Mocap'):
@@ -193,6 +195,8 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
                 x=-0.1,
                 orientation='h',
                 bgcolor = 'rgba(0,0,0,0)',
+                # Traces are emitted back to front, so reversing the legend restores the
+                # declared reading order.
                 traceorder='reversed',
                 font = dict(family = 'Times New Roman', size=22, color="black"),
                 ),
@@ -309,7 +313,7 @@ def plot_multiple_trajs_video(
     line_handles = {}                      # (estimator, exp_idx) → Line2D
 
     for est in combined_estimators:
-        r, g, b, _ = colors[est]
+        r, g, b = paper_colors.resolve(colors, est)
         for k in xys[est]:
             is_main = (k == main_expe)
             alpha   = 1.0 if is_main else 0.6
@@ -390,7 +394,7 @@ def plot_multiple_trajs_video(
         return (r, g, b)                # already 0-1 floats
 
     for est in combined_estimators:
-        rgb = _to_mpl_rgb(colors[est])        #  <-- single call
+        rgb = _to_mpl_rgb(paper_colors.resolve(colors, est))
 
         for k in xys[est]:
             is_main = (k == main_expe)
@@ -670,7 +674,7 @@ def plot_relative_trajs_video_distance(
 
     line_handles = {}
     for est in combined_estimators:
-        rgb = _to_mpl_rgb(colors[est])
+        rgb = _to_mpl_rgb(paper_colors.resolve(colors, est))
         for k in xys_raw[est]:
             is_main = (k == main_expe)
             (ln,) = ax.plot(

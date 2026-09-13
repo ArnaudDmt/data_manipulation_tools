@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 import plotly.io as pio
 import os
+from pathlib import Path
 
 # Tell webbrowser to use wslview
 os.environ["BROWSER"] = "wslview"
@@ -30,15 +31,32 @@ estimator_plot_args = {
     'Controller': {'name': 'Control', 'lineWidth': 5},
     'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 5},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 5},
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 7},
+    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 5},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 5},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 5},
     'KOWithoutWrenchSensors': {'name': 'KOWithoutWrenchSensors', 'lineWidth': 5},
-    'Mocap': {'name': 'Ground truth', 'lineWidth': 5}
+    'Mocap': {'name': 'Ground truth', 'lineWidth': 4}
 }
 
 
+
+
+# generate_metrics_plots keys its shared palette by abbreviation ("KO") and returns components in
+# 0-1, while this file was written against the long names and 0-255. Resolving both lets every
+# figure here use the same colours as the rest of the paper instead of its own defaults.
+ABBREVIATIONS = {"KineticsObserver": "KO", "KO_ZPC": "KO_ZPC",
+                 "KOWithoutWrenchSensors": "KO_WWS", "Hartley": "Hartley",
+                 "Mocap": "Mocap", "Controller": "Control", "Control": "Control",
+                 "Tilt": "Tilt", "Vanyte": "Vanyte"}
+
+
+def resolve_color(colors, name):
+    for key in (name, ABBREVIATIONS.get(name, name)):
+        if key in colors:
+            rgb = colors[key][:3]
+            return tuple(round(c * 255) if max(rgb) <= 1.0 else c for c in rgb)
+    raise KeyError(f"aucune couleur pour {name!r} parmi {sorted(colors)}")
 
 
 def continuous_euler(angles):
@@ -58,22 +76,23 @@ def continuous_euler(angles):
 
 def plotContactPoses(estimators_to_plot = None, colors = None, path = default_path):
 
-    encoders_data = pd.read_csv(f'{path}/output_data/logReplay.csv',  delimiter=';')
+    encoders_data, observer_data = load_rest_pose_data(path)
 
-    observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
-    observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
-
-    estimatorsPoses = { 'Mocap': {'pos': observer_data[['Mocap_pos_x', 'Mocap_pos_y', 'Mocap_pos_z']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['Mocap_ori_x', 'Mocap_ori_y', 'Mocap_ori_z', 'Mocap_ori_w']].to_numpy())}, \
-                        # 'Controller': {'pos': observer_data[['Controller_tx', 'Controller_ty', 'Controller_tz']].to_numpy(), \
-                        #             'ori': R.from_quat(observer_data[['Controller_qx', 'Controller_qy', 'Controller_qz', 'Controller_qw']].to_numpy())}, \
-                        'KineticsObserver': {  'pos': observer_data[['KO_posW_tx', 'KO_posW_ty', 'KO_posW_tz']].to_numpy(), \
-                                                'ori': R.from_quat(observer_data[['KO_posW_qx', 'KO_posW_qy', 'KO_posW_qz', 'KO_posW_qw']].to_numpy())}, \
-                        'KO_ZPC': {'pos': observer_data[['KO_ZPC_posW_tx', 'KO_ZPC_posW_ty', 'KO_ZPC_posW_tz']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['KO_ZPC_posW_qx', 'KO_ZPC_posW_qy', 'KO_ZPC_posW_qz', 'KO_ZPC_posW_qw']].to_numpy())}, \
-                        'Hartley': {'pos': observer_data[['Hartley_Position_x', 'Hartley_Position_y', 'Hartley_Position_z']].to_numpy(), \
-                                    'ori': R.from_quat(observer_data[['Hartley_Orientation_x', 'Hartley_Orientation_y', 'Hartley_Orientation_z', 'Hartley_Orientation_w']].to_numpy())}
-                        }
+    # A run only logs the estimators its pipeline enabled, so ask for what is there rather than
+    # failing on the ones it is not.
+    sources = {'Mocap': ('Mocap_pos', 'Mocap_ori'),
+               'KineticsObserver': ('KO_posW_t', 'KO_posW_q'),
+               'KO_ZPC': ('KO_ZPC_posW_t', 'KO_ZPC_posW_q'),
+               'Hartley': ('Hartley_Position_', 'Hartley_Orientation_')}
+    estimatorsPoses = {}
+    for name, (position, orientation) in sources.items():
+        separator = '_' if not position.endswith(('_', 't', 'q')) else ''
+        columns = [f'{position}{separator}{axis}' for axis in 'xyz']
+        quaternion = [f'{orientation}{separator}{axis}' for axis in 'xyzw']
+        if not set(columns + quaternion) <= set(observer_data.columns):
+            continue
+        estimatorsPoses[name] = {'pos': observer_data[columns].to_numpy(),
+                                 'ori': R.from_quat(observer_data[quaternion].to_numpy())}
     
     if(estimators_to_plot == None):
         estimators_to_plot = estimatorsPoses.keys()
@@ -103,7 +122,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     shapes = []
 
     for estimatorName in estimators_to_plot:
-        colorEst = colors[estimatorName]
+        colorEst = resolve_color(colors, estimatorName)
         colorEst = f'rgba({colorEst[0]}, {colorEst[1]}, {colorEst[2]}, 1)'
 
         for contactName in fbContactPoses.keys():
@@ -295,6 +314,39 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
 
     
 
+def load_rest_pose_data(path):
+    output = Path(path) / 'output_data'
+    encoders = pd.read_csv(output / 'logReplay.csv', sep=';')
+    poses_path = output / 'finalDataCSV.csv'
+    if not poses_path.exists():
+        poses_path = output / 'observerResultsCSV.csv'
+    poses = pd.read_csv(poses_path, sep=';')
+    if 'Mocap_datasOverlapping' in poses:
+        poses = poses.loc[poses['Mocap_datasOverlapping'] == 'Datas overlap']
+    poses = poses.rename(columns={f'Mocap_{long}_{axis}': f'Mocap_{short}_{axis}'
+                                  for long, short, axes in [('position', 'pos', 'xyz'), ('orientation', 'ori', 'xyzw')]
+                                  for axis in axes})
+    # The estimators moved the same way: finalDataCSV writes KO_position_x where the older
+    # observerResultsCSV wrote KO_posW_tx.
+    renames = {}
+    for estimator in ('KO', 'KO_ZPC', 'KO_WWS'):
+        renames.update({f'{estimator}_position_{axis}': f'{estimator}_posW_t{axis}' for axis in 'xyz'})
+        renames.update({f'{estimator}_orientation_{axis}': f'{estimator}_posW_q{axis}' for axis in 'xyzw'})
+    renames.update({f'Hartley_position_{axis}': f'Hartley_Position_{axis}' for axis in 'xyz'})
+    renames.update({f'Hartley_orientation_{axis}': f'Hartley_Orientation_{axis}' for axis in 'xyzw'})
+    poses = poses.rename(columns=renames)
+    # Current runs use surface contacts; the paper labels used force-sensor names.
+    for surface, sensor in [('RightFootCenter', 'RightFootForceSensor'),
+                            ('LeftFootCenter', 'LeftFootForceSensor'),
+                            ('LeftHandCloseContact', 'LeftHandForceSensor')]:
+        encoders = encoders.rename(columns=lambda name: name.replace(surface, sensor))
+    encoders.index = encoders['t'].round(9)
+    times = poses['t'].round(9)
+    if not times.isin(encoders.index).all():
+        raise ValueError('Contact log and aligned poses have different timestamps; rerun the routine')
+    return encoders.loc[times].reset_index(drop=True), poses.reset_index(drop=True)
+
+
 def plotContactRestPoses(colors = None, path = default_path):
     import numpy as np
     import plotly.graph_objects as go
@@ -338,19 +390,9 @@ def plotContactRestPoses(colors = None, path = default_path):
         )
 
     
-    encoders_data = pd.read_csv(f'{path}/output_data/logReplay.csv',  delimiter=';')
-
-    observer_data = pd.read_csv(f'{path}/output_data/observerResultsCSV.csv',  delimiter=';')
-    observer_data = observer_data[observer_data["Mocap_datasOverlapping"] == "Datas overlap"]
-
-    if(colors == None):
-        # Generate colorKinetics palette for the estimators
-        colors_t = px.colors.qualitative.Plotly  # Use Plotly's colorKinetics palette
-        colors_t = [px.colors.hex_to_rgb(colors_t[0])]
-        colors = dict.fromkeys("KineticsObserver")
-        
-        for i,estimator in enumerate(colors.keys()):
-            colors[estimator] = colors_t[i]
+    encoders_data, observer_data = load_rest_pose_data(path)
+    if colors is None:
+        colors = {'KineticsObserver': (99, 110, 250), 'Mocap': (0, 0, 0)}
 
     # Initialize plot
     fig3d = go.Figure()
@@ -366,10 +408,10 @@ def plotContactRestPoses(colors = None, path = default_path):
     iterations = range(index_range[0], index_range[1])
     shapes = []
     
-    colorKinetics = colors["KineticsObserver"]
+    colorKinetics = resolve_color(colors, "KineticsObserver")
     colorKinetics = f'rgba({colorKinetics[0]}, {colorKinetics[1]}, {colorKinetics[2]}, 1)'
 
-    colorMocap = colors["Mocap"]
+    colorMocap = resolve_color(colors, "Mocap")
     colorMocap = f'rgba({colorMocap[0]}, {colorMocap[1]}, {colorMocap[2]}, 1)'
 
     for contactName in restContactPoses.keys():
@@ -507,6 +549,11 @@ def plotContactRestPoses(colors = None, path = default_path):
         iter_start = 3000
         iter_end = 4600
 
+        # zeroRoll is the actual roll on the flat ground, drawn wherever the contact is set. On the
+        # obstacle window the actual roll is -19.7 deg, drawn by its own trace, so leaving zeroRoll
+        # there puts a second green line at zero on top of it.
+        zeroRoll[iter_start:iter_end] = None
+
         print(np.mean([x for x in worldContactOri_mocap_euler[iter_start:iter_end,0] if str(x) != 'nan']))
 
         figMain = go.Figure()
@@ -523,7 +570,11 @@ def plotContactRestPoses(colors = None, path = default_path):
         figMain.add_trace(go.Scatter(
                         x = observer_data["t"],
                         y= zeroRoll, 
-                        line=dict(color="green", width = estimator_plot_args["Mocap"]['lineWidth'])
+                        line=dict(color="green", width = estimator_plot_args["Mocap"]['lineWidth']),
+                        # Same quantity as the trace above, on the flat ground rather than on the
+                        # obstacle: without this plotly names it "trace 3" and the legend shows
+                        # the actual roll twice.
+                        showlegend=False
                     ))
         figInset = go.Figure()
         figInset.add_trace(go.Scatter(
@@ -547,18 +598,23 @@ def plotContactRestPoses(colors = None, path = default_path):
                         showlegend= False
                     ))
         
-        minY2 = np.min(list(filter(lambda v: v==v, restContactOri_euler[iter_start:iter_end:,0] -1)))
-        maxY2 = np.max(list(filter(lambda v: v==v, worldContactOri_mocap_euler[iter_start:iter_end:,0] +1)))
+        # Tight margin: the curve spends most of the window within half a degree of the ground
+        # truth, so a one-degree pad left the zoom mostly empty.
+        zoom_pad = 0.3
+        minY2 = np.min(list(filter(lambda v: v==v, restContactOri_euler[iter_start:iter_end:,0] - zoom_pad)))
+        maxY2 = np.max(list(filter(lambda v: v==v, worldContactOri_mocap_euler[iter_start:iter_end:,0] + zoom_pad)))
 
         rect_x_start_main = observer_data["t"][iter_start]
         rect_x_end_main = observer_data["t"][iter_end]
         rect_y_start_main = minY2
         rect_y_end_main = maxY2
 
-        rect_x_start_inset = 0.5  # Domain start for xaxis2
-        rect_x_end_inset = 0.8    # Domain end for xaxis2
-        rect_y_start_inset = 0.1  # Domain start for yaxis2
-        rect_y_end_inset = 0.40    # Domain end for yaxis2
+        # The zoom on the obstacle step, drawn inside the main figure on a second axis pair so the
+        # result is one self-contained file. It sits in the upper left, the only area the curves
+        # leave empty, and repeats the three traces of the window without adding legend entries.
+        # Placed to clear both the flat-ground traces running along zero and the spike the next
+        # contact creation produces, so the zoom hides none of the story it comes from.
+
         
         figMain.update_layout(
             plot_bgcolor= "rgba(0,0,0,0)", 
@@ -578,6 +634,9 @@ def plotContactRestPoses(colors = None, path = default_path):
                     title="Time (s)",
                     gridcolor= 'lightgrey', 
                     gridwidth= 3,
+                    # Trimmed to the span that carries the contacts: nothing happens before 5 s or
+                    # after the last foot lands.
+                    range=[10, 45],
                 ),
             yaxis=dict(  # Primary y-axis configuration
                     title="Roll (°)",
@@ -585,21 +644,8 @@ def plotContactRestPoses(colors = None, path = default_path):
                     gridwidth= 3,
                     zerolinecolor= 'lightgrey',
                 ),
-            shapes=[
-                    # Rectangle for the inset area
-                    dict(
-                        type="rect",
-                        xref="x",  # Reference to the primary x-axis
-                        yref="y",  # Reference to the primary y-axis
-                        x0=rect_x_start_main,
-                        x1=rect_x_end_main,
-                        y0=rect_y_start_main,
-                        y1=rect_y_end_main,
-                        line=dict(
-                            color="black",  # Border color of the rectangle
-                            width=2,
-                        ),
-                )]
+            # No inset on this figure, so no second axis pair and no box to point at one.
+            shapes=[],
         )
 
         figInset.update_layout(

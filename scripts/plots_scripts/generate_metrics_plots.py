@@ -9,8 +9,6 @@ import numpy as np
 
 import plotly.io as pio
 
-# Tell webbrowser to use wslview
-os.environ["BROWSER"] = "wslview"
 pio.renderers.default = "browser"
 
 import pathlib
@@ -100,7 +98,9 @@ def generate_turbo_subset_colors(estimatorsList):
     colors={}
     # Generate colors and reduce intensity
     for idx, estimator in enumerate(estimatorsList):
-        colors[estimator] = reduce_intensity(cmap(listCoeffs[idx]), 0.75)
+        # 0.85, not 0.75: sampling the published figures' legends gives colours that match the
+        # turbo ramp at this intensity (RI-EKF #C9C549, ground truth #D4642D).
+        colors[estimator] = reduce_intensity(cmap(listCoeffs[idx]), 0.85)
     
     return colors
 
@@ -443,6 +443,8 @@ def plot_x_y_trajs(exps_to_merge, estimatorsList, colors):
     fig = go.Figure()
     for expe in exps_to_merge:
         for estimator in estimatorsList:
+            # The mocap trajectory is added below, out of the estimators' loop.
+            if estimator == "Mocap": continue
             data = open_pickle(f"Projects/{expe}/output_data/evals/{estimator}/saved_results/traj_est/cached/x_y_z_traj.pickle")
             fig.add_trace(go.Scatter(x=data['x'], y=data['y'],
                     mode='lines',
@@ -680,6 +682,11 @@ def plot_llve(exps_to_merge, estimatorsList, colors):
             
             for cat in data.keys():
                 for axis in data[cat].keys():
+                    if len(data[cat][axis]) != len(mocapData[cat][axis]):
+                        sys.exit(
+                            f"[{expe}] {estimator}'s {cat}/{axis} has {len(data[cat][axis])} samples while the mocap "
+                            f"has {len(mocapData[cat][axis])}: the cached results of {estimator} are outdated. "
+                            f"Recompute the metrics of {expe}.")
                     data[cat][axis] = data[cat][axis] - mocapData[cat][axis]    
                     if regroupedErrors[estimator][cat][axis] is None:
                         regroupedErrors[estimator][cat][axis] = data[cat][axis]
@@ -903,15 +910,20 @@ def main():
     parser.add_argument('--exps_to_merge', nargs='+', help='List of folders whose we want to merge the computed errors', required=True)
     args = parser.parse_args()
 
-    nb_estimators=0
     exps_to_merge = args.exps_to_merge
+    current_estimators = None
     for expe in exps_to_merge:
-        if(len(next(os.walk(f"Projects/{expe}/output_data/evals/"))[1]) == 0 or (nb_estimators != 0 and nb_estimators!= len(next(os.walk(f"Projects/{expe}/output_data/evals/"))[1]))):
-           sys.exit("The experiments don't contain results from the same estimators, or don't contain any results.") 
-        nb_estimators = len(next(os.walk(f"Projects/{expe}/output_data/evals/"))[1])
+        evals_dir = f"Projects/{expe}/output_data/evals"
+        with open(f"Projects/{expe}/output_data/observers_infos.yaml", "r") as file:
+            project_estimators = set(yaml.safe_load(file).get("observers", []))
+        project_estimators &= {
+            estimator for estimator in os.listdir(evals_dir)
+            if os.path.isdir(f"{evals_dir}/{estimator}")
+        }
+        current_estimators = (project_estimators if current_estimators is None
+                              else current_estimators & project_estimators)
 
-    estimatorsList = [d for d in os.listdir(f"Projects/{exps_to_merge[0]}/output_data/evals/") 
-                  if os.path.isdir(f"Projects/{exps_to_merge[0]}/output_data/evals/{d}")]
+    estimatorsList = current_estimators
 
     # if "KineticsObserver" in estimatorsList:
     #     estimatorsList.insert(0, estimatorsList.pop(estimatorsList.index("KineticsObserver")))
@@ -922,6 +934,8 @@ def main():
         e for e in estimators_to_plot
         if e in estimatorsList and e in estimator_plot_args
     ))
+    if not estimatorsList:
+        sys.exit("No current estimator results match estimators_to_plot.")
 
     estimatorsForErrors = estimatorsList.copy()
     
@@ -937,13 +951,13 @@ def main():
     
     # plot_absolute_errors(exps_to_merge, estimatorsList, colors)
 
-    # plot_relative_errors(exps_to_merge, estimatorsForErrors, colors)
+    plot_relative_errors(exps_to_merge, estimatorsForErrors, colors)
 
     # plot_errors_per_walk_cycle(exps_to_merge, estimatorsForErrors, colors)
 
     # plot_llve(exps_to_merge, estimatorsForErrors, colors)
 
-    # plot_x_y_trajs(exps_to_merge, estimatorsList, colors)
+    # plot_x_y_trajs(exps_to_merge, estimatorsForErrors, colors)
     # plot_x_y_z_trajs(exps_to_merge, estimatorsList, colors)
     
 
@@ -964,7 +978,7 @@ def main():
     
     if(len(exps_to_merge) == 1):
         import plotPoseAndVelocity
-        plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
+        # plotPoseAndVelocity.plotPoseVel(estimatorsList, f'Projects/{exps_to_merge[0]}', colors_to_plot, estimator_plot_args)
 
     #if(len(exps_to_merge) == 1):
         import plotContactPoses
