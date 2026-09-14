@@ -31,7 +31,7 @@ estimator_plot_args = {
     'Controller': {'name': 'Control', 'lineWidth': 5},
     'Vanyte': {'name': 'Vanyt-e', 'lineWidth': 5},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 5},
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
+    'KineticsObserver': {'name': 'KO', 'lineWidth': 4},
     'KO_APC': {'name': 'KO_APC', 'lineWidth': 5},
     'KO_ASC': {'name': 'KO_ASC', 'lineWidth': 5},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 5},
@@ -292,6 +292,8 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
                     x=0.01,
                     orientation='h',
                     bgcolor = 'rgba(0,0,0,0)',
+                    # The traces are added back to front, so the legend is reversed to read
+                    # in the order the estimators are discussed: KO first, ground truth last.
                     traceorder='reversed',
                     font = dict(family = 'Times New Roman', size=20, color="black")
                     ),
@@ -558,7 +560,7 @@ def plotContactRestPoses(colors = None, path = default_path):
 
         figMain = go.Figure()
 
-        figMain.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), name=f'Kinetics Observer'))
+        figMain.add_trace(go.Scatter(x=observer_data["t"], y=restContactOri_euler[:,0], mode='lines', line=dict(color=colorKinetics, width = estimator_plot_args["KineticsObserver"]['lineWidth']), name=estimator_plot_args["KineticsObserver"]['name']))
         figMain.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_mocap_euler[:,0], mode='lines', line=dict(color=colorMocap, width = estimator_plot_args["Mocap"]['lineWidth']), name=f'Motion Capture'))
         x_interval = [t for t, is_set in zip(observer_data["t"][iter_start:iter_end], is_set_mask[iter_start:iter_end]) if is_set]
         figMain.add_trace(go.Scatter(

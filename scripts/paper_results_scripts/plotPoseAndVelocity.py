@@ -24,7 +24,7 @@ zeros_row = np.zeros((1, 3))
 estimator_plot_args_default = {
     # Line 51 intersects the requested estimators with these keys, so anything missing here is
     # silently dropped from the figure rather than reported.
-    'KO': {'name': 'Kinetics Observer', 'lineWidth': 1},
+    'KO': {'name': 'KO', 'lineWidth': 1},
     'KO_ZPC': {'name': 'KO-ZPC', 'lineWidth': 1},
     'KO_WWS': {'name': 'KO-PC', 'lineWidth': 1},
     'Control': {'name': 'Control', 'lineWidth': 1},
@@ -48,6 +48,22 @@ def continuous_euler(angles):
                         diff[j] += 2*np.pi
                 continuous_angles[i] = continuous_angles[i-1] + diff
             return continuous_angles
+
+# Panels where the signal oscillates at step frequency, so every curve fills its own vertical band
+# and whichever is drawn last hides the rest: the three velocities, and the roll and pitch. The KO
+# curves are all drawn thinner there, so the bands stay distinguishable instead of one estimator
+# painting over the others. Translation and yaw are smooth enough not to need it.
+THIN_PANELS = {(1, 2), (2, 2), (1, 3), (2, 3), (3, 3)}
+THIN_WIDTH = 0.4
+
+
+def line_width(plot_args, observerName, row, col):
+    # plot_args is passed in: inside plotPoseVel the parameter of that name shadows the module
+    # dictionary, which is estimator_plot_args_default.
+    if (row, col) in THIN_PANELS:
+        return THIN_WIDTH
+    return plot_args[observerName]["lineWidth"]
+
 
 def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_args = estimator_plot_args_default):
         print(estimators)
@@ -79,7 +95,6 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         # out -- it drifts monotonically and a zoom adds nothing -- while orientation and velocity
         # oscillate at step frequency and are unreadable at full span.
         INSET_TARGETS = {
-            'ori_roll_inset':  ('ori', 0, 1, 2),
             'ori_pitch_inset': ('ori', 1, 2, 2),
             'vel_x_inset':     ('linVel', 0, 1, 3),
             'vel_y_inset':     ('linVel', 1, 2, 3),
@@ -88,13 +103,15 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         # Window each zoom covers, in seconds of the trial's own clock. Stated absolutely
         # rather than as a span around a computed centre: the interesting stretch was
         # chosen by eye on the data, and nothing in the code can rediscover it.
-        INSET_RANGE = {'ori_roll_inset': (226.4, 236.1),
-                       'ori_pitch_inset': (226.4, 236.1),
+        INSET_RANGE = {'ori_pitch_inset': (226.4, 236.1),
                        # The velocity oscillates at step frequency: over the full 44 s the cycles
                        # merge, so its zoom stops at 142 s and keeps a handful of steps readable.
                        'vel_x_inset': (139.42, 141.6),
                        'vel_y_inset': (139.42, 141.6),
                        'vel_z_inset': (139.42, 141.6)}
+
+        # Where the leader lines meet the inset box, when the automatic choice reads badly.
+        INSET_LEADER_SIDE = {'vel_y_inset': 'left', 'vel_z_inset': 'left'}
 
         axis_idxs = dict()
         idx = 9
@@ -381,7 +398,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["pos"][:, 0],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 1, 1), color=color_Observer)
                 ),
                 row=1,
                 col=1,
@@ -391,7 +408,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["pos"][:, 1],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 2, 1), color=color_Observer)
                 ),
                 row=2,
                 col=1,
@@ -401,7 +418,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["pos"][:, 2],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 3, 1), color=color_Observer)
                 ),
                 row=3,
                 col=1,
@@ -413,7 +430,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["ori"][:, 0],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 1, 2), color=color_Observer)
                 ),
                 row=1,
                 col=2,
@@ -424,7 +441,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["ori"][:, 1],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 2, 2), color=color_Observer)
                 ),
                 row=2,
                 col=2,
@@ -439,7 +456,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         # 57.3 "yaw". The yaw is the third unwrapped Euler angle, already in degrees.
                         y=estimatorsPoses[observerName]["ori"][:, 2],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 3, 2), color=color_Observer)
                 ),
                 row=3,
                 col=2,
@@ -451,7 +468,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["linVel"][:, 0],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 1, 3), color=color_Observer)
                 ),
                 row=1,
                 col=3,
@@ -461,7 +478,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["linVel"][:, 1],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 2, 3), color=color_Observer)
                 ),
                 row=2,
                 col=3,
@@ -471,7 +488,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         x=observer_data["t"],
                         y=estimatorsPoses[observerName]["linVel"][:, 2],
                         mode="lines",showlegend= False,
-                        line=dict(width=estimator_plot_args[observerName]["lineWidth"], color=color_Observer)
+                        line=dict(width=line_width(estimator_plot_args, observerName, 3, 3), color=color_Observer)
                 ),
                 row=3,
                 col=3,
@@ -850,7 +867,65 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         INSET_TICKS = {}
         drawn = [e for e in estimators
                  if e in estimator_plot_args and e in estimatorsPoses.keys()]
+        PANEL_SOURCES = {(1, 1): ('pos', 0), (2, 1): ('pos', 1), (3, 1): ('pos', 2),
+                         (1, 2): ('ori', 0), (2, 2): ('ori', 1), (3, 2): ('ori', 2),
+                         (1, 3): ('linVel', 0), (2, 3): ('linVel', 1), (3, 3): ('linVel', 2)}
+        PANEL_YRANGE = {}
+        for (prow, pcol), (pseries, pcomp) in PANEL_SOURCES.items():
+                pspan = [estimatorsPoses[e][pseries][:, pcomp] for e in drawn
+                         if estimatorsPoses[e].get(pseries) is not None]
+                if not pspan:
+                        continue
+                pflat = np.concatenate(pspan)
+                plow, phigh = float(np.nanmin(pflat)), float(np.nanmax(pflat))
+                ppad = 0.04 * ((phigh - plow) or 1.0)
+                figPoseVel.update_yaxes(range=[plow - ppad, phigh + ppad], row=prow, col=pcol)
+                PANEL_YRANGE[(prow, pcol)] = (plow - ppad, phigh + ppad)
+
+        def _rounded(x0, x1, y0, y1, rx, ry, n=10):
+                """Polygon of a rounded rectangle, as a filled trace.
+
+                Plotly shapes have no corner radius, and a shape drawn above the traces would
+                also cover the inset itself: this is added as a trace, between the panel's curves
+                and the inset's, so only the background is muted.
+                """
+                import math
+                pts = []
+                for cx, cy, a0 in ((x1 - rx, y0 + ry, -90), (x1 - rx, y1 - ry, 0),
+                                   (x0 + rx, y1 - ry, 90), (x0 + rx, y0 + ry, 180)):
+                        for k in range(n + 1):
+                                a = math.radians(a0 + 90 * k / n)
+                                pts.append((cx + rx * math.cos(a), cy + ry * math.sin(a)))
+                return [q[0] for q in pts] + [pts[0][0]], [q[1] for q in pts] + [pts[0][1]]
+
+        W_FIG, H_FIG = 1000, 400      # same canvas the figure is written at
+        _panel_x_span = (float(observer_data["t"].iloc[0]), float(observer_data["t"].iloc[-1]))
         for inset_name, (series, component, row, col) in INSET_TARGETS.items():
+                # A half-transparent white pad behind the velocity insets: the curves oscillate at
+                # step frequency there and the box's frame and tick labels read poorly over them.
+                if inset_name.startswith('vel') and (row, col) in PANEL_YRANGE:
+                        n = (row - 1) * 3 + col
+                        dx0, dx1 = figPoseVel.layout[f"xaxis{axis_idxs[inset_name]}"].domain
+                        dy0, dy1 = figPoseVel.layout[f"yaxis{axis_idxs[inset_name]}"].domain
+                        px0, px1 = figPoseVel.layout[f"xaxis{n}"].domain
+                        py0, py1 = figPoseVel.layout[f"yaxis{n}"].domain
+                        ylo, yhi = PANEL_YRANGE[(row, col)]
+                        xlo, xhi = _panel_x_span
+                        def _to_x(v): return xlo + (v - px0) / (px1 - px0) * (xhi - xlo)
+                        def _to_y(v): return ylo + (v - py0) / (py1 - py0) * (yhi - ylo)
+                        # The tick marks and their labels sit outside the box, and unevenly: the
+                        # y labels hang to the left, the x labels below. Pad accordingly.
+                        wx, wy = dx1 - dx0, dy1 - dy0
+                        bx0, bx1 = _to_x(dx0 - 0.34 * wx), _to_x(dx1 + 0.05 * wx)
+                        by0, by1 = _to_y(dy0 - 0.49 * wy), _to_y(dy1 + 0.07 * wy)
+                        rx = 8.0 / W_FIG / (px1 - px0) * (xhi - xlo)
+                        ry = 8.0 / H_FIG / (py1 - py0) * (yhi - ylo)
+                        rxs, rys = _rounded(bx0, bx1, by0, by1, rx, ry)
+                        figPoseVel.add_trace(go.Scatter(
+                                x=rxs, y=rys, fill="toself",
+                                fillcolor="rgba(255,255,255,0.7)", mode="lines",
+                                line=dict(width=0), hoverinfo="skip", showlegend=False),
+                                row=row, col=col)
                 lo, hi = INSET_WINDOW[inset_name]
                 span = [estimatorsPoses[e][series][lo:hi, component] for e in drawn
                         if estimatorsPoses[e].get(series) is not None]
@@ -901,18 +976,7 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
 
         # The lines that pinned these ranges are commented out further down, so every panel was
         # left to plotly's autorange and its generous padding.
-        PANEL_SOURCES = {(1, 1): ('pos', 0), (2, 1): ('pos', 1), (3, 1): ('pos', 2),
-                         (1, 2): ('ori', 0), (2, 2): ('ori', 1), (3, 2): ('ori', 2),
-                         (1, 3): ('linVel', 0), (2, 3): ('linVel', 1), (3, 3): ('linVel', 2)}
-        for (prow, pcol), (pseries, pcomp) in PANEL_SOURCES.items():
-                pspan = [estimatorsPoses[e][pseries][:, pcomp] for e in drawn
-                         if estimatorsPoses[e].get(pseries) is not None]
-                if not pspan:
-                        continue
-                pflat = np.concatenate(pspan)
-                plow, phigh = float(np.nanmin(pflat)), float(np.nanmax(pflat))
-                ppad = 0.04 * ((phigh - plow) or 1.0)
-                figPoseVel.update_yaxes(range=[plow - ppad, phigh + ppad], row=prow, col=pcol)
+
 
         for inset_name in INSET_TARGETS:
                 if inset_name not in INSET_TICKS:
@@ -923,12 +987,12 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
                         f"xaxis{axis_idxs[inset_name]}": dict(
                                 gridcolor="lightgrey", zerolinecolor="lightgrey",
                                 linecolor="dimgrey", mirror=True, showline=True,
-                                ticks="outside", tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=xticks, tickangle=0,
+                                ticks="outside", ticklen=2, tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=xticks, tickangle=0,
                                 range=list(xrange)),
                         f"yaxis{axis_idxs[inset_name]}": dict(
                                 gridcolor="lightgrey", zerolinecolor="lightgrey",
                                 linecolor="dimgrey", mirror=True, showline=True,
-                                ticks="outside", tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=yticks, range=list(yrange))})
+                                ticks="outside", ticklen=2, tickcolor="lightgrey", tickfont=tick, showgrid=False, tickvals=yticks, range=list(yrange))})
 
         # Calculate y-axis limits
         def calculate_limits(*datas):
@@ -991,6 +1055,49 @@ def plotPoseVel(estimators, path = default_path, colors = None, estimator_plot_a
         figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=1)
         figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=2)
         figPoseVel.update_xaxes(title_text="Time [seconds]", row=3, col=3)
+
+        # The source rectangle sits on a panel's axes and the box on the inset's own; a shape
+        # cannot mix the two, so both are converted to paper coordinates, which plotly exposes
+        # as each axis' domain once the ranges are fixed.
+        _panel_x = (float(observer_data["t"].iloc[0]), float(observer_data["t"].iloc[-1]))
+
+        def _paper(axis_name, value, span):
+                d0, d1 = figPoseVel.layout[axis_name].domain
+                lo, hi = span
+                return d0 + (value - lo) / (hi - lo) * (d1 - d0)
+
+        for inset_name, (series, component, row, col) in INSET_TARGETS.items():
+                if inset_name not in INSET_TICKS:
+                        continue
+                _, _, xrange, yrange = INSET_TICKS[inset_name]
+                n = (row - 1) * 3 + col
+                panel_y = PANEL_YRANGE.get((row, col))
+                if panel_y is None:
+                        continue
+                sx0 = _paper(f"xaxis{n}", xrange[0], _panel_x)
+                sx1 = _paper(f"xaxis{n}", xrange[1], _panel_x)
+                sy0 = _paper(f"yaxis{n}", yrange[0], panel_y)
+                sy1 = _paper(f"yaxis{n}", yrange[1], panel_y)
+                bx0, bx1 = figPoseVel.layout[f"xaxis{axis_idxs[inset_name]}"].domain
+                by0, by1 = figPoseVel.layout[f"yaxis{axis_idxs[inset_name]}"].domain
+                side = INSET_LEADER_SIDE.get(inset_name)
+                dx = (bx0 + bx1) / 2 - (sx0 + sx1) / 2
+                dy = (by0 + by1) / 2 - (sy0 + sy1) / 2
+                if side == "left" or (side is None and abs(dx) >= abs(dy)):
+                        # Attach to the box's left corners; the automatic rule picks the facing
+                        # edge, which is the bottom one where the box sits mostly above.
+                        if side == "left":
+                                sx, bx = sx1, bx0
+                        else:
+                                sx, bx = (sx0, bx1) if dx < 0 else (sx1, bx0)
+                        pairs = ((sx, sy1, bx, by1), (sx, sy0, bx, by0))
+                else:
+                        sy, by = (sy0, by1) if dy < 0 else (sy1, by0)
+                        pairs = ((sx0, sy, bx0, by), (sx1, sy, bx1, by))
+                for x0, y0, x1, y1 in pairs:
+                        figPoseVel.add_shape(type="line", xref="paper", yref="paper",
+                                             x0=x0, y0=y0, x1=x1, y1=y1, layer="above",
+                                             line=dict(color="grey", width=0.8, dash="3px,2px"))
 
         W = 1000
         H = int(W/2.5) 

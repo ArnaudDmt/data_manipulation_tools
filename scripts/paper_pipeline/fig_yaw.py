@@ -5,5 +5,7 @@ headless()
 import plotContactPoses
 
 plotContactPoses.plotContactPoses(
-    estimators_to_plot=["KineticsObserver", "KO_ZPC", "Hartley", "Mocap"], colors=COLORS,
+    # Drawn back to front: the KO is plotted last so it stays visible where the curves overlap.
+    # The legend is put back in reading order by traceorder="reversed" in plotContactPoses.
+    estimators_to_plot=["Mocap", "Hartley", "KO_ZPC", "KineticsObserver"], colors=COLORS,
     path=f"{ROOT}/Projects/HRP5_MultiContact_1")

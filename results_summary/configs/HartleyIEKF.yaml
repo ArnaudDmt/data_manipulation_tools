@@ -1,0 +1,35 @@
+nb_contacts: 3
+
+# Parameters of the offline RI-EKF (HartleyIEKF_WithPlots/bin/InEkfLogParser).
+#
+# Everything below is a VARIANCE, matching the vocabulary of the mc_rtc observer configs
+# (ekfSensorNoiseVariances / ekfStateProcessVariances), so the RI-EKF and the Kinetics
+# Observer can be compared and changed symmetrically. The parser square-roots each value
+# before handing it to NoiseParams, which takes standard deviations.
+#
+# The values here reproduce exactly what used to be hardcoded in kinematics.cpp and
+# RobotState.cpp, so this file is a no-op until it is deliberately changed.
+# Set HARTLEY_CONFIG to point the parser at a different file.
+
+# Initial covariance of the gyroscope bias state (was RobotState.cpp: 1e-8 * Identity).
+gyroBiasInitVariance: [1e-12, 1e-12, 1e-12]
+# Random-walk process covariance of the gyroscope bias (was setGyroscopeBiasNoise(1e-5)).
+gyroBiasProcessVariance: [1e-10, 1e-10, 1e-10]
+
+# Sensor noise, per robot. These mirror ekfSensorNoiseVariances in the matching
+# observers/MCKineticsObserver/<robot>.yaml, so both estimators trust the same IMU equally.
+# HARTLEY_ROBOT selects the entry; the parser refuses to run without it when this section
+# exists, because applying one robot's calibration to another is the bug this section fixes.
+#
+# Previously the parser hardcoded std 0.0005 / 0.05 -- HRP-5P's values -- for every robot,
+# so RHPS1 ran with a gyroscope trusted 64x more than its own calibration says.
+accelerometerBiasVariance: 1e-8    # std 0.0001
+contactVariance: 1e-4              # std 0.01
+
+robots:
+  rhps1:
+    gyroscopeVariance: 1.6e-5        # std 0.004
+    accelerometerVariance: 3.6e-3    # std 0.06
+  hrp5_p:
+    gyroscopeVariance: 2.5e-7        # std 0.0005
+    accelerometerVariance: 2.5e-3    # std 0.05

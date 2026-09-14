@@ -1,0 +1,169 @@
+# Plugins: [MocapAligner]
+Plugins: [MocapAligner, HartleyIEKF]
+# Plugins: [MocapAligner, HartleyIEKF]
+# Plugins: [MocapAligner, HartleyIEKF]
+
+# Plugins: [HartleyIEKF] 
+
+
+
+
+
+
+
+
+# Plugins: [HartleyIEKF] 
+
+
+# Plugins: [HartleyIEKF] 
+
+# Plugins: [ CAPO ]
+
+
+
+
+
+# Plugins: [HartleyIEKF] 
+
+# Plugins: [HartleyIEKF] 
+
+# Plugins: [HartleyIEKF] 
+
+#MainRobot: HRP4CR
+#Timestep: 0.002
+#Enabled: LIPMWalking
+#Enabled: LIPMStabilizer
+#Enabled: ForceSensorCalibration
+#Plugins: [HartleyIEKF]
+
+#MainRobot: HRP4
+#Timestep: 0.005
+#Enabled: LIPMStabilizer
+#Enabled: LIPMStabilizer
+#Enabled: ForceSensorCalibration
+#Enabled: MultiContactController
+#Plugins: []
+
+#MainRobot: HRP2DRC
+#Timestep: 0.005
+#Timestep: 0.005  
+# Enabled: ismpc_walking
+# Enabled: LIPMWalking
+#Enabled: LIPMStabilizer
+#Enabled: ForceSensorCalibration
+#Enabled: CoM
+#Plugins: []
+
+#Plugins: [NoisySensors]
+
+#MainRobot: HRP5P
+#Timestep: 0.01
+#Enabled: MultiContactController
+
+#Enabled: LIPMWalking
+#Enabled: LIPMStabilizer
+#Enabled: ForceSensorCalibration
+#Plugins: []
+
+# MainRobot: JVRC1
+#Timestep: 0.002
+# Enabled: LIPMWalking
+# Enabled: LIPMStabilizer
+# Enabled: ForceSensorCalibration
+#Enabled: MultiContactController
+#Plugins: [HartleyIEKF]
+
+#VerboseLoader: true
+#VerboseStateFactory: true
+
+#Plugins: [HartleyIEKF]
+#Timestep: 0.01
+#Timestep: 0.002
+# MainRobot: HRP5P
+
+# MainRobot: H1
+
+# Replay:
+  # streaming: true
+  
+MainRobot: RHPS1_sake2_sake2
+# MainRobot: HRP2DRC
+Timestep: 0.005
+# Enabled: LIPMStabilizer
+Enabled: BaselineWalkingController
+# Enabled: LogisticController_ismpc
+
+# Enabled: BaselineWalkingController
+# Plugins: []
+#Plugins: []
+#Plugins: []
+#Timestep: 0.005
+#Timestep: 0.002
+# MainRobot: RHPS1_sake2_sake2
+# Enabled: ANAAvatarController_ismpc
+# Enabled: LIPMWalking
+# MainRobot: HRP5P
+#Enabled: TiltVisualFsmController
+#MainRobot: JVRC1
+
+
+#ObserverPipelines:
+#  name: MainObserverPipeline
+#  gui: true
+#  observers:
+#    - type: Encoder
+#    - type: Attitude
+#      update: false
+#      config:
+#        KalmanFilter:
+#          gyr_cov: 1e-6
+
+#    - type: KinematicInertial
+#      update: false
+#      config:
+#        anchorFrame:
+#          maxAnchorFrameDiscontinuity: 0.02
+#          
+#    - type: Tilt
+#      update: true
+#      config:
+#        odometryType: Odometry6d 
+#        contactsDetection: Surfaces
+#        surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [LeftHandForceSensor]
+
+#    - type: MCKineticsObserver
+#      update: false
+#      config:
+#        backupInterval: 1
+#        odometryType: Flat  # None # Odometry6d # flatOdometry
+#        surfacesOfContactsAsInput: [RightHandSupportPlate, LeftHandSupportPlate] # [LeftHandForceSensor]
+#        contactsDetection: Sensors
+#        #surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [LeftHandForceSensor]  # Not needed for HRP5P
+#        #contactSensorsDisabledInit: # [RightFootForceSensor, LeftFootForceSensor]
+#    - type: NaiveOdometry
+#      update: false
+#      config:
+#        odometryType: Flat
+#        contactsDetection: Sensors
+#        #surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [LeftHandForceSensor]
+
+#Plugins: [HartleyIEKF]
+#Replay:
+#  log: /home/arnaud/devel/src/mc_walker_policy/mc-control-WalkerPolicy-2023-09-20-13-45-16.bin
+#  with-inputs: true
+#  with-gui-inputs: true
+#  with-outputs: true
+#  with-datastore-config: /path/to/datastore-to-replay.yaml
+  
+#Timestep: 0.002
+#MainRobot: HRP5P
+#Enabled: WalkerPolicy
+
+#Enabled: Posture
+#Timestep: 0.002
+#ControllerModulePaths: ["@CATKIN_DEVEL_PREFIX@/lib/mc_controller/"]
+#RobotModulePaths: ["@PROJECT_SOURCE_DIR@/description"]
+#RobotModulePaths: [/home/arnaud/devel/src/catkin_ws_CnoidEnv/src/CnoidEnv/description]
+#Timestep: 0.002
+#Plugins: [HartleyIEKF]
+

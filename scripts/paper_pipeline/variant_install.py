@@ -10,6 +10,17 @@ from pathlib import Path
 
 CONFIG = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver.yaml"
 ROBOTS = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver"
+# Files outside the observer tree that an experiment may still touch. They were NOT snapshotted
+# before, so a variant that enabled the noise plugin or retuned the RI-EKF would have survived a
+# crash and contaminated every later run -- the failure mode of the hidden-hand experiment.
+#   mc_rtc.yaml            carries the Plugins list (NoisySensors is enabled there)
+#   plugins/HartleyIEKF    the RI-EKF's own sensor variances, kept mirror of the KO's
+#   plugins/NoisySensors   the synthetic IMU noise model
+EXTRA = {
+    "mc_rtc.yaml": Path.home() / ".config/mc_rtc/mc_rtc.yaml",
+    "HartleyIEKF.yaml": Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml",
+    "NoisySensors.yaml": Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml",
+}
 # The retained tuning, kept with the pipeline. It must NOT point into results/var-clean-ref-*:
 # that is an OUTPUT of the replay stage whose directory hash changes with the configuration.
 REFERENCE = Path(__file__).resolve().parents[2] / "results/paper-rebuild/configs/clean/MCKineticsObserver.yaml"
@@ -30,12 +41,20 @@ def snapshot():
         shutil.copy(REFERENCE, kept)
         for robot in ("hrp5_p", "rhps1"):
             shutil.copy(ROBOTS / f"{robot}.yaml", PRISTINE / f"{robot}.yaml")
+    # Taken once and never refreshed from a live file afterwards: refreshing them from disk while
+    # a variant is installed would freeze the variant as the new reference.
+    for name, live in EXTRA.items():
+        if live.exists() and not (PRISTINE / name).exists():
+            shutil.copy(live, PRISTINE / name)
 
 
 def restore():
     shutil.copy(PRISTINE / "MCKineticsObserver.yaml", CONFIG)
     for robot in ("hrp5_p", "rhps1"):
         shutil.copy(PRISTINE / f"{robot}.yaml", ROBOTS / f"{robot}.yaml")
+    for name, live in EXTRA.items():
+        if (PRISTINE / name).exists():
+            shutil.copy(PRISTINE / name, live)
 
 
 def scale_flexibilities(factor):
