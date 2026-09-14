@@ -44,9 +44,13 @@ for line in "${plan[@]}"; do
     [ -f "$cache" ] && cp "$cache" "$store/$p/cached_rel_err.pickle"
     # The mocap travels with the estimate: the routine resynchronises the ground truth on
     # every run, so pairing a run's velocities with another run's mocap is wrong.
-    for f in KO_loc_vel Hartley_loc_vel mocap_loc_vel; do
+    for f in KO_loc_vel Hartley_loc_vel Tilt_loc_vel mocap_loc_vel; do
       [ -f "$out/$f.pickle" ] && cp "$out/$f.pickle" "$store/$p/$f.pickle"
     done
+    # A decimated trajectory, so the SHAPE of a run's error stays answerable: the full file is
+    # 70 MB and the next variant overwrites it, and the error cache holds statistics, not a signal.
+    env/bin/python "$HERE/keep_traj.py" "$out/evals" "$store/$p" \
+      || echo "[$name/$p] TRAJECTOIRE DECIMEE ECHOUEE"
     # The disturbance-wrench table needs the estimated wrench against the hand sensor. Keep only
     # those columns: the full log is 35 MB a trial and nothing else here reads it.
     if [ "$name" = "hidehand" ]; then

@@ -86,6 +86,51 @@ def main(variant):
         text = re.sub(r"(?m)^contactCovLoadWeightExponent:.*$",
                       "contactCovLoadWeightExponent: 0.0", text)
         CONFIG.write_text(text)
+    elif variant == "noangular":
+        # Arnaud's variant, and the cleaner test of "does the contact ORIENTATION carry the yaw":
+        # `noangstiff` mirrors pinContacts and therefore keeps the yaw angular damping, which
+        # still couples the contact orientation to the base through the relative angular velocity.
+        # Here the whole angular channel goes: no angular stiffness, no angular damping at all, so
+        # the reaction torque no longer depends on the contact orientation; and the orientation
+        # state is frozen at its initial value (zero process, zero init variance), which is the
+        # nearest a configuration can come to removing it from the state altogether.
+        for robot in ("hrp5_p", "rhps1"):
+            path = ROBOTS / f"{robot}.yaml"
+            text = path.read_text()
+            for key in ("angStiffness", "angDamping"):
+                text = re.sub(rf"(?m)^(\s*{key}:\s*)\[[^\]]*\]", r"\g<1>[0.0, 0.0, 0.0]", text)
+            path.write_text(text)
+        text = CONFIG.read_text()
+        text = re.sub(r"(?m)^(\s*contactOrientationProcessVariance:\s*)\[[^\]]*\]",
+                      r"\g<1>[0.0, 0.0, 0.0]", text)
+        text = re.sub(r"(?m)^(\s*contactOriInitVariance\w+:\s*)\[[^\]]*\]",
+                      r"\g<1>[0.0, 0.0, 0.0]", text)
+        CONFIG.write_text(text)
+    elif variant in ("noangstiff", "nogyrobias", "nounmodeled"):
+        # `pinContacts` changes four things at once, so the KO-PC result cannot say which of them
+        # carries the yaw. These three are each ONE of those four, and they need no code change.
+        #   noangstiff  -> the angular visco-elastic model, i.e. the contact orientation coupling
+        #   nogyrobias  -> the gyrometer bias state (HRP-5P's yaw bias is 0.049 deg/s)
+        #   nounmodeled -> the disturbance wrench state
+        # What pinContacts does and these do not is disabling the contact wrench CORRECTION; that
+        # one is left to elimination.
+        if variant == "noangstiff":
+            # Mirror MCKineticsObserver.cpp:190 exactly: zero angular stiffness, and the roll and
+            # pitch angular damping, keeping the yaw damping. Declared twice per robot file.
+            for robot in ("hrp5_p", "rhps1"):
+                path = ROBOTS / f"{robot}.yaml"
+                text = path.read_text()
+                text = re.sub(r"(?m)^(\s*angStiffness:\s*)\[[^\]]*\]",
+                              r"\g<1>[0.0, 0.0, 0.0]", text)
+                text = re.sub(r"(?m)^(\s*angDamping:\s*)\[\s*([^,\]]*),\s*([^,\]]*),\s*([^,\]]*)\]",
+                              r"\g<1>[0.0, 0.0, \g<4>]", text)
+                path.write_text(text)
+        else:
+            key = "withGyroBias" if variant == "nogyrobias" else "withUnmodeledWrench"
+            text = CONFIG.read_text()
+            text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: false", text)
+            assert n == 1, f"{key} not found once ({n})"
+            CONFIG.write_text(text)
     elif variant == "tightyaw":
         # The contact rest orientation's yaw process covariance is 1e-4, ten thousand times the
         # roll and pitch. Bring it down to theirs and see whether the yaw drift follows.
@@ -103,6 +148,26 @@ def main(variant):
         text = re.sub(r"(?m)^(\s*gyroBiasInitVariance:\s*)\[[^\]]*\]",
                       r"\g<1>[1e-08, 1e-08, 0.0]", text)
         CONFIG.write_text(text)
+    elif variant == "handinput":
+        # The left hand stops being a detected contact, but its force sensor is NOT ignored: with
+        # no contact claiming it, MCKineticsObserver::inputAdditionalWrench sums its measured
+        # wrench into the additional wrench handed to the filter. The hand effort is therefore a
+        # KNOWN input rather than a disturbance to estimate -- the opposite of "hidehand".
+        # The list is declared twice: in MCKineticsObserver.yaml and again per robot, and the
+        # per-robot file wins. Editing only the first one silently changes nothing.
+        def drop_hand(path):
+            text = path.read_text()
+            edited, n = re.subn(r"(?m)^(\s*surfacesForContactDetection:\s*\[)([^\]]*)(\])",
+                                lambda m: m.group(1) + ", ".join(
+                                    s.strip() for s in m.group(2).split(",")
+                                    if "LeftHand" not in s) + m.group(3), text)
+            if n:
+                path.write_text(edited)
+            return n
+        touched = drop_hand(CONFIG)
+        for robot in ("hrp5_p", "rhps1"):
+            touched += drop_hand(ROBOTS / f"{robot}.yaml")
+        assert touched, "surfacesForContactDetection found nowhere"
     elif variant == "hidehand":
         # Disturbance-wrench figure: the estimator is blind to the left hand, so the effort
         # measured there becomes a disturbance it has to recover.
