@@ -36,17 +36,30 @@ def moments(values):
             "sum_sq": float(np.square(values).sum())}
 
 
-def relative_errors():
-    out = {}
-    for cache in sorted(m.ROOT.glob("results/var-*/*/eval/saved_results/traj_est/cached/cached_rel_err.pickle")):
-        variant, project = cache.parts[-7], cache.parts[-6]
-        data = pickle.load(cache.open("rb"))
-        for length, block in data.items():
-            for metric in METRICS:
-                if metric not in block:
-                    continue
+def absorb(out, cache, variant, project):
+    data = pickle.load(cache.open("rb"))
+    for length, block in data.items():
+        for metric in METRICS:
+            if metric in block:
                 out.setdefault(variant, {}).setdefault(project, {}).setdefault(
                     str(length), {})[metric] = moments(block[metric])
+
+
+def relative_errors():
+    """Both pipelines, kept apart.
+
+    The paper's relative errors come from the ROUTINE since commit 1827144 -- the replay's
+    evaluated window started 50 ms early on RHPS1_5 -- so the routine's caches are summarised
+    under the plain variant name (`clean`, `zpc`, ...) and are the ones to check a paper number
+    against. The replay's are kept under their `var-<label>-<hash>` directory name because they
+    cover datasets the routine never ran: the flexibility variants on all 13 rather than the 7 the
+    paper's table needs, and the `noconstraint` ablation, which is analysis and not in the paper.
+    """
+    out = {}
+    for cache in sorted(m.ROOT.glob("results/var-*/*/eval/saved_results/traj_est/cached/cached_rel_err.pickle")):
+        absorb(out, cache, cache.parts[-7], cache.parts[-6])
+    for cache in sorted(m.WORK.glob("runs/*/*/cached_rel_err.pickle")):
+        absorb(out, cache, cache.parts[-3], cache.parts[-2])
     # The RI-EKF baseline lives with the projects, not with a variant: it is the same offline
     # parse for every one of them.
     for project in m.ALL:
@@ -54,12 +67,7 @@ def relative_errors():
                  / "output_data/evals/Hartley/saved_results/traj_est/cached/cached_rel_err.pickle")
         if not cache.exists():
             continue
-        data = pickle.load(cache.open("rb"))
-        for length, block in data.items():
-            for metric in METRICS:
-                if metric in block:
-                    out.setdefault("riekf", {}).setdefault(project, {}).setdefault(
-                        str(length), {})[metric] = moments(block[metric])
+        absorb(out, cache, "riekf", project)
     return out
 
 

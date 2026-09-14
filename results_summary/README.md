@@ -8,6 +8,14 @@ This directory is what those caches reduce to, produced by `scripts/paper_pipeli
 - `relative_errors.json` — per variant, per dataset, per sub-trajectory length, per metric:
   `count`, `sum_abs`, `sum_sq`. The `riekf` variant is the RI-EKF baseline, which is one offline
   parse shared by every run.
+
+  **Two pipelines are in there, and only one feeds the paper.** A key that is a plain variant name
+  — `clean`, `zpc`, `pc`, `flexdiv10`, … — comes from the routine, and that is what every number
+  in the paper is computed from. A key shaped `var-<label>-<hash>` comes from the replay, whose
+  evaluated window started 50 ms early on `KO_TRO2024_RHPS1_5`; its numbers differ by up to a few
+  percent and must not be used to check a published value. The replay entries are kept because
+  they cover datasets the routine never ran: the flexibility variants on all 13 rather than the 7
+  the paper's table needs, and the `noconstraint` ablation, which is analysis and not in the paper.
 - `velocities.json` — the same three numbers for the local linear velocity error, split into the
   `xy` norm and `z`.
 - `macros/` — the LaTeX macros the paper includes.
