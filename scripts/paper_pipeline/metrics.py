@@ -59,10 +59,22 @@ def pool(arrays):
 
 def rpe_macros():
     lines, report = [], []
-    replay = {name: latest_variant_dir(label) for name, label in m.REPLAY_LABELS.items()}
+    available = {name for name in m.REPLAY_LABELS
+                 if (m.WORK / "runs" / name).is_dir()}
 
-    def cache(directory, project):
-        return directory / project / "eval/saved_results/traj_est/cached/cached_rel_err.pickle"
+    def cache(variant, project):
+        """Relative errors come from the ROUTINE, not the replay.
+
+        The two pipelines run the same estimator -- their raw outputs agree to 0.07 um -- but they
+        disagree on which sample the evaluated window starts at. On KO_TRO2024_RHPS1_5 the replay
+        starts 10 samples (50 ms) early, which inflates its relative error by 11.9%; sweeping the
+        offset puts the minimum exactly where the routine's cross-correlation places it.
+
+        Taking everything from the routine also stops the tables from mixing pipelines: the RI-EKF
+        baseline has always come from the routine, and on LongWalk the routine evaluates both
+        estimators at the same 250 Hz, where the replay runs at 500 Hz.
+        """
+        return m.WORK / "runs" / variant / project / "cached_rel_err.pickle"
 
     def riekf(project):
         return (m.ROOT / "Projects" / project
@@ -89,9 +101,9 @@ def rpe_macros():
 
     for category, (projects, distance) in m.CATEGORIES.items():
         for variant, (_, _, estimator) in m.VARIANTS.items():
-            if estimator is None or variant not in replay:
+            if estimator is None or variant not in available:
                 continue
-            emit(category, estimator, stats([cache(replay[variant], p) for p in projects], distance))
+            emit(category, estimator, stats([cache(variant, p) for p in projects], distance))
         emit(category, "Hartley", stats([riekf(p) for p in projects], distance))
 
     # Flexibility ablation: same estimator, retuned contact stiffness, two categories only.
@@ -99,7 +111,7 @@ def rpe_macros():
         for category in m.FLEX_CATEGORIES:
             projects, distance = m.CATEGORIES[category]
             emit(category + suffix, "Kineticsobserver",
-                 stats([cache(replay[variant], p) for p in projects], distance))
+                 stats([cache(variant, p) for p in projects], distance))
     return lines, report
 
 
