@@ -13,7 +13,7 @@ sys.path.insert(0, f"{ROOT}/scripts/paper_results_scripts")
 import paper_colors
 from generate_metrics_plots import estimator_plot_args
 
-SERIES = [("KO", "Kinetics Observer"), ("Hartley", "RI-EKF"), ("Mocap", "Ground truth")]
+SERIES = [("KO", "KO"), ("Hartley", "RI-EKF"), ("Mocap", "Ground truth")]
 UNTIL = 500.0
 
 columns = ["t"] + [f"{e}_position_{a}" for e, _ in SERIES for a in "xy"]

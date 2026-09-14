@@ -76,9 +76,11 @@ def rpe_macros():
         """
         return m.WORK / "runs" / variant / project / "cached_rel_err.pickle"
 
-    def riekf(project):
+    def other(observer, project):
+        """Estimators that do not depend on the Kinetics Observer's tuning: the RI-EKF baseline
+        and VALINOR. Both are scored by the same chain, so they live with the projects."""
         return (m.ROOT / "Projects" / project
-                / "output_data/evals/Hartley/saved_results/traj_est/cached/cached_rel_err.pickle")
+                / f"output_data/evals/{observer}/saved_results/traj_est/cached/cached_rel_err.pickle")
 
     def stats(paths, distance):
         bags = {key: [] for key in RPE_METRICS}
@@ -104,7 +106,9 @@ def rpe_macros():
             if estimator is None or variant not in available:
                 continue
             emit(category, estimator, stats([cache(variant, p) for p in projects], distance))
-        emit(category, "Hartley", stats([riekf(p) for p in projects], distance))
+        emit(category, "Hartley", stats([other("Hartley", p) for p in projects], distance))
+        if all(other("Tilt", p).exists() for p in projects):
+            emit(category, "Tilt", stats([other("Tilt", p) for p in projects], distance))
 
     # Flexibility ablation: same estimator, retuned contact stiffness, two categories only.
     for variant, suffix in m.FLEX_SUFFIX.items():
@@ -142,6 +146,7 @@ def velocity_macros():
               for v, (_, _, e) in m.VARIANTS.items() if e is not None
               for c in m.CATEGORIES for p in ("KO",)]
     series += [(c, "Hartley", "clean", "Hartley") for c in m.CATEGORIES]
+    series += [(c, "Tilt", "clean", "Tilt") for c in m.CATEGORIES]
     series += [(c + s, "Kineticsobserver", v, "KO")
                for v, s in m.FLEX_SUFFIX.items() for c in m.FLEX_CATEGORIES]
 

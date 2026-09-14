@@ -114,7 +114,10 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
 
     fbContactPoses = dict.fromkeys(contactNames)
 
-    index_range = [0,2830]
+    # The first 2.4 s are cut (480 samples at 200 Hz): the time axis is shifted so the figure
+    # starts at zero, right where the KO-ZPC's yaw begins to decrease.
+    index_range = [480, 2830]
+    time_shift = observer_data["t"][index_range[0]]
     y_mins = []
     y_maxs = []
 
@@ -181,7 +184,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,1], mode='lines', name=f'{estimatorName} | {contactName}: pitch'))
             # fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', name=f'{estimatorName} | {contactName}: yaw'))
 
-            fig.add_trace(go.Scatter(x=observer_data["t"], y=worldContactOri_euler[:,2], mode='lines', line=dict(color=colorEst, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
+            fig.add_trace(go.Scatter(x=observer_data["t"] - time_shift, y=worldContactOri_euler[:,2], mode='lines', line=dict(color=colorEst, width = estimator_plot_args[estimatorName]['lineWidth']), name=f'{estimator_plot_args[estimatorName]["name"]}'))        
 
             list_without_nan = [x for x in worldContactOri_euler[index_range[0]:index_range[1],2] if str(x) != 'nan']
             y_mins.append(np.min(list_without_nan))
@@ -211,15 +214,15 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
         for i, state in enumerate(is_set_mask):
             if state and start is None:
                 # Begin a new region
-                start = observer_data["t"][iterations[i]]  # Start of "Set" region
+                start = observer_data["t"][iterations[i]] - time_shift  # Start of "Set" region
             elif not state and start is not None:
                 # End the current region
-                set_regions.append((start, observer_data["t"][iterations[i - 1]]))
+                set_regions.append((start, observer_data["t"][iterations[i - 1]] - time_shift))
                 start = None
 
         # Handle the case where the last region ends at the final iteration
         if start is not None:
-            set_regions.append((start, observer_data["t"][iterations[-1]]))
+            set_regions.append((start, observer_data["t"][iterations[-1]] - time_shift))
 
         # Assign colorKinetics for the current contact
         fillcolor2 = colors2[contactName2]
@@ -274,7 +277,7 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
     #fig.data = tuple(listData)
 
     fig.update_xaxes(
-                range = [observer_data["t"][index_range[0]], observer_data["t"][index_range[1]]]
+                range = [0.0, observer_data["t"][index_range[1]] - time_shift]
             )
 
     fig.update_yaxes(

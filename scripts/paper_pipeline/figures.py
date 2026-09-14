@@ -20,7 +20,7 @@ PYTHON = m.ROOT / "env/bin/python"
 AS_PNG = {"multicontact-odom-traj"}
 
 
-def regenerate(selection):
+def regenerate(selection, show=False):
     produced, failed = {}, []
     environment = dict(os.environ, PAPER_FIG_OUT=str(OUT))
     for name, (command, filename) in m.FIGURES.items():
@@ -48,6 +48,10 @@ def regenerate(selection):
         source.replace(target)
         produced[name] = target
         print(f"    -> {target.name}")
+        if show:
+            # A single figure is being looked at, not rebuilt in bulk: put it on screen.
+            subprocess.Popen(["firefox", str(target)], start_new_session=True,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     return produced, failed
 
 
@@ -88,7 +92,9 @@ if __name__ == "__main__":
     arguments = [a for a in sys.argv[1:] if not a.startswith("--")]
     selection = arguments[0] if arguments else "all"
     OUT.mkdir(parents=True, exist_ok=True)
-    produced, failed = ({}, []) if "--export-only" in sys.argv else regenerate(selection)
+    # Regenerating one named figure means someone is looking at it; open it unless told not to.
+    show = selection != "all" and "--no-show" not in sys.argv
+    produced, failed = ({}, []) if "--export-only" in sys.argv else regenerate(selection, show)
     if produced and "--no-install" not in sys.argv:
         install(produced)
     export()

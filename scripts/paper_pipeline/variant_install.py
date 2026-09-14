@@ -3,6 +3,7 @@
 Every variant is the retained configuration plus one deliberate change, so they are all derived
 from a pristine copy of it rather than from whatever the previous variant left installed.
 """
+import math
 import re
 import shutil
 import sys
@@ -105,6 +106,203 @@ def main(variant):
         text = re.sub(r"(?m)^contactCovLoadWeightExponent:.*$",
                       "contactCovLoadWeightExponent: 0.0", text)
         CONFIG.write_text(text)
+    elif variant == "imunoise":
+        # Degrade gyrometer AND accelerometer together, noise only, and widen both estimators'
+        # measurement variances by the same amount. Measured at standstill on MultiContact_1, the
+        # robot's own noise is gyro [6.3e-4, 7.4e-4, 1.9e-3] rad/s and accelerometer
+        # [0.065, 0.092, 0.054] m/s2 -- the accelerometer is ALREADY noisier than a middle-grade
+        # industrial MEMS, so degrading it means going to a consumer-grade unit.
+        # Targets: gyro 2.057e-3 rad/s (ARW 0.5 deg/sqrt(h)), accelerometer 0.15 m/s2
+        # (VRW ~0.64 m/s/sqrt(h)). Injected = sqrt(target^2 - existing^2). No bias: a calibrated
+        # IMU has none at the start of a 14 s trial, and the in-run drift has not had time to grow.
+        GYRO_INJECT = "[0.001958, 0.001919, 0.000857]"
+        ACC_INJECT = "[0.13522, 0.1187, 0.14001]"
+        GYRO_VAR = "4.2308e-06"
+        ACC_VAR = "2.2500e-02"
+        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        text = plugins.read_text()
+        text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
+                          lambda m: "Plugins: [" + m.group(1) + ", NoisySensors]", text, count=1)
+        assert n == 1, "no active Plugins entry in mc_rtc.yaml"
+        plugins.write_text(text)
+
+        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        text = noisefile.read_text()
+        if re.search(r"(?m)^seed:", text):
+            text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
+        else:
+            text = "seed: 20260914\n" + text
+        for key, value in (("withNoisyGyro", "true"), ("withAcceleroNoise", "true"),
+                           ("gyroNoise_StdDev", GYRO_INJECT), ("gyroOffset", "[0.0, 0.0, 0.0]"),
+                           ("acceleroNoise_StdDev", ACC_INJECT), ("AcceleroOffset", "[0.0, 0.0, 0.0]")):
+            text, n = re.subn(r"(?m)^" + key + r":.*$", key + ": " + value, text)
+            assert n == 1, key + " not found once"
+        noisefile.write_text(text)
+
+        robot = ROBOTS / "hrp5_p.yaml"
+        text = robot.read_text()
+        for key, value in (("gyroSensorVariance", GYRO_VAR), ("acceleroSensorVariance", ACC_VAR)):
+            triple = "[" + ", ".join([value] * 3) + "]"
+            text, n = re.subn(r"(?m)^(\s*)" + key + r":\s*\[[^\]]*\]",
+                              lambda m, k=key, t=triple: m.group(1) + k + ": " + t, text)
+            assert n == 1, key + " not found once in hrp5_p.yaml"
+        robot.write_text(text)
+
+        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        text = hartley.read_text()
+        for key, old, value in (("gyroscopeVariance", "2.5e-7", GYRO_VAR),
+                                ("accelerometerVariance", "2.5e-3", ACC_VAR)):
+            text, n = re.subn(r"(?m)^(\s*)" + key + r":\s*" + re.escape(old) + r"(.*)$",
+                              lambda m, k=key, v=value: m.group(1) + k + ": " + v + m.group(2), text)
+            assert n == 1, key + " not found once in HartleyIEKF.yaml"
+        hartley.write_text(text)
+    elif variant.startswith("biasinit_"):
+        # Same gyro-bias initial variance on BOTH estimators, to see what the pair does when the
+        # bias state is given more room. The retained tuning is 1e-8 on each (the RI-EKF's config
+        # file carried 1e-12 from 2026-08-28 to 2026-09-14, but its parses were produced with the
+        # code default 1e-8, so the published numbers are unaffected).
+        value = variant[len("biasinit_"):]
+        text = CONFIG.read_text()
+        text, n = re.subn(r"(?m)^(\s*gyroBiasInitVariance:\s*)\[[^\]]*\]",
+                          rf"\g<1>[{value}, {value}, {value}]", text)
+        assert n == 1, f"gyroBiasInitVariance not found once in the KO config ({n})"
+        CONFIG.write_text(text)
+        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        text = hartley.read_text()
+        text, n = re.subn(r"(?m)^gyroBiasInitVariance:.*$",
+                          f"gyroBiasInitVariance: [{value}, {value}, {value}]", text)
+        assert n == 1, f"gyroBiasInitVariance not found once in the RI-EKF config ({n})"
+        hartley.write_text(text)
+    elif variant.startswith("gyrobias_"):
+        # Residual bias sweep. IMUs are calibrated before a campaign, so a 0.2 deg/s turn-on bias
+        # is not what an experiment actually carries: what is left is the calibration residual and
+        # the thermal drift since. HRP-5P's own bias measures 0.0003 deg/s on the yaw axis, so it
+        # is effectively calibrated. The variant name carries the residual in deg/s, applied on the
+        # three axes with the sign pattern of the turn-on model.
+        degpersec = float(variant[len("gyrobias_"):].removesuffix("_asis"))
+        magnitude = math.radians(degpersec)
+        bias = f"[{magnitude:.4e}, {-magnitude:.4e}, {magnitude:.4e}]"
+        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        text = plugins.read_text()
+        text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
+                          lambda m: f"Plugins: [{m.group(1)}, NoisySensors]", text, count=1)
+        assert n == 1, "no active Plugins entry in mc_rtc.yaml"
+        plugins.write_text(text)
+        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        text = noisefile.read_text()
+        if re.search(r"(?m)^seed:", text):
+            text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
+        else:
+            text = "seed: 20260914\n" + text
+        for key, value in (("withNoisyGyro", "true"), ("withAcceleroNoise", "false"),
+                           ("gyroNoise_StdDev", "[0.0, 0.0, 0.0]"), ("gyroOffset", bias)):
+            text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: {value}", text)
+            assert n == 1, f"{key} not found once ({n})"
+        noisefile.write_text(text)
+        # "_asis" keeps the bias covariances the paper publishes -- KO 1e-8 (std 1e-4 rad/s,
+        # i.e. 0.006 deg/s) and RI-EKF 1e-12 -- instead of opening them. That is the configuration
+        # every published number was produced with, and it is far too tight to estimate a bias of
+        # a few hundredths of a degree per second.
+        if variant.endswith("_asis"):
+            return
+        for path, pattern, replacement in (
+                (CONFIG, r"(?m)^(\s*gyroBiasInitVariance:\s*)\[[^\]]*\]",
+                 r"\g<1>[2.5e-05, 2.5e-05, 2.5e-05]"),
+                (Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml",
+                 r"(?m)^gyroBiasInitVariance:.*$",
+                 "gyroBiasInitVariance: [2.5e-5, 2.5e-5, 2.5e-5]")):
+            text = path.read_text()
+            text, n = re.subn(pattern, replacement, text)
+            assert n == 1, f"gyroBiasInitVariance not found once in {path.name} ({n})"
+            path.write_text(text)
+    elif variant in ("noisygyro", "gyronoise", "gyrobias"):
+        # HRP-5P carries a very good gyrometer, which is why the RI-EKF stays accurate through the
+        # multicontact slippage: it trusts that gyrometer heavily. These variants degrade it to a
+        # middle-grade industrial MEMS unit through the NoisySensors plugin, which rewrites the
+        # sensor signal in the tick so BOTH estimators read the same corrupted values.
+        #
+        #   noisygyro  white noise + turn-on bias      gyronoise  noise only      gyrobias  bias only
+        #
+        # What is injected is what the signal LACKS, measured on the four multicontact trials with
+        # the robot standing still (2 s, 401 samples each), so the TOTAL matches the target:
+        #
+        #        existing white noise        existing bias
+        #   x         5.8e-4 rad/s              2.4e-5 rad/s
+        #   y         5.2e-4                    4.5e-4
+        #   z         1.4e-3                    5.0e-6      <- already high, and it is the yaw axis
+        #
+        # Target: angle random walk 0.5 deg/sqrt(h) = 2.057e-3 rad/s discrete at 200 Hz, and a
+        # turn-on bias of 0.2 deg/s. Injected = sqrt(target^2 - existing^2) for the noise, and
+        # target - existing for the bias. Note the z axis already carries two thirds of the target
+        # noise on its own, and that the estimators declare 5e-4 there -- they over-trust it.
+        inject_noise = variant in ("noisygyro", "gyronoise")
+        inject_bias = variant in ("noisygyro", "gyrobias")
+        noise = "[1.973e-3, 1.990e-3, 1.507e-3]" if inject_noise else "[0.0, 0.0, 0.0]"
+        bias = "[3.476e-3, -3.450e-3, 3.995e-3]" if inject_bias else "[0.0, 0.0, 0.0]"
+
+        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        text = plugins.read_text()
+        text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
+                          lambda m: f"Plugins: [{m.group(1)}, NoisySensors]", text, count=1)
+        assert n == 1, "no active Plugins entry in mc_rtc.yaml"
+        plugins.write_text(text)
+
+        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        text = noisefile.read_text()
+        if re.search(r"(?m)^seed:", text):
+            text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
+        else:
+            text = "seed: 20260914\n" + text
+        for key, value in (("withNoisyGyro", "true"), ("withAcceleroNoise", "false")):
+            text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: {value}", text)
+            assert n == 1, f"{key} not found once ({n})"
+        for key, value in (("gyroNoise_StdDev", noise), ("gyroOffset", bias)):
+            text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: {value}", text)
+            assert n == 1, f"{key} not found once ({n})"
+        noisefile.write_text(text)
+
+        # Both estimators are widened by the SAME amount, and only where the signal changed: the
+        # measurement variance follows the white noise, the bias init variance follows the bias.
+        if inject_noise:
+            robot = ROBOTS / "hrp5_p.yaml"
+            text = robot.read_text()
+            text, n = re.subn(r"(?m)^(\s*gyroSensorVariance:\s*)\[[^\]]*\]",
+                              r"\g<1>[4.231e-6,4.231e-6,4.231e-6]", text)
+            assert n == 1, f"gyroSensorVariance not found once ({n})"
+            robot.write_text(text)
+
+        if inject_bias:
+            text = CONFIG.read_text()
+            text, n = re.subn(r"(?m)^(\s*gyroBiasInitVariance:\s*)\[[^\]]*\]",
+                              r"\g<1>[2.5e-05, 2.5e-05, 2.5e-05]", text)
+            assert n == 1, f"gyroBiasInitVariance not found once ({n})"
+            CONFIG.write_text(text)
+
+        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        text = hartley.read_text()
+        if inject_noise:
+            text, n = re.subn(r"(?m)^(\s*gyroscopeVariance:\s*)2\.5e-7(.*)$", r"\g<1>4.231e-6\g<2>", text)
+            assert n == 1, f"hrp5_p gyroscopeVariance not found once ({n})"
+        if inject_bias:
+            text, n = re.subn(r"(?m)^gyroBiasInitVariance:.*$",
+                              "gyroBiasInitVariance: [2.5e-5, 2.5e-5, 2.5e-5]", text)
+            assert n == 1, f"RI-EKF gyroBiasInitVariance not found once ({n})"
+        hartley.write_text(text)
+    elif variant == "pointcontact":
+        # The point-contact Kinetics Observer: no moment transmitted at the contacts at all, and
+        # the two states pinContacts also drops. It differs from pinContacts on exactly two
+        # points -- the yaw viscous damping is removed here (MCKineticsObserver.cpp:192 keeps it,
+        # which a point contact cannot exert) and the contact wrench measurements STILL correct
+        # the filter. Measured on LongWalk, `noangular` alone scored 0.299 deg against 0.258 for
+        # pinContacts although it removes less; this variant says whether the gap comes from that
+        # damping term or from the states pinContacts drops.
+        main("noangular")
+        text = CONFIG.read_text()
+        for key in ("withGyroBias", "withUnmodeledWrench"):
+            text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: false", text)
+            assert n == 1, f"{key} not found once ({n})"
+        CONFIG.write_text(text)
+        return
     elif variant == "noangular":
         # Arnaud's variant, and the cleaner test of "does the contact ORIENTATION carry the yaw":
         # `noangstiff` mirrors pinContacts and therefore keeps the yaw angular damping, which

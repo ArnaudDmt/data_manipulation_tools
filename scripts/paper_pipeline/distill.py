@@ -60,14 +60,21 @@ def relative_errors():
         absorb(out, cache, cache.parts[-7], cache.parts[-6])
     for cache in sorted(m.WORK.glob("runs/*/*/cached_rel_err.pickle")):
         absorb(out, cache, cache.parts[-3], cache.parts[-2])
-    # The RI-EKF baseline lives with the projects, not with a variant: it is the same offline
-    # parse for every one of them.
-    for project in m.ALL:
+    # The RI-EKF baseline. It USED to be read from Projects/<p>/output_data, which every variant
+    # run overwrites: the archive then recorded whatever happened to be on disk at distill time.
+    # That is how the multicontact baseline silently became a parse left by fixup_valinor, and how
+    # a later rerun looked like an 11% regression when it was the archive that was wrong.
+    # Read it from the run snapshots instead, which are written once per run and never rewritten.
+    for cache in sorted(m.WORK.glob("runs/clean/*/riekf_rel_err.pickle")):
+        absorb(out, cache, "riekf", cache.parts[-2])
+    # Fall back to the project tree only for datasets no snapshot covers yet, and say so.
+    missing = [p for p in m.ALL if p not in out.get("riekf", {})]
+    for project in missing:
         cache = (m.ROOT / "Projects" / project
                  / "output_data/evals/Hartley/saved_results/traj_est/cached/cached_rel_err.pickle")
-        if not cache.exists():
-            continue
-        absorb(out, cache, "riekf", project)
+        if cache.exists():
+            print(f"  riekf/{project}: pas d'instantane, lu depuis Projects/ (provenance incertaine)")
+            absorb(out, cache, "riekf", project)
     return out
 
 
