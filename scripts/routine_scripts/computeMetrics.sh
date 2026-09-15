@@ -18,9 +18,11 @@ run_analysis() {
     fi
 
     eval "$cmd &"
+    analysis_pid=$!
 }
 
 compute_metrics() {
+    local analysis_pids=()
     cd $cwd
     
     mocapFormattedResults="$outputDataPath/formattedMocap_Traj.txt"
@@ -38,9 +40,10 @@ compute_metrics() {
         # Function to clean up background jobs on exit
         cleanup() {
             echo "Stopping background processes..."
-            # Stops all the background processes
-            kill %${(k)^jobstates}
-            wait
+            if (( ${#analysis_pids[@]} )); then
+                kill "${analysis_pids[@]}" 2>/dev/null
+                wait "${analysis_pids[@]}" 2>/dev/null
+            fi
             exit
         }
 
@@ -55,8 +58,13 @@ compute_metrics() {
         mv "$outputDataPath/mocap_loc_vel.pickle" "$outputDataPath/evals/mocap_loc_vel.pickle"
 
         for observer in "${observers[@]}"; do
-            formattedTrajVar="formatted_${observer}_Traj.txt"
-            if [ -f "$outputDataPath/$formattedTrajVar" ]; then
+            # The mocap trajectory is formatted under a different name than the observers'.
+            if [[ "$observer" == "Mocap" ]]; then
+                formattedTraj="$mocapFormattedResults"
+            else
+                formattedTraj="$outputDataPath/formatted_${observer}_Traj.txt"
+            fi
+            if [ -f "$formattedTraj" ]; then
                 mkdir -p "$outputDataPath/evals/$observer/saved_results/traj_est/cached"
                 if ! [ -f "$outputDataPath/evals/$observer/eval_cfg.yaml" ]; then
                     touch "$outputDataPath/evals/$observer/eval_cfg.yaml"
@@ -65,13 +73,31 @@ compute_metrics() {
                 fi
 
                 cp $mocapFormattedResults "$outputDataPath/evals/$observer/stamped_groundtruth.txt"
-                mv "$outputDataPath/$formattedTrajVar" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
-                mv "$outputDataPath/${observer}_x_y_z_traj.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/x_y_z_traj.pickle"
-                mv "$outputDataPath/${observer}_loc_vel.pickle" "$outputDataPath/evals/$observer/saved_results/traj_est/cached/loc_vel.pickle"
-                
+                if [[ "$observer" == "Mocap" ]]; then
+                    # Still needed by the other observers, and removed after the loop.
+                    cp "$formattedTraj" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
+                else
+                    mv "$formattedTraj" "$outputDataPath/evals/$observer/stamped_traj_estimate.txt"
+                fi
+                for pickleName in x_y_z_traj loc_vel; do
+                    sourcePickle="$outputDataPath/${observer}_${pickleName}.pickle"
+                    destPickle="$outputDataPath/evals/$observer/saved_results/traj_est/cached/${pickleName}.pickle"
+                    if [ -f "$sourcePickle" ]; then
+                        mv "$sourcePickle" "$destPickle"
+                    elif [[ "$observer" == "Mocap" && -f "$outputDataPath/evals/mocap_${pickleName}.pickle" ]]; then
+                        # Not exported a second time under the observer's name: reuse the ground truth's.
+                        cp "$outputDataPath/evals/mocap_${pickleName}.pickle" "$destPickle"
+                    else
+                        # Never leave results of a previous run behind: they would be
+                        # inconsistent with the freshly generated ground truth.
+                        rm -f "$destPickle"
+                    fi
+                done
+
 
                 # Call the run_analysis function for each observer
                 run_analysis "$observer" "$num_samples_rel_error" "${predefined_sublengths[@]}"
+                analysis_pids+=("$analysis_pid")
             fi
         done
         
@@ -81,8 +107,10 @@ compute_metrics() {
         exit
     fi
 
-    # Wait for all background processes to finish
-    wait
+    # Wait only for metric workers launched above.
+    if (( ${#analysis_pids[@]} )); then
+        wait "${analysis_pids[@]}"
+    fi
     echo "Metrics computation finished"
 }
 

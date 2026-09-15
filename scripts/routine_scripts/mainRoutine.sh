@@ -4,20 +4,6 @@
 if [ ! -f "$replay_yaml" ]; then
     echo "The scripts excepts to find a configuration file named $replay_yaml."
     exit
-else
-    if ! grep -q "MocapVisualizer" $replay_yaml || ! grep -q "firstRun:" $replay_yaml; then
-        # Execute your action here if both patterns are found
-        echo "Please add the MocapVisualizer observer to the list of the observers in $replay_yaml."
-        exit
-    fi
-    if ! (grep -v '^#' $replay_yaml | grep -q "firstRun:"); then
-        echo "Please add the boolean firstRun to the configuration of the MocapVisualizer in $replay_yaml."
-        exit
-    fi
-    if ! (grep -v '^#' $replay_yaml | grep -q "projectName:"); then
-        echo "Please add the variable projectName to the configuration of the MocapVisualizer in $replay_yaml."
-        exit
-    fi
 fi
 
 
@@ -43,6 +29,15 @@ if [[ $(grep 'Use_HartleyIEKF:' $projectConfig | grep -v '^#' | sed 's/Use_Hartl
     useHartley=true
 else
     useHartley=false
+fi
+
+############################ Checking if the sensors must be made noisy ############################
+
+if [[ $(grep 'Use_NoisySensors:' $projectConfig | grep -v '^#' | sed 's/Use_NoisySensors: //' | sed 's: ::g') == "true" ]]; then
+    useNoisySensors=true
+    echo -e "${YELLOW}The NoisySensors plugin will be used for the replay: the IMU signals will be degraded following $HOME/.config/mc_rtc/plugins/NoisySensors.yaml.${RESET}"
+else
+    useNoisySensors=false
 fi
 
 
@@ -85,7 +80,7 @@ else
         esac
     done
     if [ -s $projectConfig ]; then
-        awk -i inplace -v robot="$main_robot" 'FNR==1 {print "EnabledRobot:", robot}1' $projectConfig
+        sed -i "1i\\EnabledRobot: $main_robot" "$projectConfig"
     else
         #echo "EnabledRobot: $main_robot" > $projectConfig
         echo -e "\nEnabledRobot: $main_robot" >> $projectConfig
@@ -109,7 +104,7 @@ else
     yq -r ".robots[] | select(.name == \"$main_robot\") | .bodies[].name" $mocapMarkers_yaml
     read body;
     if [ -s $projectConfig ]; then
-        awk -i inplace -v body="$body" 'FNR==1 {print "EnabledBody:", body}1' $projectConfig;
+        sed -i "1i\\EnabledBody: $body" "$projectConfig"
     else
         #echo "EnabledBody: $body" > $projectConfig
         echo -e "\nEnabledBody: $body" >> $projectConfig
@@ -131,7 +126,7 @@ else
     echo "No body for the linear velocity evaluation was given in the configuration file $projectConfig. Please enter the name of the body to add to $projectConfig: "; 
     read body;
     if [ -s $projectConfig ]; then
-        awk -i inplace -v body="$body" 'FNR==1 {print "Body_vel_eval:", body}1' $projectConfig;
+        sed -i "1i\\Body_vel_eval: $body" "$projectConfig"
     else
         echo -e "\Body_vel_eval: $body" >> $projectConfig
     fi
@@ -161,7 +156,7 @@ if [[ -f "$mcrtcLog" ]]; then
     cd $rawDataPath
 
     mv $mcrtcLog originalLog.bin
-    mc_bin_utils originalLog.bin controllerLog --keys "t" "qIn" "JointSensor*" "ground_Default*" "qOut*" "FloatingBase_*" "Accelerometer_*" "tauIn*" "RightFootForceSensor*" "LeftFootForceSensor*" "LeftHandForceSensor*" "RightHandForceSensor*" "alphaIn*" "ff*" "perf_GlobalRun"
+    $scriptsPath/routine_scripts/lightenBin.sh originalLog.bin controllerLog.bin "t" "qIn" "JointSensor*" "ground_Default*" "qOut*" "FloatingBase_*" "Accelerometer_*" "tauIn*" "RightFootForceSensor*" "LeftFootForceSensor*" "LeftHandForceSensor*" "RightHandForceSensor*" "alphaIn*" "ff*" "perf_GlobalRun"
 
     heavy_log=true
   fi
@@ -178,7 +173,7 @@ else
         cd $scriptsPath
         echo "The bin file of the replay with the observers has been found. Removing useless columns."
 
-        eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+        eval $scriptsPath/routine_scripts/lightenBin.sh $outputDataPath/logReplay.bin $outputDataPath/logReplay.bin $(python lightenOutputBin.py "$projectPath" "$outputDataPath/logReplay.bin")
 
         cd $outputDataPath
         echo " Converting to csv."
@@ -204,42 +199,57 @@ else
                 sed -i "s/bodyName:.*/bodyName: $bodyName/" $mocapPlugin_yaml
             else
                 if [ -s $mocapPlugin_yaml ]; then
-                    awk -i inplace -v name="$bodyName" 'FNR==1 {print "bodyName:", name}1' $mocapPlugin_yaml
+                    sed -i "1ibodyName: $bodyName" "$mocapPlugin_yaml"
                 else
                     echo "bodyName: $bodyName" > $mocapPlugin_yaml
                 fi
             fi
 
+            # Plugins the replay needs, MocapAligner being the mandatory one.
+            replayPlugins="MocapAligner"
+            if $useHartley; then
+                replayPlugins="$replayPlugins, HartleyIEKF"
+            fi
+            if $useNoisySensors; then
+                replayPlugins="$replayPlugins, NoisySensors"
+            fi
+
+            # Plugins we add to $mc_rtc_yaml and must remove once the replay is over.
+            addedPlugins=()
+
             pluginWasActivated=true
             if ! grep -v '^#' $mc_rtc_yaml | grep -q "MocapAligner"; then
                 pluginWasActivated=false
-                echo "The plugin MocapAligner was not activated. Activating it for the replay."
-                
-                if $useHartley; then
-                    awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner, HartleyIEKF] \n"}1' $mc_rtc_yaml
-                else
-                    awk -i inplace 'FNR==1 {print "Plugins: [MocapAligner] \n"}1' $mc_rtc_yaml
-                fi
+                echo "The plugin MocapAligner was not activated. Activating it for the replay (Plugins: [$replayPlugins])."
+                sed -i "1i\Plugins: [$replayPlugins]" "$mc_rtc_yaml"
             else
-                if ! grep -v '^#' $mc_rtc_yaml | grep -q "HartleyIEKF"; then
-                    if $useHartley; then
-                        grep -v '^#' $mc_rtc_yaml | grep -q "MocapAligner" | sed -i "s/Plugins:.*/Plugins: [MocapAligner, HartleyIEKF]/" $mc_rtc_yaml
+                # MocapAligner is already enabled: append the other required
+                # plugins to the existing list rather than overwriting it.
+                for plugin in HartleyIEKF NoisySensors; do
+                    case ", $replayPlugins," in
+                        *", $plugin,"*) ;;
+                        *) continue;;
+                    esac
+                    if ! grep -v '^#' $mc_rtc_yaml | grep -q "$plugin"; then
+                        echo "Adding the plugin $plugin to $mc_rtc_yaml for the replay."
+                        sed -i "0,/^\([[:space:]]*Plugins:[[:space:]]*\[[^]]*\)\]/s//\1, $plugin]/" $mc_rtc_yaml
+                        addedPlugins+=("$plugin")
                     fi
-                fi
+                done
             fi
             
             
             sed -i "/^\([[:space:]]*firstRun: \).*/s//\1"true"/" $replay_yaml
             mc_rtc_ticker --no-sync --replay-outputs -e -l $mcrtcLog
             cd /tmp
-            LOG=$(find -iname "mc-control*" | grep "Passthrough" | grep -v "latest" | grep ".bin" | sort | tail -1)
+            LOG=$(find . -maxdepth 1 -type f -readable -name "mc-control*Passthrough*.bin" ! -name "*latest*" | sort | tail -1)
             echo "Copying the replay's bin file ($LOG) to the output_data folder as logReplay.bin"
             mv $LOG $logReplayBin
 
             cd $scriptsPath
             echo "Removing useless columns from the replayed log."
 
-            eval mc_bin_utils extract $outputDataPath/logReplay.bin $outputDataPath/logReplay --keys $(python lightenOutputBin.py "$projectPath")
+            eval $scriptsPath/routine_scripts/lightenBin.sh $outputDataPath/logReplay.bin $outputDataPath/logReplay.bin $(python lightenOutputBin.py "$projectPath" "$outputDataPath/logReplay.bin")
 
             cd $outputDataPath
             
@@ -248,6 +258,10 @@ else
 
             if ! $pluginWasActivated; then
                 sed -i '1d' $mc_rtc_yaml
+            elif (( ${#addedPlugins[@]} > 0 )); then
+                for plugin in "${addedPlugins[@]}"; do
+                    sed -i "0,/^\([[:space:]]*Plugins:[[:space:]]*\[[^]]*\), $plugin\]/s//\1]/" $mc_rtc_yaml
+                done
             fi
         else
             echo "The log file of the controller does not exist or is not named as expected. Expected: $mcrtcLog."
@@ -270,16 +284,36 @@ else
     echo "WESH3"
     if $useHartley; then
         echo "WESH4"
-        hartleyRoutine=$(locate -b '\runLogsRoutine.sh' | grep Hartley)
+        # HARTLEY_DIR can be set to skip the search. Otherwise try locate (fast
+        # but its database usually does not index $HOME), then fall back to find.
+        if [ -n "$HARTLEY_DIR" ]; then
+            hartleyRoutine="$HARTLEY_DIR/runLogsRoutine.sh"
+        else
+            # The '|| true' are required: routine.sh runs under 'set -e', and a
+            # command substitution whose pipeline fails (grep matching nothing)
+            # kills the whole routine silently.
+            hartleyRoutine=$(locate -b '\runLogsRoutine.sh' 2>/dev/null | grep Hartley | head -1 || true)
+            if [ -z "$hartleyRoutine" ]; then
+                hartleyRoutine=$(find "$HOME" -maxdepth 6 -type f -name 'runLogsRoutine.sh' -path '*Hartley*' -print -quit 2>/dev/null || true)
+            fi
+        fi
+
+        if [ ! -f "$hartleyRoutine" ]; then
+            echo "Could not find Hartley's runLogsRoutine.sh. Set HARTLEY_DIR to the directory containing it, or disable Use_HartleyIEKF in the project configuration."
+            exit 1
+        fi
+
         hartleyDir=$(dirname "$hartleyRoutine")
+        echo "Using Hartley's routine from $hartleyDir."
 
         cd "$hartleyDir"
+        mkdir -p data
         if find data -mindepth 1 -maxdepth 1 | read; then
             rm data/*
         fi
 
         cp "/tmp/HartleyInput.txt" "data/HartleyInput.txt"
-        
+
         cd "$hartleyDir"
         ./runLogsRoutine.sh "anything"
 
