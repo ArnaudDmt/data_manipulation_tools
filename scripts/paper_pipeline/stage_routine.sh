@@ -38,6 +38,14 @@ for line in "${plan[@]}"; do
   for p in $datasets; do
     echo "================ $name / $p"
     mkdir -p "$store/$p"
+    # Opt-in: a change to the RI-EKF's own configuration makes its cached parse stale. With
+    # KO_REBUILD_HARTLEY_CLEAN set, the clean pass rebuilds it from this very tick's input
+    # (chain.sh -> rebuild_hartley.sh) and every later variant copies the refreshed parse.
+    if [ "$name" = "clean" ] && [ -n "${KO_REBUILD_HARTLEY_CLEAN:-}" ]; then
+      case "$p" in HRP5*) export KO_REBUILD_HARTLEY=hrp5_p ;; *) export KO_REBUILD_HARTLEY=rhps1 ;; esac
+    else
+      unset KO_REBUILD_HARTLEY
+    fi
     if ! "$HERE/chain.sh" "$p"; then echo "[$name/$p] ABANDONNE"; continue; fi
     out="Projects/$p/output_data"
     cache="$out/evals/KO/saved_results/traj_est/cached/cached_rel_err.pickle"
