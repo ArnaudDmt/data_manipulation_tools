@@ -519,6 +519,20 @@ def reference_time_offset(project, cache):
         reference_rows = list(csv.DictReader(stream, delimiter=";"))
     log_time = np.array([float(row["t"]) for row in log_rows])
     reference_time = np.array([float(row["t"]) for row in reference_rows])
+    # finalDataCSV is on the routine's REPAIRED clock: repair_mc_rtc_skipped_iters.py:48-61 adds one
+    # step per skipped iteration to every later row. logReplay.csv is on the raw iteration counter.
+    # Matching the two as they are landed the window early by the skips it had to absorb -- 4 ms on
+    # HRP5P_LongWalk, 50 ms on KO_TRO2024_RHPS1_5, where it cost 12 % of the translation RPE and 42 %
+    # of the yaw RPE against the routine (measured 2026-09-16). On the repaired clock the offset is
+    # exactly the one extract_ros_trajectories needs, since it stamps raw - offset + skipped[row].
+    # Tested on the 13 datasets: unchanged 0 on the 11 whose window spans the log, 1002.280 s and
+    # 207.420 s on the other two, matching the lag measured against the routine's own trajectory.
+    skipped = skipped_iteration_shift(project, project_timestep(project))
+    if skipped is not None:
+        if len(skipped) != len(log_time):
+            raise RuntimeError(f"{project.name}: {len(skipped)} perf_GlobalRun rows for {len(log_time)} "
+                               "log rows; cannot put the log on the repaired clock")
+        log_time = log_time + skipped
     log = accelerometer_signal(log_rows)
     reference = accelerometer_signal(reference_rows)
     # The two files need not share a sampling rate: the routine downsamples some datasets on the
@@ -919,7 +933,7 @@ def skipped_iteration_shift(project, timestep):
 
 
 def extract_ros_trajectories(bag, floating_output, centroid_output, velocity_output=None, env=None,
-                             offset=0.0, shift=None):
+                             offset=0.0, shift=None, step=None):
     if env:
         os.environ.update(env)
         prefixes = env.get("AMENT_PREFIX_PATH", "").split(os.pathsep)
@@ -958,10 +972,14 @@ def extract_ros_trajectories(bag, floating_output, centroid_output, velocity_out
             if topic != "/kinetics_observer/estimated_state":
                 continue
             state = deserialize_message(serialized, KineticsState)
-            stamp = state.header.stamp.sec + state.header.stamp.nanosec * 1.0e-9 - offset
+            raw = state.header.stamp.sec + state.header.stamp.nanosec * 1.0e-9
+            stamp = raw - offset
             if shift is not None and len(shift):
-                # One bag message per log row, in order, so the row index is the message index.
-                stamp += float(shift[count if count < len(shift) else -1])
+                # The header carries the log's uniform `t`, so its row is raw / step. Counting messages
+                # instead assumed the bag starts at row 0, which a truncated bag (a cold start at the
+                # mocap window) breaks: its first message is row 41474 on RHPS1_5. Identical otherwise.
+                row = int(round(raw / step)) if step else count
+                stamp += float(shift[min(max(row, 0), len(shift) - 1)])
             for key, kinematics in (("floating", state.global_floating_base_kinematics), ("centroid", state.global_centroid_kinematics)):
                 values = (stamp, kinematics.position.x, kinematics.position.y, kinematics.position.z,
                           kinematics.orientation.x, kinematics.orientation.y, kinematics.orientation.z, kinematics.orientation.w)
@@ -1136,9 +1154,10 @@ def evaluate(args):
              f"output_bag:={replay_bag}", "startup_delay:=0.5", "shutdown_delay:=0.5"], env)
         offset_path = cache / "time_offset.json"
         offset = json.loads(offset_path.read_text(encoding="utf-8"))["offset"] if offset_path.exists() else 0.0
-        shift = skipped_iteration_shift(project, project_timestep(project))
+        step = project_timestep(project)
+        shift = skipped_iteration_shift(project, step)
         extract_ros_trajectories(replay_bag, trajectory, centroid, destination / "kinetics_velocity.txt",
-                                 env, offset, shift)
+                                 env, offset, shift, step)
         if args.no_plots:
             # Tuning inner loop: the bags are regenerable intermediates and cost GBs per trial.
             shutil.rmtree(replay_bag, ignore_errors=True)
