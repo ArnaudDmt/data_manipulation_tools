@@ -114,9 +114,9 @@ def plotContactPoses(estimators_to_plot = None, colors = None, path = default_pa
 
     fbContactPoses = dict.fromkeys(contactNames)
 
-    # The first 2.4 s are cut (480 samples at 200 Hz): the time axis is shifted so the figure
+    # The first 2.65 s are cut (530 samples at 200 Hz): the time axis is shifted so the figure
     # starts at zero, right where the KO-ZPC's yaw begins to decrease.
-    index_range = [480, 2830]
+    index_range = [530, 2830]
     time_shift = observer_data["t"][index_range[0]]
     y_mins = []
     y_maxs = []

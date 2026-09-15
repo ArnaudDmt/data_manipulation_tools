@@ -1,6 +1,6 @@
 observers:
   - abbreviation: KO
-    name: Kinetics Observer
+    name: KO
     kinematics:
       FloatingBase:
         position: [Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_tx, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_ty, Observers_MainObserverPipeline_MCKineticsObserver_mcko_fb_posW_tz]
@@ -90,7 +90,7 @@ observers:
         orientation: [Mocap_ori_x, Mocap_ori_y, Mocap_ori_z, Mocap_ori_w]
     lineWidth: 1
   - abbreviation: Control
-    name: Controller
+    name: Control
     kinematics:
       FloatingBase:
         position: [ff_tx, ff_ty, ff_tz]

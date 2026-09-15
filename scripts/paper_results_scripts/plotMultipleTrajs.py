@@ -57,11 +57,141 @@ estimator_plot_args_default = {
     # Declaration order sets the legend and the drawing order of the figures.
     'KO': {'group': 1, 'lineWidth': 1, 'column_names': ['KO_position_x', 'KO_position_y']},
     'Hartley': {'group': 1, 'lineWidth': 1, 'column_names':  ['Hartley_position_x', 'Hartley_position_y']},
-    'Control': {'group': 1, 'lineWidth': 2, 'dash': '8px,4px', 'column_names': ['Control_position_x', 'Control_position_y']},
-    'KO_ZPC': {'group': 1, 'lineWidth': 2, 'column_names': ['KO_ZPC_position_x', 'KO_ZPC_position_y']},
+    'Control': {'group': 1, 'lineWidth': 0.5, 'dash': '8px,4px', 'column_names': ['Control_position_x', 'Control_position_y']},
+    'KO_ZPC': {'group': 1, 'lineWidth': 0.5, 'dash': '8px,4px', 'column_names': ['KO_ZPC_position_x', 'KO_ZPC_position_y']},
     'Tilt': {'group': 1, 'lineWidth': 1, 'column_names': ['Tilt_position_x', 'Tilt_position_y']},
     'Mocap': {'group': 0, 'lineWidth': 1, 'column_names': ['Mocap_position_x', 'Mocap_position_y']},
 }
+
+# Magnified inset, per experiment. The published slippage figure carried one, composed by hand
+# from a separate zoom_slip.pdf; this script never produced it.
+#
+# Everything below is in DATA coordinates, including the box: the main axes are equal-aspect
+# (scaleanchor), so a uniform scale keeps the magnified shape faithful, and the leader lines can
+# join the source region to the box without mixing coordinate systems -- which is what makes a
+# paper-domain inset impossible to connect.
+#
+#   window_t  : (t0, t1) time interval to magnify. NOT a spatial window: the trajectories have
+#               drifted apart, so the same physical event sits at a different place on each curve
+#               and a box in x/y would cut a different moment out of each one.
+#   box       : (x0, x1, y0, y1) where to draw it, in the empty part of the plot
+#   pad_x     : fraction of the x range opened on the left to make room for the box
+#   stack     : estimators drawn in the inset, top band first. Each is re-centred in its own
+#               horizontal band, so the inset compares the SHAPE of the motion during slippage
+#               rather than the relative positions of the three curves -- which have drifted
+#               apart and would otherwise overlap unreadably. The caption says they are separated.
+INSETS = {
+    'HRP5_MultiContact_1': {
+        # No stacking here: the curves stay close enough that their relative positions read.
+        'window_t': (13.9, 16.2),
+        'box': (0.12, 0.72, -0.58, -0.14),
+        'show': ('Hartley', 'KO', 'Mocap'),
+    },
+    'KO_TRO_2024_RHPS1_SLIPPAGE_1': {
+        'window_t': (48.5, 58.5),
+        'box': (-1.22, -0.42, -1.47, -0.63),
+        'pad_x': 0.34,
+        'stack': ('Hartley', 'Mocap', 'KO'),
+    },
+}
+
+
+def _leaders(fig, window, box):
+    """Join the magnified region to its box along the two edges that face each other.
+
+    Which corners to use depends on where the box sits: joining fixed corners draws the lines
+    straight across the figure as soon as the box is below the region rather than beside it.
+    """
+    wx0, wx1, wy0, wy1 = window
+    bx0, bx1, by0, by1 = box
+    dx = (bx0 + bx1) / 2 - (wx0 + wx1) / 2
+    dy = (by0 + by1) / 2 - (wy0 + wy1) / 2
+    if abs(dx) >= abs(dy):                      # box beside the region
+        wx, bx = (wx0, bx1) if dx < 0 else (wx1, bx0)
+        pairs = ((wx, wy1, bx, by1), (wx, wy0, bx, by0))
+    else:                                       # box above or below it
+        wy, by = (wy0, by1) if dy < 0 else (wy1, by0)
+        pairs = ((wx0, wy, bx0, by), (wx1, wy, bx1, by))
+    for x0, y0, x1, y1 in pairs:
+        fig.add_shape(type='line', x0=x0, y0=y0, x1=x1, y1=y1,
+                      line=dict(color='black', width=1, dash='6px,3px,1px,3px'), layer='above')
+
+
+def _inset_traces(fig, inset, estimators, xys, times, expe, colors, estimator_plot_args):
+    """Draw the magnified region inside `box`, plus its outline and two leader lines."""
+    bx0, bx1, by0, by1 = inset['box']
+    t0, t1 = inset['window_t']
+    stamps = times[expe]
+    if stamps is None:
+        raise SystemExit("the inset needs the time column of finalDataCSV.csv")
+    inside = (stamps >= t0) & (stamps <= t1)
+    drawn = [e for e in inset.get('stack') or inset['show'] if e in estimators]
+
+    segments = {e: (np.asarray(xys[e][expe][0], float)[inside],
+                    np.asarray(xys[e][expe][1], float)[inside]) for e in drawn}
+    # The outline on the main plot is the union of the three segments. It is as wide as the drift
+    # between them, which does look large -- but framing a single curve puts the box where THAT
+    # curve was, not on the cluster the reader is being pointed at, since the others have drifted
+    # away from it.
+    xs = np.concatenate([s[0] for s in segments.values()])
+    ys = np.concatenate([s[1] for s in segments.values()])
+    mx, my = 0.03 * (xs.max() - xs.min()), 0.03 * (ys.max() - ys.min())
+    wx0, wx1 = xs.min() - mx, xs.max() + mx
+    wy0, wy1 = ys.min() - my, ys.max() + my
+
+    if 'stack' not in inset:
+        # Plain magnification: one transform for every curve, so their relative positions are
+        # preserved. Used where the curves have not drifted apart enough to overlap unreadably.
+        scale = min((bx1 - bx0) * 0.92 / (wx1 - wx0), (by1 - by0) * 0.92 / (wy1 - wy0))
+        bx0 = max(bx0, bx1 - (wx1 - wx0) * scale / 0.92)
+        cx, cy = (wx0 + wx1) / 2, (wy0 + wy1) / 2
+        ox, oy = (bx0 + bx1) / 2, (by0 + by1) / 2
+        for estimator in drawn:
+            x, y = segments[estimator]
+            r, g, b = paper_colors.resolve(colors, estimator)
+            fig.add_trace(go.Scatter(
+                x=ox + (x - cx) * scale, y=oy + (y - cy) * scale, mode='lines',
+                line=dict(color=f'rgb({r}, {g}, {b})',
+                          width=estimator_plot_args[estimator]['lineWidth'] + 2,
+                          dash=estimator_plot_args[estimator].get('dash')),
+                showlegend=False, hoverinfo='skip'))
+        frame = dict(line=dict(color='black', width=1.5), fillcolor='rgba(0,0,0,0)', layer='above')
+        fig.add_shape(type='rect', x0=wx0, x1=wx1, y0=wy0, y1=wy1, **frame)
+        fig.add_shape(type='rect', x0=bx0, x1=bx1, y0=by0, y1=by1, **frame)
+        _leaders(fig, (wx0, wx1, wy0, wy1), (bx0, bx1, by0, by1))
+        return bx0, by0
+
+    # One band per curve, stacked top to bottom in the order given.
+    band = (by1 - by0) / len(drawn)
+    widest = max(s[0].max() - s[0].min() for s in segments.values())
+    tallest = max(s[1].max() - s[1].min() for s in segments.values())
+    # A single scale for every curve and both axes: the shapes stay comparable and undistorted.
+    scale = min((bx1 - bx0) * 0.90 / widest, band * 0.80 / tallest)
+    # The scale is usually set by the band height, which leaves the box wider than its content.
+    # Pull the left edge in to what is actually used; the right edge carries the leader lines.
+    bx0 = max(bx0, bx1 - widest * scale / 0.90)
+
+    for rank, estimator in enumerate(drawn):
+        x, y = segments[estimator]
+        cx, cy = (x.min() + x.max()) / 2, (y.min() + y.max()) / 2
+        ox = (bx0 + bx1) / 2
+        oy = by1 - (rank + 0.5) * band
+        r, g, b = paper_colors.resolve(colors, estimator)
+        fig.add_trace(go.Scatter(
+            x=ox + (x - cx) * scale, y=oy + (y - cy) * scale,
+            mode='lines',
+            line=dict(color=f'rgb({r}, {g}, {b})',
+                      width=estimator_plot_args[estimator]['lineWidth'] + 2,
+                      dash=estimator_plot_args[estimator].get('dash')),
+            showlegend=False, hoverinfo='skip'))
+
+    frame = dict(line=dict(color='black', width=1.5), fillcolor='rgba(0,0,0,0)', layer='above')
+    fig.add_shape(type='rect', x0=wx0, x1=wx1, y0=wy0, y1=wy1, **frame)
+    fig.add_shape(type='rect', x0=bx0, x1=bx1, y0=by0, y1=by1, **frame)
+    # Leader lines between the corresponding corners, top and bottom.
+    _leaders(fig, (wx0, wx1, wy0, wy1), (bx0, bx1, by0, by1))
+    return bx0, by0
+
 
 def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = default_path,  main_expe = 0):    
     estimators = list(set(estimators).intersection(estimator_plot_args.keys()).intersection(estimator_plot_args_default.keys())) 
@@ -93,9 +223,11 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
     for estimator in estimators:
         all_groups[estimator_plot_args[estimator]['group']]["estimators"].append(estimator)
 
+    times = dict.fromkeys(range(len(exps)))
     for e, exp in enumerate(exps):
         file = f'{path}{exp}/output_data/finalDataCSV.csv'
         df = pd.read_csv(file, sep=';')
+        times[e] = df['t'].to_numpy() if 't' in df.columns else None
         for estimator in estimators:
             xys[estimator][e][0] = df[estimator + '_position_x'].to_numpy()  # 1-D
             xys[estimator][e][1] = df[estimator + '_position_y'].to_numpy()  # 1-D
@@ -168,6 +300,12 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
                     #         name=f'{estimatorName} - CSV {e+1} X', showlegend=False))
 
 
+        inset = INSETS.get(exps[main_expe]) if main_expe < len(exps) else None
+        if inset is not None:
+            inset_left, inset_bottom = _inset_traces(
+                fig, inset, combined_estimators, xys, times, main_expe,
+                colors, estimator_plot_args)
+
         x_min = all_groups[group]['plot_lims']['xmin']
         y_min = all_groups[group]['plot_lims']['ymin']
         x_max = all_groups[group]['plot_lims']['xmax']
@@ -208,6 +346,12 @@ def plot_multiple_trajs(estimators, exps, colors, estimator_plot_args, path = de
             scaleanchor = "x",
             scaleratio = 1
         )
+
+        if inset is not None:
+            # Open space on the left so the box sits beside the data, not over it.
+            # Open exactly the space the box ended up needing, not what was configured.
+            x_min = min(x_min, inset_left - 0.05)
+            y_min = min(y_min, inset_bottom - 0.03)
 
         fig.update_xaxes(
             range=[x_min, x_max],

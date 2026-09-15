@@ -28,7 +28,7 @@ contactNameToPlot = {"RightFootForceSensor": "Right foot", "LeftFootForceSensor"
 estimator_plot_args = {
     # Thinner than they were: at 7 and 5 the estimate swallowed the ground truth wherever the two
     # agree, which is most of the figure.
-    'KineticsObserver': {'name': 'Kinetics Observer', 'lineWidth': 4},
+    'KineticsObserver': {'name': 'KO', 'lineWidth': 4},
     'Hartley': {'name': 'RI-EKF', 'lineWidth': 3},
     'GroundTruth': {'name': 'Gound truth', 'lineWidth': 3}
 }
