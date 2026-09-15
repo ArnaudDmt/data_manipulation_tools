@@ -157,6 +157,8 @@ REQUIRED_CLIFF = 1.0
 REQUIRED_CREDIT_BOUND = {"trans_xy": 0.0, "yaw": 0.60}
 NOMINAL_RUNS = tuple(f"KO_TRO2024_RHPS1_{i}" for i in range(1, 6))
 SLIPPAGE_RUNS = tuple(f"KO_TRO_2024_RHPS1_SLIPPAGE_{i}" for i in range(1, 4))
+SCREEN_PROJECTS = ("HRP5_MultiContact_1", "HRP5_MultiContact_2", "HRP5P_LongWalk",
+                   "KO_TRO2024_RHPS1_1", "KO_TRO_2024_RHPS1_SLIPPAGE_1")
 
 # name -> (covariance field, axis indices, low log10, high log10)
 # Bounds bracket the installed value by a few decades; every base point is inside its box.
@@ -176,6 +178,10 @@ SPACE = (
     # 320 m. The old floor of 1e-7 could not even return to the installed value, so a search that
     # finally sees LongWalk still could not undo the damage. Let it find the balance itself.
     ("contact_process_position_xy", "contact_process", (0, 1), -9.5, -5.0),
+    # Absolute counterpart of contact_process_position_z_ratio, for studies that want the normal
+    # rest-pose process covariance on the same ladder of round values as the tangential one rather
+    # than as a proportion of it. The two are alternatives: search one or the other, never both.
+    ("contact_process_position_z", "contact_process", (2,), -9.0, -5.0),
     # The installed value is exactly 0, which pins the contact roll and pitch: with no process
     # covariance the filter cannot correct them. They are observable, so there is something to
     # correct, and every strong configuration found so far raises this by six to seven decades --
@@ -222,14 +228,16 @@ SPACE = (
     # Ceiling raised four decades: da of 5 rad/s^2 over a 2 ms step is already 1e-4 of variance,
     # so the old 1e-8 cut off the whole plausible region for a metric (yaw) that never improved.
     ("state_angular_velocity_process", "state_angular_velocity_process", (0, 1, 2), -14.0, -4.0),
-    ("gyro_bias_process", "gyro_bias_process", (0, 1, 2), -20.0, -15.0),
-    # Left wide on purpose: the unmodeled wrench absorbs what the contact model cannot explain,
-    # and it is the other state that feeds the velocity estimate.
-    ("unmodeled_force_process", "unmodeled_wrench_process", (0, 1, 2), -4.0, 2.0),
-    # Same split: the yaw component of an unmodeled torque is a ground friction moment, the
-    # roll/pitch components are compliance. Different physics, so they get different freedom.
-    ("unmodeled_torque_process_rp", "unmodeled_wrench_process", (3, 4), -3.0, 3.0),
-    ("unmodeled_torque_process_yaw", "unmodeled_wrench_process", (5,), -3.0, 3.0),
+    # Ceiling raised from -15 to -10. The RI-EKF's gyro bias switches regime between 5e-16 and
+    # 1e-10 -- below it the bias stays pinned at 1.3e-5 on LongWalk, above it drifts to 3.1e-4 and
+    # costs a factor five on yaw -- and the old ceiling left the whole transition outside the box,
+    # so the search could never see the trade this parameter actually carries.
+    ("gyro_bias_process", "gyro_bias_process", (0, 1, 2), -20.0, -10.0),
+    # One shared dimension for the whole unmodeled wrench. Splitting force from torque let the
+    # search set them decades apart, which is not a physical statement about an unmodelled
+    # disturbance: it is one wrench, and the force and moment parts of it are not independently
+    # identifiable from these datasets.
+    ("unmodeled_wrench_process", "unmodeled_wrench_process", (0, 1, 2, 3, 4, 5), -4.0, math.log10(4.0)),
     # The gyro bias is the only state that can absorb a yaw-rate error, and the RI-EKF leaves its
     # z component untouched because that direction is unobservable. Letting the search drive this
     # initial variance towards zero recovers the same protection. The axes are split because the
@@ -256,6 +264,79 @@ RATIO_SPACE = (
     ("contact_process_position_z_ratio", "contact_process", (2,), -3.0, 0.0),
 )
 RATIO_REFERENCE = {"contact_process_position_z_ratio": ("contact_process", 0)}
+# A ratio axis and its absolute twin write the same covariance entry, so only one may be searched.
+ABSOLUTE_COUNTERPART = {"contact_process_position_z_ratio": "contact_process_position_z"}
+
+
+def ladder(low_exponent, high_exponent, mantissas=(1.0, 2.0, 5.0)):
+    """Round values from 10**low to 10**high, e.g. 1e-9, 2e-9, 5e-9, 1e-8 ..."""
+    values = [mantissa * 10.0 ** exponent
+              for exponent in range(low_exponent, high_exponent + 1) for mantissa in mantissas]
+    return tuple(value for value in values if value <= 10.0 ** high_exponent * 1.0000001)
+
+
+def square_ladder(low_exponent, high_exponent):
+    """Variances whose standard deviation is a round number: cov = (m * 10**-k)**2, m in 1, 2, 3.
+
+    A variance of 5e-6 reads fine but its sigma is 2.236e-3, which is not something to put in a
+    paper. Only an even exponent with mantissa 1, 4 or 9 has a round root, so the ladder is built
+    in sigma space and squared: sigma 1e-3, 2e-3, 3e-3 gives 1e-6, 4e-6, 9e-6. The bounds are
+    given as variance exponents, as everywhere else in the space.
+    """
+    values = []
+    for exponent in range(low_exponent, high_exponent + 1):
+        if exponent % 2:
+            continue                    # an odd variance exponent can never have a round root
+        sigma = 10.0 ** (exponent // 2)
+        values += [(mantissa * sigma) ** 2 for mantissa in (1.0, 2.0, 3.0)]
+    return tuple(value for value in sorted(values)
+                 if 10.0 ** low_exponent * 0.999999 <= value <= 10.0 ** high_exponent * 1.000001)
+
+
+# Dimensions restricted to a discrete ladder instead of the continuous log axis. A covariance that
+# lands on 3.7241e-07 is not more true than one on 5e-07 -- the data cannot resolve that -- and a
+# tuning that has to be read, justified and published is worth more on round numbers. The sampler
+# still works in continuous log space; overlay_from snaps to the nearest rung, so the objective is
+# piecewise constant. That costs CMA-ES its gradient inside a cell, hence --refine-sampler tpe.
+GRID = {
+    "unmodeled_wrench_process": ladder(-4, 0) + (2.0, 4.0),
+    "gyro_bias_process": ladder(-20, -10),
+    "contact_process_position_xy": ladder(-9, -5),
+    "contact_process_position_z": ladder(-9, -5),
+    "contact_process_orientation_rp": ladder(-12, -3),
+    "contact_process_orientation_yaw": ladder(-9, -4),
+    "contact_new_position_xy": ladder(-7, -3),
+    "contact_new_position_z": ladder(-7, -3),
+    "contact_new_orientation_rp": ladder(-7, -3),
+    "contact_new_orientation_yaw": ladder(-7, -3),
+}
+
+
+# Same dimensions, but every rung is a variance whose standard deviation is a round number. See
+# square_ladder: only an even exponent with mantissa 1, 4 or 9 qualifies, so the bounds are widened
+# to the enclosing even exponents rather than losing the ends of the range.
+SQUARE_GRID = {
+    "unmodeled_wrench_process": square_ladder(-4, 1),
+    "gyro_bias_process": square_ladder(-20, -10),
+    "contact_process_position_xy": square_ladder(-10, -4),
+    "contact_process_position_z": square_ladder(-10, -4),
+    "contact_process_orientation_rp": square_ladder(-12, -4),
+    "contact_process_orientation_yaw": square_ladder(-10, -4),
+    "contact_new_position_xy": square_ladder(-8, -2),
+    "contact_new_position_z": square_ladder(-8, -2),
+    "contact_new_orientation_rp": square_ladder(-8, -2),
+    "contact_new_orientation_yaw": square_ladder(-8, -2),
+}
+# Which ladder snap() uses; set from --grid.
+ACTIVE_GRID = GRID
+
+
+def snap(name, value):
+    """The nearest rung of `name`'s ladder, in log distance; `value` unchanged if it has none."""
+    rungs = ACTIVE_GRID.get(name)
+    if not rungs:
+        return value
+    return min(rungs, key=lambda rung: abs(math.log10(rung) - math.log10(max(value, 1e-300))))
 
 # Covariances that legitimately differ between robots because they carry that robot's sensor
 # calibration. Searching them as absolute variances would force one robot onto the other's
@@ -368,7 +449,18 @@ SHARED_WITH_RIEKF = ("gyroscope_scale", "accelerometer_scale")
 # dynamics, so scaling this trust does not move the baseline at all. Round 2 searches them anyway,
 # because the contact wrench is the one measurement that feeds the velocity state: installing a
 # win here costs a re-prepare of the datasets, which is worth knowing about before paying for it.
-SENSOR_CALIBRATION = ()
+# The contact wrench covariance is now MEASURED, so it is calibration and not a search dimension.
+# The unloaded noise floor gives RHPS1 sigma 1.08 N (variance 1.0) and 0.029 N.m (9e-4), HRP5-P
+# 0.67 N (5e-1) and 0.026 N.m, its hand 0.1 N (1e-2) and 0.005 N.m (2.5e-5) -- all installed in the
+# per-robot observer files. Searching a multiplier on top of that asks the filter to distrust a
+# sensor by a factor nobody measured: the last two campaigns both settled on 150x, i.e. sigma
+# 12.3 N against a measured 1.08, eleven times the real noise. That is not a calibration, it is the
+# cheapest way for the search to reduce the weight of a measurement the contact model cannot
+# reproduce -- the same model error the yaw-torque residual shows -- and reporting it as a sensor
+# property would be wrong. The installability limit noted below applies too: apply_to_mc_rtc cannot
+# write these back, so a win here does not survive installation.
+SENSOR_CALIBRATION = ("contact_wrench_force_scale", "contact_wrench_moment_xy_scale",
+                      "contact_wrench_moment_z_scale")
 
 # Dimensions with no measured effect, excluded so the sampler's budget goes where the leverage is.
 # Each was moved one at a time from the installed configuration and produced no change:
@@ -390,7 +482,13 @@ MEASURED_INERT = (
     # contact model, and this list had locked it out. HRP5-P's four stay excluded, untested.
     "hrp5_p_linear_damping_ratio_xy", "hrp5_p_linear_damping_ratio_z",
     "hrp5_p_angular_damping_ratio_xy", "hrp5_p_angular_damping_ratio_z",
-    "contact_process_orientation_rp",
+    # contact_process_orientation_rp was excluded here and is searchable again: active_space()
+    # drops exclusions *before* applying --only, so a study that names it would be told the
+    # dimension does not exist, and it is one of the axes the current study searches.
+    #
+    # contact_process_position_z is deliberately NOT listed either, for the same reason. It and
+    # contact_process_position_z_ratio write the same covariance entry, so a study picks one with
+    # --only; overlay_from skips the ratio's fallback whenever the absolute axis is in the point.
     # contact_process_orientation_yaw, contact_process_position_z_ratio and
     # contact_new_orientation_rp were measured inert at alpha=0. The load-weighted projector
     # changed what they do, so that premise no longer holds and they are searchable again.
@@ -513,10 +611,14 @@ def overlay_from(base, widths, point, flexibility=None):
         if name not in point:
             continue        # not searched (see --only): keep the installed value already in `values`
         for index in indices:
-            values[field][index] = 10.0 ** float(point[name])
+            values[field][index] = snap(name, 10.0 ** float(point[name]))
     # Ratio axes are resolved after the absolute ones, since each is a multiple of an axis the
-    # loop above has just written. Left out of the point, a ratio keeps the installed proportion.
+    # loop above has just written. Left out of the point, a ratio keeps the installed proportion --
+    # unless its absolute counterpart is being searched, in which case re-deriving it here would
+    # silently overwrite the value the loop above just placed.
     for name, field, indices, _, _ in RATIO_SPACE:
+        if ABSOLUTE_COUNTERPART.get(name) in point:
+            continue
         reference_field, reference_index = RATIO_REFERENCE[name]
         reference = values[reference_field][reference_index]
         ratio = (10.0 ** float(point[name]) if name in point
@@ -761,7 +863,7 @@ def read_ratios(path, projects):
                 pairs[(row["project"], row["metric"])][row["estimator"]] = float(row["value"])
     expected = len(projects) * len(POSE_METRICS)
     if len(pairs) != expected:
-        raise RuntimeError(f"expected {expected} median comparisons in {path}, found {len(pairs)}")
+        raise RuntimeError(f"expected {expected} mean comparisons in {path}, found {len(pairs)}")
     return {f"{project}|{metric}": values["Kinetics"] / max(values["RI-EKF"], 1e-12)
             for (project, metric), values in pairs.items()}
 
@@ -1046,9 +1148,13 @@ class Search:
 # generation and 6 workers gave 6. At 17 dimensions the floor is 12.5, so popsize == workers
 # clears it on its own -- and a generation is then exactly one wave of workers rather than two,
 # which doubles the number of adaptation steps for the same trial budget with no worker left idle.
+                # sigma0 has to clear the rung spacing of any laddered dimension, or the whole
+                # first generation snaps to one value and CMA-ES adapts its covariance on a
+                # perfectly flat objective. A 1-2-5 ladder is ~0.30 decades per rung, so the 0.25
+                # default sits inside a single rung: --sigma0 0.75 spans two to three of them.
                 sampler=self.optuna.samplers.CmaEsSampler(
                     seed=SEED, popsize=self.args.popsize or 2 * self.args.workers,
-                    x0=self.anchor, sigma0=0.25),
+                    x0=self.anchor, sigma0=self.args.sigma0),
                 storage=f"sqlite:///{self.tracking / 'study.db'}", load_if_exists=True)
         sampler = self.optuna.samplers.TPESampler(seed=SEED, n_startup_trials=self.args.startup,
                                                   multivariate=True, group=True)
@@ -1330,7 +1436,9 @@ def write_report(search, best_point, best_ratios, base_ratios, destination):
     def line(name):
         if name not in best_point:
             return f"{name:34}   held (excluded from the search)"
-        return f"{name:34} {best_point[name]:+.3f}  ({10 ** best_point[name]:.4g})"
+        # Report the value the trial actually ran, which for a laddered dimension is the rung the
+        # sampler's continuous coordinate was snapped to, not the coordinate itself.
+        return f"{name:34} {best_point[name]:+.3f}  ({snap(name, 10 ** best_point[name]):.4g})"
 
     lines.extend(("", "## Winning point (log10 variance)", "", "```",
                   *(line(name) for name, *_ in ALL_SPACE), "```", "",
@@ -1363,6 +1471,15 @@ def main():
     parser.add_argument("--only", nargs="+", metavar="DIM",
                         help="Search only these dimensions, holding the rest at the installed "
                              "configuration. For focused studies of one mechanism.")
+    parser.add_argument("--grid", choices=("round", "square"), default="round",
+                        help="Ladder the searched dimensions snap to. `round` is 1-2-5 per decade; "
+                             "`square` keeps only variances whose standard deviation is itself a "
+                             "round number, which is what a published table needs.")
+    parser.add_argument("--sigma0", type=float, default=0.25,
+                        help="CMA-ES initial step, in log10 decades per dimension. Raise it above "
+                             "the rung spacing of any laddered dimension (~0.3 for a 1-2-5 "
+                             "ladder), otherwise the first generation lands inside one rung and "
+                             "the snapped objective is flat.")
     parser.add_argument("--refine-sampler", choices=("cmaes", "tpe"), default="cmaes",
                         help="Sampler for the full-dataset phase. CMA-ES adapts a covariance over "
                              "the search space, so it follows the correlated directions the "
@@ -1379,6 +1496,8 @@ def main():
     parser.add_argument("--prefix", default="tune")
     parser.add_argument("--workspace", type=Path, default=Path("/home/arnaud/devel/src/catkin_ws"))
     args = parser.parse_args()
+    global ACTIVE_GRID
+    ACTIVE_GRID = SQUARE_GRID if args.grid == "square" else GRID
     args.tracking = args.tracking.resolve()
     install_shutdown_handlers()
 

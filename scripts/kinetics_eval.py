@@ -35,6 +35,7 @@ PROJECTS = [*(f"HRP5_MultiContact_{index}" for index in range(1, 5)),
             "HRP5P_LongWalk",
             *(f"KO_TRO2024_RHPS1_{index}" for index in range(1, 6)),
             *(f"KO_TRO_2024_RHPS1_SLIPPAGE_{index}" for index in range(1, 4))]
+CACHE_SUFFIX = ""
 
 
 def merge_covariance_overlay(configuration, overlay, robot=None):
@@ -222,7 +223,8 @@ def selected_projects(names):
     if not names:
         return list(PROJECTS)
     chosen = [name.strip() for name in names.split(",") if name.strip()]
-    unknown = [name for name in chosen if name not in PROJECTS]
+    unknown = [name for name in chosen
+               if name not in PROJECTS and not (ROOT / "Projects" / name).is_dir()]
     if unknown:
         raise ValueError(f"unknown project(s): {', '.join(unknown)}; known: {', '.join(PROJECTS)}")
     return chosen
@@ -230,7 +232,7 @@ def selected_projects(names):
 
 def project_paths(name):
     project = ROOT / "Projects" / name
-    return project, project / "output_data/kinetics_eval"
+    return project, project / "output_data" / ("kinetics_eval" + CACHE_SUFFIX)
 
 
 def fingerprint(path):
@@ -678,6 +680,10 @@ def compact_conversion_source(source, directory):
     for index, chunk in enumerate(chunks):
         target = directory / f"compact_{index:02d}.bin"
         run(["mc_bin_utils", "extract", "--in", chunk, "--out", target, "--keys", *keys])
+        # Free each split as soon as its channels are out, the way lightenBin.sh does. Keeping all
+        # of them alive costs a second full copy of the source -- 24 GB on HRP5P_LongWalk -- and
+        # that is what fills the disk, since the caller has already paid for the log itself.
+        chunk.unlink(missing_ok=True)
         compact.append(target)
     merged = directory / "compact_merged.bin"
     run([sys.executable, ROOT / "scripts/routine_scripts/mergeBinLogs.py", merged, *compact])
@@ -885,7 +891,35 @@ def plot_trajectory_states(project, kinetics, mocap, riekf, destination):
     return path
 
 
-def extract_ros_trajectories(bag, floating_output, centroid_output, velocity_output=None, env=None, offset=0.0):
+def skipped_iteration_shift(project, timestep):
+    """Cumulative wall time the controller lost to skipped iterations, per log row.
+
+    mc_rtc writes one log row per *executed* iteration, so a row whose perf_GlobalRun exceeded the
+    controller period stands for several periods of elapsed time. The routine corrects for this in
+    repair_mc_rtc_skipped_iters.py (called from mainRoutine.sh:362) and keeps the corrected stamps;
+    the replay stamps from the bag, which carries the log's uncorrected uniform `t`. Without the
+    same correction the two pipelines drift apart -- 60 ms by the end of KO_TRO2024_RHPS1_4 -- and
+    rpg, which matches estimate to ground truth *by timestamp*, then pairs different samples on
+    each side. That biases only the Kinetics column, since the RI-EKF baseline is read from the
+    routine's own (corrected) results.
+    """
+    import numpy as np
+    path = project / "output_data/perf_GlobalRun_log.csv"
+    if not path.exists():
+        return None
+    with path.open(newline="", encoding="utf-8") as stream:
+        delays = [float(row["perf_GlobalRun"]) for row in csv.DictReader(stream, delimiter=";")]
+    # The repair compares against the period in milliseconds and skips row 0, as here.
+    step_ms = timestep * 1000.0
+    skipped = np.zeros(len(delays))
+    for index, delay in enumerate(delays):
+        if index and delay > step_ms:
+            skipped[index] = int(delay / step_ms) - 1
+    return np.cumsum(skipped) * timestep
+
+
+def extract_ros_trajectories(bag, floating_output, centroid_output, velocity_output=None, env=None,
+                             offset=0.0, shift=None):
     if env:
         os.environ.update(env)
         prefixes = env.get("AMENT_PREFIX_PATH", "").split(os.pathsep)
@@ -925,6 +959,9 @@ def extract_ros_trajectories(bag, floating_output, centroid_output, velocity_out
                 continue
             state = deserialize_message(serialized, KineticsState)
             stamp = state.header.stamp.sec + state.header.stamp.nanosec * 1.0e-9 - offset
+            if shift is not None and len(shift):
+                # One bag message per log row, in order, so the row index is the message index.
+                stamp += float(shift[count if count < len(shift) else -1])
             for key, kinematics in (("floating", state.global_floating_base_kinematics), ("centroid", state.global_centroid_kinematics)):
                 values = (stamp, kinematics.position.x, kinematics.position.y, kinematics.position.z,
                           kinematics.orientation.x, kinematics.orientation.y, kinematics.orientation.z, kinematics.orientation.w)
@@ -1099,7 +1136,9 @@ def evaluate(args):
              f"output_bag:={replay_bag}", "startup_delay:=0.5", "shutdown_delay:=0.5"], env)
         offset_path = cache / "time_offset.json"
         offset = json.loads(offset_path.read_text(encoding="utf-8"))["offset"] if offset_path.exists() else 0.0
-        extract_ros_trajectories(replay_bag, trajectory, centroid, destination / "kinetics_velocity.txt", env, offset)
+        shift = skipped_iteration_shift(project, project_timestep(project))
+        extract_ros_trajectories(replay_bag, trajectory, centroid, destination / "kinetics_velocity.txt",
+                                 env, offset, shift)
         if args.no_plots:
             # Tuning inner loop: the bags are regenerable intermediates and cost GBs per trial.
             shutil.rmtree(replay_bag, ignore_errors=True)
@@ -1141,6 +1180,8 @@ def main():
     parser.add_argument("--passthrough-config", type=Path, default=DEFAULT_PASSTHROUGH_CONFIG,
                         help="Controller YAML holding the inline MCKineticsObserver config layer")
     parser.add_argument("--projects", help="Comma-separated subset of the datasets to process")
+    parser.add_argument("--cache-suffix", default="",
+                        help="Use an isolated output_data/kinetics_eval<SUFFIX> cache")
     subparsers = parser.add_subparsers(dest="command", required=True)
     prepare_parser = subparsers.add_parser("prepare")
     prepare_parser.add_argument("--force", action="store_true")
@@ -1155,6 +1196,10 @@ def main():
     run_parser.add_argument("--no-latest", action="store_true", help="Do not move the results/latest symlink")
     run_parser.add_argument("--no-open", action="store_true", help="Never open the report in a browser")
     args = parser.parse_args()
+    global CACHE_SUFFIX
+    if args.cache_suffix and not re.fullmatch(r"_[A-Za-z0-9_.-]+", args.cache_suffix):
+        parser.error("invalid --cache-suffix")
+    CACHE_SUFFIX = args.cache_suffix
     # Applies to every subcommand: 'run' never calls prepare(), so setting this there did
     # nothing and the experiment silently used the default config.
     if args.observer_config is not None:
