@@ -1,4 +1,46 @@
 This repository regroups tools that help alignigning the data obtained from a mocap with the data of mc_rtc. 
+
+## Fast Kinetics evaluation
+
+Create the repository Python environment once (PEP 668-safe):
+
+```bash
+python3 -m venv --system-site-packages .venv
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+Build the ROS 2 wrapper once, then prepare the four canonical HRP5P MultiContact and three RHPS1 Slippage datasets once:
+
+```bash
+cd /home/arnaud/devel/src/catkin_ws
+colcon build --merge-install --packages-select kinetics_observer_ros2 test_state_obs_ros2
+
+cd /home/arnaud/devel/src/data_manipulation_tools
+.venv/bin/python scripts/kinetics_eval.py prepare --regenerate-missing
+```
+
+Preparation writes `kinetics_eval.yaml`. Edit that file, then run:
+
+```bash
+.venv/bin/python scripts/kinetics_eval.py run --label my-tuning
+```
+
+Each run is stored under `results/<label>-<config-hash>/`; `results/latest`
+points to the newest run. The folder contains the exact YAML, Kinetics
+trajectories, RPG relative-error outputs, per-project XY/position/roll-pitch-yaw plots, `summary.csv`, and `report.html`.
+RI-EKF and Kinetics are both evaluated against the same synchronized mocap
+trajectory. The recurring run is synchronous and does not replay ROS topics.
+
+Run the resumable 128-trial covariance search with:
+
+```bash
+.venv/bin/python scripts/kinetics_tune.py
+```
+
+The trial ledger, winning overlay, and research summary are written to
+`results/kinetics-tuning-constrained-20260822/`. The search constrains new-contact uncertainty to at least 1 cm/1 degree, scores slippage Z and velocity against RI-EKF, and can be extended with `--trials`. Use `--covariance-overlay PATH` before the `run`
+subcommand to evaluate an overlay while preserving each robot's resolved settings.
+
 To this end, the mocap's data must be acquired the following way:
     - place the markers at the locations indicated on the pictures of MarkerPlacements.pdf. In the mocap's software, re-label the markers 1, 2 and 3 respectively: Marker1, Marker2 and Marker3.
     - at the end of the experiment, export the data to a csv file.
@@ -6,7 +48,7 @@ To this end, the mocap's data must be acquired the following way:
 # How to run
 run the script "./routine.sh" that will propose you to work either on an existing project or a new project. Upon creation of a new project, the script will create a dedicated folder containing the necessary folders. Once created, please paste the mocap's csv and mc_rtc's log inside the folder "raw_data" and fill in the file "projectConfig.yaml" with the names of the robot used and the limb the mocap markers are placed on. These names must match the ones used in mc_rtc.
 Re-run the script "./routine.sh", which will ask you the timestep used by mc_rtc during the experiment.
-To generate the necessary data, the mc_rtc's log will be replayed, please make sure that the file mc_rtc.yaml is correctly set up.
+To generate the necessary data, the mc_rtc's log will be replayed, the pipeline reads each projectConfig.yaml and creates a per-project MainRobot replay override (HRP5P for MultiContact, RHPS1 for Slippage).
 After changes, the script can be run with three options:
 * --compute-metrics: compute essentially the trajectory evaluation metrics of the observers for a desired projet / set of projects. Takes time if the logs are long.
 * --debug: run the routine with the possibility to re-run the steps one by one with more plots to debug the different steps.
