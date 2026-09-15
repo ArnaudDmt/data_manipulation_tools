@@ -1,0 +1,44 @@
+# Middle-grade (industrial MEMS) IMU model, e.g. ADIS1644x / STIM-lite class.
+# Controller timestep dt = 0.005 s (200 Hz) -- see Timestep in mc_rtc.yaml.
+# The plugin adds, per iteration and per axis:
+#   measurement += N(0, *Noise_StdDev)          <- white noise, already discretized
+#   bias        += N(0, *RandomWalk_StdDev)     <- bias random walk, per iteration
+#   bias        += *Slope                       <- deterministic drift, per iteration
+#   measurement += bias                         <- *Offset is the initial (turn-on) bias
+
+############################### Gyrometer ###############################
+withNoisyGyro: true
+
+# Turn-on bias ~0.2 deg/s (3.5e-3 rad/s), different on each axis.
+gyroOffset: [3.5e-3, -3.0e-3, 4.0e-3]
+
+# Angle random walk 0.3 deg/sqrt(h) = 8.7e-5 rad/s/sqrt(Hz)
+#  -> discrete std = 8.7e-5 / sqrt(0.005) = 1.2e-3 rad/s
+gyroNoise_StdDev: [1.2e-3, 1.2e-3, 1.2e-3]
+
+# Bias instability ~5 deg/h. Per-step random walk of 3e-7 rad/s gives a bias
+# drift std of 3e-7*sqrt(200000) = 1.3e-4 rad/s (~27 deg/h) over a 1000 s run.
+gyroRandomWalk_StdDev: [3.0e-7, 3.0e-7, 3.0e-7]
+
+# No deterministic drift on top of the random walk.
+gyroSlope: [0.0, 0.0, 0.0]
+
+############################### Accelerometer ###############################
+withAcceleroNoise: true
+
+# Turn-on bias ~5 mg (0.05 m/s^2), different on each axis.
+AcceleroOffset: [0.03, -0.04, 0.05]
+
+# Velocity random walk 0.06 m/s/sqrt(h) = 1.0e-3 m/s^2/sqrt(Hz)
+#  -> discrete std = 1.0e-3 / sqrt(0.005) = 1.4e-2 m/s^2
+acceleroNoise_StdDev: [1.4e-2, 1.4e-2, 1.4e-2]
+
+# Bias instability ~0.05 mg. Per-step random walk of 3e-6 m/s^2 gives a bias
+# drift std of 1.3e-3 m/s^2 (~0.13 mg) over a 1000 s run.
+acceleroRandomWalk_StdDev: [3.0e-6, 3.0e-6, 3.0e-6]
+
+acceleroSlope: [0.0, 0.0, 0.0]
+
+############################### Force / torque ###############################
+withForceSensorNoise: false
+withTorqueSensorNoise: false

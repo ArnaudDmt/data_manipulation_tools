@@ -6,10 +6,16 @@ channels and cannot feed the routine.  Everything else -- controller config, rob
 pinned log destination -- is taken from kinetics_eval so the observer that writes this log is the
 one the routine runs.
 """
-import re, sys, time, shutil, tempfile, subprocess, pathlib
+import os, re, sys, time, shutil, tempfile, subprocess, pathlib
 
 sys.path.insert(0, 'scripts')
 import kinetics_eval as ke
+
+
+def config_home():
+    """The HOME whose .config/mc_rtc this tick uses: a private one (config_home.py) when
+    KO_CONFIG_HOME is set, the real one otherwise."""
+    return pathlib.Path(os.environ.get("KO_CONFIG_HOME", str(pathlib.Path.home())))
 
 
 def replay_config(source, robot, timestep, log_directory, template):
@@ -42,7 +48,7 @@ def set_mocap_body(project):
     body = str((_yaml.safe_load((project / "projectConfig.yaml").read_text()) or {}).get("EnabledBody", "")).strip()
     if not body:
         raise RuntimeError(f"{project.name}: projectConfig.yaml has no EnabledBody")
-    config = pathlib.Path.home() / ".config/mc_rtc/plugins/MocapAligner.yaml"
+    config = config_home() / ".config/mc_rtc/plugins/MocapAligner.yaml"
     config.parent.mkdir(parents=True, exist_ok=True)
     previous = config.read_text() if config.exists() else ""
     if re.search(r"(?m)^bodyName:", previous):
@@ -61,12 +67,14 @@ def retick(name, destination):
     robot = ke.project_robot(project)
     timestep = ke.project_timestep(project)
     tick_directory = pathlib.Path(tempfile.mkdtemp(prefix="retick_", dir=str(destination.parent)))
-    config = replay_config(ke.DEFAULT_MC_RTC_CONFIG, robot, timestep, tick_directory, "replay")
+    home = config_home()
+    config = replay_config(home / ".config/mc_rtc/mc_rtc.yaml", robot, timestep, tick_directory, "replay")
     started = time.time()
     try:
         subprocess.run(["mc_rtc_ticker", "-f", str(config), "--no-sync", "--replay-outputs",
                         "-e", "-l", str(controller_log)], check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
+                       env={**os.environ, "HOME": str(home)})
         produced = [p for p in tick_directory.glob("replay*.bin") if "latest" not in p.name]
         if not produced:
             produced = [ke.newest_replay(started)]

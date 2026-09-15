@@ -72,7 +72,8 @@ REPLAY_LABELS = {"clean": "var-clean-ref", "zpc": "var-zpc", "pc": "var-pc",
 # observer pipeline, so both estimators come out of a single tick. It is deliberately limited to
 # the one short dataset whose figure needs it: two instances re-register their logger keys every
 # iteration, which is harmless over 11k iterations and produced a 37.8 GB runaway on LongWalk.
-CONTROLLER = Path.home() / ".config/mc_rtc/controllers/Passthrough.yaml"
+CONTROLLER = (Path(__import__("os").environ.get("KO_CONFIG_HOME", str(Path.home())))
+              / ".config/mc_rtc/controllers/Passthrough.yaml")
 
 # --- figures ----------------------------------------------------------------------------------
 

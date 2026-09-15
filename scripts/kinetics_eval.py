@@ -235,9 +235,27 @@ def project_paths(name):
     return project, project / "output_data" / ("kinetics_eval" + CACHE_SUFFIX)
 
 
+# Files up to this size are fingerprinted by CONTENT. The modification time alone invalidated every
+# cache whenever a configuration was rewritten with identical bytes (a restore, a reinstall), and it
+# cannot tell a real change from a touch. Larger files (logs, bags, libraries) keep size + mtime.
+CONTENT_FINGERPRINT_MAX_BYTES = 64 * 1024 * 1024
+
+
 def fingerprint(path):
     stat = path.stat()
-    return {"path": str(path.resolve()), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+    result = {"path": str(path.resolve()), "size": stat.st_size, "mtime_ns": stat.st_mtime_ns}
+    if stat.st_size <= CONTENT_FINGERPRINT_MAX_BYTES:
+        result["sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    return result
+
+
+def same_fingerprint(current, expected):
+    """Content when both sides carry it; size and mtime otherwise (manifests written before)."""
+    if current.get("path") != expected.get("path") or current.get("size") != expected.get("size"):
+        return False
+    if "sha256" in current and "sha256" in expected:
+        return current["sha256"] == expected["sha256"]
+    return current.get("mtime_ns") == expected.get("mtime_ns")
 
 
 def shared_library(binary, stem):
@@ -303,10 +321,10 @@ def validate_cache(cache, dependencies):
         if expected is None:
             raise RuntimeError(f"stale cache for {cache.parent.parent.name}; rerun prepare --force")
         current = fingerprint(Path(expected["path"]))
-        if current != expected:
+        if not same_fingerprint(current, expected):
             raise RuntimeError(f"{key} changed for {cache.parent.parent.name}; rerun prepare --force")
     for key, expected in dependencies.items():
-        if manifest[key] != expected:
+        if not same_fingerprint(expected, manifest[key]):
             raise RuntimeError(f"{key} changed for {cache.parent.parent.name}; rerun prepare --force")
 
 

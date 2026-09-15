@@ -1,0 +1,167 @@
+ObserverPipelines:
+  name: MainObserverPipeline
+  gui: false
+  observers:
+    - type: Encoder
+      # config: 
+      #   velocity: encoderVelocities
+    # - type: MCVanytEstimator
+    #   update: true      
+    #   config: 
+    #     leggedOdometry:
+    #       odometryType: 6D
+    # - type: BodySensor
+      #   update: false
+      #   config:
+      #     bodySensor: FloatingBase
+
+      # - type: KinematicInertial
+      #   update: true
+      #   config:
+      #     anchorFrame:
+      #       maxAnchorFrameDiscontinuity: 0.05 # [m]
+
+      # - type: Attitude
+      #   update: true
+      
+    - type: MCValinor 
+      update: true
+      config:
+        withDebugLogs: false
+        leggedOdometry:
+          odometryType: 6D
+
+    - type: MCKineticsObserver
+      update: false
+      config:
+        withGui: false
+        withDebugLogs: true
+        leggedOdometry:
+          odometryType: 6D
+        contacts:
+          schmittTriggerLowerPropThreshold: 0.1
+          schmittTriggerUpperPropThreshold: 0.12
+      # MCKineticsObserverFG disabled for kinetics replay (not required).
+      # - type: ExternalForcesObserver 
+      #   estimation_method: MomentumObserver # or ForceSensorBased
+      #   is_active: true                  # false = estimate and log only, no feedback to QP
+      #   use_forces_from_ft_sensors: true # include FT sensor wrenches in the estimate
+      #   # MomentumObserver-only keys:
+      #   residual_gain: 10.0              # observer gain K; higher = faster response, more noise
+      #   torque_source_type: CommandedTorque  # JointTorqueMeasurement preferred when available
+# - type: MCKineticsObserverFG
+#   name: WoJoints
+#   update: false   
+#   config: 
+#     withGui: false 
+#     withDebugLogs: true
+#     jointTorques:
+#       enabled: false
+#       useCommandAsMeasurement: true
+#       noise: 1e-1
+#     leggedOdometry:
+#       withRestPoseAverageFactor: false
+#       odometryType: 6D
+#     contacts:  
+#       schmittTriggerLowerPropThreshold: 0.1
+#       schmittTriggerUpperPropThreshold: 0.12
+# - type: MCKineticsObserverFG
+#   update: false
+#   config: 
+#     ignoreWrenchSensors: false
+#     withContactStateCovRemoval: false
+#     withDebugLogs: true 
+#     leggedOdometry:
+#       odometryType: 6D
+
+# - type: MCDisturbanceObserver
+#   update: false  
+
+# - type: MCWaiko
+#   update: false 
+#   config: 
+#     withDebugLogs: true
+#     withOriCorrectFromContactPos: false
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+# - type: MCWaiko
+#   name: WaikoTest
+#   update: false 
+#   config: 
+#     withDebugLogs: true
+#     withOriCorrectFromContactPos: true 
+#     withOriCorrectFromContactOri: false
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+# - type: MCWaiko
+#   name: WaikoTestBis
+#   update: false 
+#   config: 
+#     withDebugLogs: true
+#     withOriCorrectFromContactPos: false 
+#     withOriCorrectFromContactOri: false
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+# - type: MCKineticsObserver
+#   name: KOAPC
+#   update: false
+#   config: 
+#     withDebugLogs: false
+#     withContactStateCovRemoval: false
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+# - type: MCKineticsObserver
+#   name: KOASC
+#   update: false
+#   config: 
+#     zero_process_cov: true
+#     withDebugLogs: false
+#     withAdaptativeContactProcessCov: false
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+    # - type: MCKineticsObserver
+    #   name: KOZPC
+    #   update: false
+    #   config: 
+    #     zero_process_cov: true
+    #     withDebugLogs: false
+    #     withContactStateCovRemoval: false
+    #     withAdaptativeContactProcessCov: false
+    #     leggedOdometry:
+    #       odometryType: 6D 	
+
+    # - type: MCKineticsObserver
+    #   name: KOWithoutWrenchSensors
+    #   update: false
+    #   config: 
+    #     ignoreWrenchSensors: true
+    #     withDebugLogs: true 
+    #     withAdaptativeContactProcessCov: true
+    #     leggedOdometry:
+    #       odometryType: 6D 	
+
+# - type: Tilt
+#   update: false
+#   config: 
+#     leggedOdometry:
+#       odometryType: 6D 	
+
+#- type: NaiveOdometry
+#  update: false
+#  config:
+#    odometryType: Flat
+#    contactsDetection: Sensors
+#    #surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [LeftHandForceSensor]
+    # - type: MocapVisualizer
+    #   update: false
+    #   config:
+    #     firstRun: true
+    #     projectName: KO_TRO_2024_RHPS1_SLIPPAGE_1
+    #     mocapBodyName: Body
+    #     contactsDetection: Surfaces
+    #     surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [RightFootCenter, LeftFootCenter, LeftHandCloseContact]

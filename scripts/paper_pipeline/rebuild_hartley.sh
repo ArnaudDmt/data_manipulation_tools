@@ -21,7 +21,8 @@ age=$(( $(date +%s) - $(date -r /tmp/HartleyInput.txt +%s) ))
 
 cp /tmp/HartleyInput.txt "$HARTLEY/data/HartleyInput.txt" || exit 1
 rm -f "$HARTLEY/data/HartleyOutput.csv"
-( cd "$HARTLEY/bin" && HARTLEY_ROBOT="$robot" ./InEkfLogParser ) > /tmp/inekf_$project.log 2>&1 \
+# The parser reads $HOME/.config/mc_rtc/plugins/HartleyIEKF.yaml: under a private HOME it takes that run's.
+( cd "$HARTLEY/bin" && HOME="${KO_CONFIG_HOME:-$HOME}" HARTLEY_ROBOT="$robot" ./InEkfLogParser ) > /tmp/inekf_$project.log 2>&1 \
   || { echo "[$project] ABANDON: InEkfLogParser a echoue, voir /tmp/inekf_$project.log"; exit 1; }
 [ -s "$HARTLEY/data/HartleyOutput.csv" ] || { echo "[$project] ABANDON: sortie vide"; exit 1; }
 

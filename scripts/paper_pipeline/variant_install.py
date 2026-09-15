@@ -9,8 +9,11 @@ import shutil
 import sys
 from pathlib import Path
 
-CONFIG = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver.yaml"
-ROBOTS = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver"
+# Rebound by bind() when a variant is written into a private HOME (config_home.py) rather than
+# into the real ~/.config.
+MC = Path.home() / ".config/mc_rtc"
+CONFIG = MC / "observers/MCKineticsObserver.yaml"
+ROBOTS = MC / "observers/MCKineticsObserver"
 # Files outside the observer tree that an experiment may still touch. They were NOT snapshotted
 # before, so a variant that enabled the noise plugin or retuned the RI-EKF would have survived a
 # crash and contaminated every later run -- the failure mode of the hidden-hand experiment.
@@ -18,9 +21,9 @@ ROBOTS = Path.home() / ".config/mc_rtc/observers/MCKineticsObserver"
 #   plugins/HartleyIEKF    the RI-EKF's own sensor variances, kept mirror of the KO's
 #   plugins/NoisySensors   the synthetic IMU noise model
 EXTRA = {
-    "mc_rtc.yaml": Path.home() / ".config/mc_rtc/mc_rtc.yaml",
-    "HartleyIEKF.yaml": Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml",
-    "NoisySensors.yaml": Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml",
+    "mc_rtc.yaml": MC / "mc_rtc.yaml",
+    "HartleyIEKF.yaml": MC / "plugins/HartleyIEKF.yaml",
+    "NoisySensors.yaml": MC / "plugins/NoisySensors.yaml",
 }
 # The retained tuning, kept with the pipeline. It must NOT point into results/var-clean-ref-*:
 # that is an OUTPUT of the replay stage whose directory hash changes with the configuration.
@@ -85,9 +88,10 @@ def set_unmodeled(value):
     CONFIG.write_text(text)
 
 
-def main(variant):
-    snapshot()
-    restore()
+def main(variant, isolated=False):
+    if not isolated:
+        snapshot()
+        restore()
     # "hidehand+uw0.09" = the hidehand figure variant with the disturbance-wrench process moved.
     if "+uw" in variant:
         variant, _, value = variant.partition("+uw")
@@ -119,14 +123,14 @@ def main(variant):
         ACC_INJECT = "[0.13522, 0.1187, 0.14001]"
         GYRO_VAR = "4.2308e-06"
         ACC_VAR = "2.2500e-02"
-        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        plugins = MC / "mc_rtc.yaml"
         text = plugins.read_text()
         text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
                           lambda m: "Plugins: [" + m.group(1) + ", NoisySensors]", text, count=1)
         assert n == 1, "no active Plugins entry in mc_rtc.yaml"
         plugins.write_text(text)
 
-        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        noisefile = MC / "plugins/NoisySensors.yaml"
         text = noisefile.read_text()
         if re.search(r"(?m)^seed:", text):
             text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
@@ -148,7 +152,7 @@ def main(variant):
             assert n == 1, key + " not found once in hrp5_p.yaml"
         robot.write_text(text)
 
-        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        hartley = MC / "plugins/HartleyIEKF.yaml"
         text = hartley.read_text()
         for key, old, value in (("gyroscopeVariance", "2.5e-7", GYRO_VAR),
                                 ("accelerometerVariance", "2.5e-3", ACC_VAR)):
@@ -167,7 +171,7 @@ def main(variant):
                           rf"\g<1>[{value}, {value}, {value}]", text)
         assert n == 1, f"gyroBiasInitVariance not found once in the KO config ({n})"
         CONFIG.write_text(text)
-        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        hartley = MC / "plugins/HartleyIEKF.yaml"
         text = hartley.read_text()
         text, n = re.subn(r"(?m)^gyroBiasInitVariance:.*$",
                           f"gyroBiasInitVariance: [{value}, {value}, {value}]", text)
@@ -182,13 +186,13 @@ def main(variant):
         degpersec = float(variant[len("gyrobias_"):].removesuffix("_asis"))
         magnitude = math.radians(degpersec)
         bias = f"[{magnitude:.4e}, {-magnitude:.4e}, {magnitude:.4e}]"
-        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        plugins = MC / "mc_rtc.yaml"
         text = plugins.read_text()
         text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
                           lambda m: f"Plugins: [{m.group(1)}, NoisySensors]", text, count=1)
         assert n == 1, "no active Plugins entry in mc_rtc.yaml"
         plugins.write_text(text)
-        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        noisefile = MC / "plugins/NoisySensors.yaml"
         text = noisefile.read_text()
         if re.search(r"(?m)^seed:", text):
             text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
@@ -208,7 +212,7 @@ def main(variant):
         for path, pattern, replacement in (
                 (CONFIG, r"(?m)^(\s*gyroBiasInitVariance:\s*)\[[^\]]*\]",
                  r"\g<1>[2.5e-05, 2.5e-05, 2.5e-05]"),
-                (Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml",
+                (MC / "plugins/HartleyIEKF.yaml",
                  r"(?m)^gyroBiasInitVariance:.*$",
                  "gyroBiasInitVariance: [2.5e-5, 2.5e-5, 2.5e-5]")):
             text = path.read_text()
@@ -240,14 +244,14 @@ def main(variant):
         noise = "[1.973e-3, 1.990e-3, 1.507e-3]" if inject_noise else "[0.0, 0.0, 0.0]"
         bias = "[3.476e-3, -3.450e-3, 3.995e-3]" if inject_bias else "[0.0, 0.0, 0.0]"
 
-        plugins = Path.home() / ".config/mc_rtc/mc_rtc.yaml"
+        plugins = MC / "mc_rtc.yaml"
         text = plugins.read_text()
         text, n = re.subn(r"(?m)^Plugins:\s*\[([^\]]*)\]",
                           lambda m: f"Plugins: [{m.group(1)}, NoisySensors]", text, count=1)
         assert n == 1, "no active Plugins entry in mc_rtc.yaml"
         plugins.write_text(text)
 
-        noisefile = Path.home() / ".config/mc_rtc/plugins/NoisySensors.yaml"
+        noisefile = MC / "plugins/NoisySensors.yaml"
         text = noisefile.read_text()
         if re.search(r"(?m)^seed:", text):
             text = re.sub(r"(?m)^seed:.*$", "seed: 20260914", text)
@@ -278,7 +282,7 @@ def main(variant):
             assert n == 1, f"gyroBiasInitVariance not found once ({n})"
             CONFIG.write_text(text)
 
-        hartley = Path.home() / ".config/mc_rtc/plugins/HartleyIEKF.yaml"
+        hartley = MC / "plugins/HartleyIEKF.yaml"
         text = hartley.read_text()
         if inject_noise:
             text, n = re.subn(r"(?m)^(\s*gyroscopeVariance:\s*)2\.5e-7(.*)$", r"\g<1>4.231e-6\g<2>", text)
@@ -296,7 +300,7 @@ def main(variant):
         # the filter. Measured on LongWalk, `noangular` alone scored 0.299 deg against 0.258 for
         # pinContacts although it removes less; this variant says whether the gap comes from that
         # damping term or from the states pinContacts drops.
-        main("noangular")
+        main("noangular", isolated)
         text = CONFIG.read_text()
         for key in ("withGyroBias", "withUnmodeledWrench"):
             text, n = re.subn(rf"(?m)^{key}:.*$", f"{key}: false", text)
@@ -412,5 +416,33 @@ def main(variant):
     print(f"installed {variant}")
 
 
+def bind(home):
+    """Point every path of this module at `home`/.config/mc_rtc."""
+    global MC, CONFIG, ROBOTS, EXTRA
+    MC = Path(home) / ".config/mc_rtc"
+    CONFIG = MC / "observers/MCKineticsObserver.yaml"
+    ROBOTS = MC / "observers/MCKineticsObserver"
+    EXTRA = {"mc_rtc.yaml": MC / "mc_rtc.yaml", "HartleyIEKF.yaml": MC / "plugins/HartleyIEKF.yaml",
+             "NoisySensors.yaml": MC / "plugins/NoisySensors.yaml"}
+
+
+def install_into(home, variant):
+    """Materialize a private HOME from the versioned base and apply `variant` there.
+
+    No snapshot and no restore: the real ~/.config is never written, so nothing can be left
+    installed by a crash, and the base is re-read from config_base/ every time.
+    """
+    import config_home
+    config_home.materialize(home)
+    bind(home)
+    real_main = globals()["main"]
+    real_main(variant, isolated=True)
+    (Path(home) / "variant.txt").write_text(variant + "\n")
+    print(f"{variant}: {config_home.digest(home)}")
+
+
 if __name__ == "__main__":
-    main(sys.argv[1])
+    if sys.argv[1] == "--home":
+        install_into(sys.argv[2], sys.argv[3])
+    else:
+        main(sys.argv[1])

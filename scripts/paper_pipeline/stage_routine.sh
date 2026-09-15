@@ -12,9 +12,12 @@ WORK="$ROOT/results/paper-rebuild"
 cd "$ROOT" || exit 1
 wanted=${1:-all}
 
-# A variant left installed -- a hidden hand, a 30 deg orientation error -- silently
-# contaminates every later tick, so restore the retained tuning whatever happens.
-trap 'env/bin/python "$HERE/variant_install.py" clean >/dev/null 2>&1' EXIT INT TERM
+# Every variant runs under its own private HOME (config_home.py): the real ~/.config/mc_rtc is
+# never written, so a crash cannot leave a variant installed and there is nothing to restore.
+# KO_LIVE_CONFIG=1 brings back the former behaviour (install into ~/.config, restore at exit).
+if [ -n "${KO_LIVE_CONFIG:-}" ]; then
+  trap 'env/bin/python "$HERE/variant_install.py" clean >/dev/null 2>&1' EXIT INT TERM
+fi
 
 mapfile -t plan < <(env/bin/python - "$wanted" <<'PY'
 import sys
@@ -31,10 +34,16 @@ PY
 for line in "${plan[@]}"; do
   IFS=$'\t' read -r name argument datasets <<< "$line"
   echo "############ variante $name ($argument)"
-  if ! env/bin/python "$HERE/variant_install.py" "$argument"; then
-    echo "[$name] INSTALLATION ECHOUEE, variante ignoree"; continue
-  fi
   store="$WORK/runs/$name"
+  if [ -n "${KO_LIVE_CONFIG:-}" ]; then
+    unset KO_CONFIG_HOME
+    installed=$(env/bin/python "$HERE/variant_install.py" "$argument")
+  else
+    export KO_CONFIG_HOME="$WORK/homes/$name"
+    installed=$(cd "$HERE" && ../../env/bin/python variant_install.py --home "$KO_CONFIG_HOME" "$argument")
+  fi
+  if [ $? -ne 0 ]; then echo "[$name] INSTALLATION ECHOUEE, variante ignoree"; continue; fi
+  echo "$installed"
   for p in $datasets; do
     echo "================ $name / $p"
     mkdir -p "$store/$p"
@@ -49,6 +58,11 @@ for line in "${plan[@]}"; do
     if ! "$HERE/chain.sh" "$p"; then echo "[$name/$p] ABANDONNE"; continue; fi
     out="Projects/$p/output_data"
     cache="$out/evals/KO/saved_results/traj_est/cached/cached_rel_err.pickle"
+    # Provenance: the exact configuration files and their digest travel with the results.
+    if [ -n "${KO_CONFIG_HOME:-}" ]; then
+      (cd "$HERE" && ../../env/bin/python -c "import config_home as c; c.keep_provenance('$KO_CONFIG_HOME', '$store/$p')") \
+        || echo "[$name/$p] PROVENANCE ECHOUEE"
+    fi
     [ -f "$cache" ] && cp "$cache" "$store/$p/cached_rel_err.pickle"
     # The mocap travels with the estimate: the routine resynchronises the ground truth on
     # every run, so pairing a run's velocities with another run's mocap is wrong.
@@ -68,7 +82,6 @@ for line in "${plan[@]}"; do
   done
 done
 
-# Never leave a variant installed: a stale 30 deg orientation error or a hidden hand would
-# silently contaminate every later tick.
-env/bin/python "$HERE/variant_install.py" clean
+# Live mode only: never leave a variant installed in ~/.config.
+[ -n "${KO_LIVE_CONFIG:-}" ] && env/bin/python "$HERE/variant_install.py" clean
 echo "STAGE_ROUTINE_DONE"
