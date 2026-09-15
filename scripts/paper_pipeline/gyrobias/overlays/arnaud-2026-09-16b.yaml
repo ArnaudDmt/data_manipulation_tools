@@ -1,0 +1,6 @@
+# Config actuelle (biais init 1e-12) + seulement ces covariances initiales, demande d'Arnaud 2026-09-16.
+covariances:
+  gyro_bias_initial: [1.0e-12, 1.0e-12, 1.0e-12]
+  state_linear_velocity_initial: [1.0e-6, 1.0e-6, 1.0e-6]
+  state_angular_velocity_initial: [1.0e-6, 1.0e-6, 1.0e-6]
+  unmodeled_wrench_initial: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]

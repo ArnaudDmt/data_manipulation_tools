@@ -1,0 +1,21 @@
+# Jeu de covariances demande par Arnaud le 2026-09-16, a appliquer par-dessus la config resolue
+# d'un cache (cold_variant.py <projet> <suffixe> <label> puis ces cles). Rien d'installe dans ~/.config.
+# Ordre des blocs contact : position xyz, orientation xyz (roll, pitch, yaw), force xyz, couple xyz.
+covariances:
+  # garde du test precedent
+  gyro_bias_initial: [1.0e-8, 1.0e-8, 1.0e-8]
+  gyro_bias_process: [1.0e-16, 1.0e-16, 1.0e-16]
+  unmodeled_wrench_initial: [100.0, 100.0, 100.0, 100.0, 100.0, 100.0]
+  # nouveaux
+  state_linear_velocity_initial: [1.0e-6, 1.0e-6, 1.0e-6]
+  state_angular_velocity_initial: [1.0e-6, 1.0e-6, 1.0e-6]
+  state_position_process: [1.0e-10, 1.0e-10, 1.0e-10]
+  state_orientation_process: [1.0e-12, 1.0e-12, 1.0e-12]
+  state_linear_velocity_process: [1.0e-10, 1.0e-10, 1.0e-10]
+  state_angular_velocity_process: [1.0e-10, 1.0e-10, 1.0e-10]
+  unmodeled_wrench_process: [0.01, 0.01, 0.01, 0.01, 0.01, 0.01]
+  # contacts presents au demarrage : inchanges
+  contact_initial: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 400.0, 400.0, 400.0, 100.0, 100.0, 100.0]
+  # contacts crees ensuite
+  contact_initial_new: [1.0e-4, 1.0e-4, 1.0e-6, 2.0e-4, 2.0e-4, 2.0e-4, 0.5, 0.5, 0.5, 9.0e-4, 9.0e-4, 9.0e-4]
+  contact_process: [2.5e-9, 2.5e-9, 1.0e-9, 1.0e-8, 1.0e-8, 1.0e-4, 900.0, 900.0, 900.0, 225.0, 225.0, 225.0]

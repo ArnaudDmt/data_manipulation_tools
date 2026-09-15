@@ -30,7 +30,7 @@ OUT = Path('/tmp/claude-1000/-home-arnaud-devel-src-data-manipulation-tools/'
            '287daf9e-ad1c-4931-a07e-923142412c80/scratchpad/riekfcheck')
 Q = [f'IMU_Orientation_{a}' for a in 'xyzw']
 P = [f'IMU_Position_{a}' for a in 'xyz']
-KEYS = ('rel_trans_perc', 'rel_yaw', 'rel_tilt', 'rel_gravity')
+KEYS = ('rel_trans_x_y_norm', 'rel_trans_z', 'rel_tilt', 'rel_yaw', 'rel_trans_perc')
 
 
 def means(pickle_path):

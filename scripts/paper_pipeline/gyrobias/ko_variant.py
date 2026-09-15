@@ -29,6 +29,11 @@ def build(name, settings):
     for key, value in settings.items():
         if key in MODEL_KEYS:
             data['contact_model'][key] = value
+        elif '.' in key:
+            section, _, leaf = key.partition('.')
+            if leaf not in data.get(section, {}):
+                sys.exit(f'ABANDON: cle inconnue {key}')
+            data[section][leaf] = value
         elif key in data:
             data[key] = value
         else:
