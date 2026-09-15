@@ -321,7 +321,7 @@ rigidBody_MocapLimb_Ori_R = rigidBody_ThreePointsFrame_Ori_R * threePointsFrame_
 rigidBody_MocapLimb_Pos = rigidBody_ThreePointsFrame_Pos + rigidBody_ThreePointsFrame_Ori_R.apply(threePointsFrame_MocapLimb_Pos)
 
 world_MocapLimb_Ori_R = world_RigidBody_Ori_R * rigidBody_MocapLimb_Ori_R
-world_MocapLimb_Pos = world_RigidBody_Pos + rigidBody_MocapLimb_Ori_R.apply(rigidBody_MocapLimb_Pos)
+world_MocapLimb_Pos = world_RigidBody_Pos + world_RigidBody_Ori_R.apply(rigidBody_MocapLimb_Pos)
 
 
 

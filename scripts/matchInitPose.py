@@ -219,42 +219,82 @@ if(displayLogs):
 matchIndex = data_df[data_df['t'] == matchTime].index[0]
 
 
+# Gates for calling a sample "static", i.e. one where the accelerometer reads
+# gravity alone and the body is not turning. Judged on the IMU only, never on a
+# quantity derived from the mocap position.
+GRAVITY = 9.81                  # m/s2
+ACCELERO_STATIC_TOL = 0.05      # m/s2, |ya| must sit this close to g
+GYRO_STATIC_TOL = 0.01          # rad/s
+MIN_STATIC_SAMPLES = 200        # below this the tolerances are relaxed
+MAX_STATIC_SAMPLES = 2000       # the median has long converged by here
+
+
 def get_mocap_pitch_offset_from_accelero():
+    """
+    Estimate the constant tilt offset between the mocap rigid body and the IMU
+    by comparing the direction of gravity the two disagree on.
+
+    The offset is averaged over every sample where the IMU is genuinely static
+    rather than read off a single 50 ms window. Two reasons:
+
+      - staticness used to be judged on a velocity differentiated from the
+        mocap *position*. That tied the ground truth's attitude to the position
+        pipeline, so any change there moved the chosen window somewhere else
+        entirely and silently re-tilted the whole ground truth. Judging it on
+        the accelerometer and the gyrometer alone decouples the two.
+      - zero velocity does not mean zero acceleration. The old criterion could
+        settle on an instant where the body was momentarily still but
+        accelerating and rotating, reading a gravity direction that was off by
+        several degrees. |accelerometer| ~ g is the direct test of the
+        assumption actually being made, and it rejects exactly those instants.
+
+    A componentwise median over the qualifying samples supplies the robustness:
+    it ignores the tail of windows that slip through the gates.
+    """
     ya = np.array(data_df[['Accelerometer_linearAcceleration_x', 'Accelerometer_linearAcceleration_y', 'Accelerometer_linearAcceleration_z']])
+    omega = np.array(data_df[['Accelerometer_angularVelocity_x', 'Accelerometer_angularVelocity_y', 'Accelerometer_angularVelocity_z']])
 
-    avg_interval = 10
+    acc_norm = np.linalg.norm(ya, axis=1)
+    gyro_norm = np.linalg.norm(omega, axis=1)
 
-    # We look for the consecutive iterations during which the velocity of the body remains zero
-    # to be sure there is no acceleration and we can use the accelero to correct the tilt.
-    zeros_row = np.zeros((1, 3))
-    velMocap = np.diff(world_MocapLimb_Pos, axis=0)/timeStep_s
-    velMocap = np.vstack((zeros_row,velMocap))
-    locVelMocap = world_MocapLimb_Ori_R.apply(velMocap, inverse=True)
-    vel_norm = np.linalg.norm(locVelMocap, axis=1)
+    # Loosened together until enough samples qualify, so that a run with no
+    # truly quiet instant still produces an estimate rather than failing.
+    acc_tol, gyro_tol = ACCELERO_STATIC_TOL, GYRO_STATIC_TOL
+    while True:
+        static_idx = np.flatnonzero((np.abs(acc_norm - GRAVITY) < acc_tol) & (gyro_norm < gyro_tol))
+        if len(static_idx) >= MIN_STATIC_SAMPLES or acc_tol > 1.0:
+            break
+        acc_tol *= 2.0
+        gyro_tol *= 2.0
 
-    start_idx = None
-    min_avg_vel = float('inf') 
+    if len(static_idx) == 0:
+        raise RuntimeError("Could not find a single static sample to estimate the mocap's tilt offset from the accelerometer.")
 
-    for i in range(len(vel_norm) - avg_interval + 1):
-        avg_vel = np.mean(vel_norm[i:i + avg_interval])
-        if avg_vel < min_avg_vel:
-            min_avg_vel = avg_vel
-            min_idx = i
+    if len(static_idx) < MIN_STATIC_SAMPLES:
+        print(f"WARNING: only {len(static_idx)} static samples found (tolerances relaxed to |a-g| < {acc_tol:.3f} m/s2, |w| < {gyro_tol:.4f} rad/s). The mocap tilt offset may be unreliable.")
 
-    # Use the interval with minimum average velocity
-    start_idx = min_idx
-    Rt_ez_accelero = ya / np.linalg.norm(ya, axis=1, keepdims=True)
-    Rt_ez_accelero_avg = np.mean(Rt_ez_accelero[start_idx:start_idx + avg_interval], axis=0)
+    # The estimate saturates long before every sample is used.
+    if len(static_idx) > MAX_STATIC_SAMPLES:
+        static_idx = static_idx[np.linspace(0, len(static_idx) - 1, MAX_STATIC_SAMPLES).astype(int)]
 
-    start_time = start_idx * timeStep_s
-    end_time = (start_idx + avg_interval - 1) * timeStep_s
-    print(f"Minimum velocity average segment from t = {start_time:.3f}s to t = {end_time:.3f}s: Avg velocity = {min_avg_vel:.6f} m/s")
-    
-    init_mocap_avg_R_quat = np.mean(world_MocapLimb_Ori_R.as_quat()[start_idx:start_idx + avg_interval], axis=0)
+    mocap_R = world_MocapLimb_Ori_R[static_idx].as_matrix()
+    Rt_ez_accelero = ya[static_idx] / acc_norm[static_idx, None]
 
-    true_R_init_avg_quat = R.from_matrix(merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero_avg, R.from_quat(init_mocap_avg_R_quat).as_matrix()))
-    mocap_pitch_offset = R.from_quat(init_mocap_avg_R_quat).inv() * true_R_init_avg_quat
+    offsets = np.empty((len(static_idx), 3))
+    for i in range(len(static_idx)):
+        true_R = merge_tilt_with_yaw_axis_agnostic(Rt_ez_accelero[i], mocap_R[i])
+        offsets[i] = R.from_matrix(mocap_R[i].T @ true_R).as_rotvec()
+
+    mocap_pitch_offset = R.from_rotvec(np.median(offsets, axis=0))
+
+    spread = np.degrees(np.linalg.norm(np.percentile(offsets, 75, axis=0) - np.percentile(offsets, 25, axis=0)))
+    magnitude = np.degrees(mocap_pitch_offset.magnitude())
     print(f"The offset on the mocap pitch is not contained in the configuration file, computing it from the accelerometer signal: {mocap_pitch_offset.as_quat()}")
+    print(f"  estimated over {len(static_idx)} static samples: {magnitude:.3f} deg, interquartile spread {spread:.3f} deg")
+    if spread > 2.0:
+        print(f"  WARNING: the static samples disagree by {spread:.3f} deg. The mocap's attitude is not consistent with gravity over the run.")
+    if magnitude > 5.0:
+        print(f"  WARNING: a {magnitude:.3f} deg tilt offset is far larger than a plausible marker mounting error. Check this recording's entry in markersPlacements.yaml.")
 
     return mocap_pitch_offset
 
