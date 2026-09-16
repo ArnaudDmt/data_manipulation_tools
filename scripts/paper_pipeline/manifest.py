@@ -47,6 +47,19 @@ VARIANTS = {
     "flexmul10":  ("flexmul10",  MULTICONTACT + SLIPPING, None),
     "hidehand":   ("hidehand",   NO_LEFT_HAND,           None),
     "orierror":   ("orierror30", ORI_ERROR,              None),
+    # KO-Lin in the paper: the Kinetics Observer with the whole ANGULAR contact channel removed --
+    # no angular stiffness, no angular damping, no contact torque measurement, and no process
+    # covariance on the contact torque state. The gyro bias, the disturbance wrench and the contact
+    # FORCES are kept, so the comparison isolates what the contact orientation brings and nothing
+    # else. It is a variant, never a replacement of the KO.
+    #
+    # It replaces `noangular`, which zeroed the angular visco-elastic law while keeping the torque
+    # measurement: the filter was told the contact makes no torque while being shown one, and the
+    # corrected torque state still reached the angular dynamics one step later with every Jacobian
+    # zeroed. Arnaud called that version erroneous and no longer wants it studied, so it is gone
+    # from the paper. The `noangular` branch of variant_install survives only because the
+    # `pointcontact` analysis variant builds on it.
+    "noangclean": ("noangclean", ALL,                    "Kolinear"),
 }
 
 # Analysis variant, not a paper table: the retained tuning with the constrained contact process
@@ -64,14 +77,25 @@ FLEX_CATEGORIES = ["Multicontact", "Slippingodometry"]
 # results/var-*/ holds. The routine chain is still run for them: it is where the velocity
 # pickles, the RI-EKF baseline and every figure's input come from.
 REPLAY_LABELS = {"clean": "var-clean-ref", "zpc": "var-zpc", "pc": "var-pc",
-                 "flexdiv10": "var-flex-div10", "flexmul10": "var-flex-mul10"}
+                 "flexdiv10": "var-flex-div10", "flexmul10": "var-flex-mul10",
+                 # noangclean (KO-Lin) has no replay overlay: its observer option removes the angular
+                 # stiffness and damping and neutralises the contact torque channel, none of which is
+                 # a covariance the replay can overlay. It is listed here only because metrics.py
+                 # gates the relative-error macros on this dict; stage_replay.sh iterates a literal
+                 # list, so nothing tries to replay it. Its errors come from the routine, like
+                 # every other variant's since the window fix.
+                 "noangclean": "var-noangclean"}
 
 # --- controller configuration ------------------------------------------------------------------
 
-# The KO-ZPC curve comes from a SECOND MCKineticsObserver instance named KOZPC in the controller's
-# observer pipeline, so both estimators come out of a single tick. It is deliberately limited to
-# the one short dataset whose figure needs it: two instances re-register their logger keys every
-# iteration, which is harmless over 11k iterations and produced a 37.8 GB runaway on LongWalk.
+# These estimators run together in Passthrough with the retained tuning. Other experiments
+# still need separate runs because they change the shared robot or sensor configuration.
+# KO-Lin is NOT here: it changes the global observer configuration, which every instance of the
+# tick reads, so it cannot share one. The KONOANG instance stays declared in the controller and
+# still ticks, but nothing reads its column any more -- and since noAngularFlexibility now also
+# neutralises the contact torque channel, that column would be KO-Lin rather than the retired
+# `noangular` anyway.
+SHARED_ROUTINE_OBSERVERS = {"clean": "KO", "zpc": "KO_ZPC", "pc": "KO_WWS"}
 CONTROLLER = (Path(__import__("os").environ.get("KO_CONFIG_HOME", str(Path.home())))
               / ".config/mc_rtc/controllers/Passthrough.yaml")
 
@@ -82,8 +106,7 @@ CONTROLLER = (Path(__import__("os").environ.get("KO_CONFIG_HOME", str(Path.home(
 # hence the pattern rather than a fixed name.
 FIGURES = {
     # The trajectory figures do not all carry the same curves: KO-ZPC is drawn where the
-    # comparison is the point, and it costs a second observer instance at tick time (NEEDS_KOZPC
-    # below is derived from exactly these lists, so the two can never disagree).
+    # comparison is the point. All KO instances run together regardless of the figure selection.
     "multicontact-odom-traj": ("fig_traj.py HRP5_MultiContact_1 KO,KO_ZPC,Hartley,Control,Mocap",
                                "trajectories_*.pdf"),
     "slipping-odom-traj":     ("fig_traj.py KO_TRO_2024_RHPS1_SLIPPAGE_1 KO,KO_ZPC,Hartley,Control,Mocap",
@@ -104,15 +127,3 @@ FIGURES = {
 # through instead of silently dropping them, and so the gap stays visible.
 STATIC_FIGURES = ["compute_time", "framesAndVars", "KineticsObserver", "summary", "viscoFeet",
                   "friends", "tilesOnFloor", "multiContactExpe"]
-
-
-def _needs_kozpc():
-    """Projects whose figure asks for the KO-ZPC curve, read off FIGURES itself."""
-    wanted = set()
-    for command, _ in FIGURES.values():
-        parts = command.split()
-        if len(parts) >= 3 and "KO_ZPC" in parts[2]:
-            wanted.add(parts[1])
-    return wanted
-
-NEEDS_KOZPC = _needs_kozpc()

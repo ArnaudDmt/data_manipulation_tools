@@ -4,6 +4,7 @@ Every variant is the retained configuration plus one deliberate change, so they 
 from a pristine copy of it rather than from whatever the previous variant left installed.
 """
 import math
+import os
 import re
 import shutil
 import sys
@@ -307,26 +308,31 @@ def main(variant, isolated=False):
             assert n == 1, f"{key} not found once ({n})"
         CONFIG.write_text(text)
         return
+    elif variant == "noangclean":
+        # KO-Lin in the paper. The three changes -- no angular stiffness, no angular damping, no
+        # contact torque measurement, no contact torque process -- are now ONE observer option,
+        # applied per instance in MCKineticsObserver.cpp right before setObserverCovariances().
+        # Writing it into the global observer configuration rather than rewriting the robot files
+        # keeps the variant a single deliberate change, the way `pc` and the flexibility variants
+        # are, and removes the two regex rewrites that had to be kept in step with the C++.
+        CONFIG.write_text("noAngularFlexibility: true\n\n" + CONFIG.read_text())
     elif variant == "noangular":
         # Arnaud's variant, and the cleaner test of "does the contact ORIENTATION carry the yaw":
         # `noangstiff` mirrors pinContacts and therefore keeps the yaw angular damping, which
         # still couples the contact orientation to the base through the relative angular velocity.
         # Here the whole angular channel goes: no angular stiffness, no angular damping at all, so
-        # the reaction torque no longer depends on the contact orientation; and the orientation
-        # state is frozen at its initial value (zero process, zero init variance), which is the
-        # nearest a configuration can come to removing it from the state altogether.
+        # the reaction torque no longer depends on the contact orientation.
+        # The contact ORIENTATION covariances are deliberately left alone: an earlier version of
+        # this branch also pinned contactOrientationProcessVariance and the contactOriInitVariance
+        # keys to zero, which Arnaud never asked for and which made the variant test two things at
+        # once. Results produced before 2026-09-16 under the name `noangular` carry that extra
+        # change and are not comparable with the ones produced after it.
         for robot in ("hrp5_p", "rhps1"):
             path = ROBOTS / f"{robot}.yaml"
             text = path.read_text()
             for key in ("angStiffness", "angDamping"):
                 text = re.sub(rf"(?m)^(\s*{key}:\s*)\[[^\]]*\]", r"\g<1>[0.0, 0.0, 0.0]", text)
             path.write_text(text)
-        text = CONFIG.read_text()
-        text = re.sub(r"(?m)^(\s*contactOrientationProcessVariance:\s*)\[[^\]]*\]",
-                      r"\g<1>[0.0, 0.0, 0.0]", text)
-        text = re.sub(r"(?m)^(\s*contactOriInitVariance\w+:\s*)\[[^\]]*\]",
-                      r"\g<1>[0.0, 0.0, 0.0]", text)
-        CONFIG.write_text(text)
     elif variant in ("noangstiff", "nogyrobias", "nounmodeled"):
         # `pinContacts` changes four things at once, so the KO-PC result cannot say which of them
         # carries the yaw. These three are each ONE of those four, and they need no code change.
@@ -437,6 +443,15 @@ def install_into(home, variant):
     bind(home)
     real_main = globals()["main"]
     real_main(variant, isolated=True)
+    # Opt-in: re-tick only the estimators asked for. Without KO_OBSERVERS every instance runs, as
+    # before, and the materialised controller stays byte-identical to the versioned base.
+    selection = os.environ.get("KO_OBSERVERS", "").replace(",", " ").split()
+    if selection:
+        kept = config_home.select_observers(home, selection)
+        print(f"observateurs retenus : {' '.join(kept)}")
+    dropped = os.environ.get("KO_DROP_PLUGINS", "").replace(",", " ").split()
+    if dropped:
+        print(f"plugins restants : {' '.join(config_home.drop_plugins(home, dropped))}")
     (Path(home) / "variant.txt").write_text(variant + "\n")
     print(f"{variant}: {config_home.digest(home)}")
 

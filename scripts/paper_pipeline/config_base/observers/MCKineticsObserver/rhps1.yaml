@@ -1,5 +1,16 @@
 contacts:
   contactsDetection: Surfaces
+  # Declared HERE, inside `contacts:`, and not only at the root below. MCKineticsObserver reads the
+  # flexibilities through `config("contacts")` (MCKineticsObserver.cpp:187-190) and nowhere else,
+  # and mc_rtc layers the package's own etc/MCKineticsObserver/robots/rhps1.yaml -- which declares
+  # them inside `contacts:` -- UNDER this file. A root-level declaration therefore never overrides
+  # the package's, which is why the flexibility variants came out inert on every RHPS1 dataset on
+  # 2026-09-17: scale_flexibilities rewrote keys the observer does not read. The values are the
+  # package's own, so the reference results are unchanged and stay comparable.
+  linStiffness: [3e4, 3e4, 3e4]
+  angStiffness: [727, 727, 727]
+  linDamping: [150, 150, 150]
+  angDamping: [17, 17, 17]
   surfacesForContactDetection: [RightFootCenter, LeftFootCenter] # [LeftHandCloseContact] 
   #contactSensorsIgnored: [LeftHandForceSensor] # [LeftHandForceSensor]
 

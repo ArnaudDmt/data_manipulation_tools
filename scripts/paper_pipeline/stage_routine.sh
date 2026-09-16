@@ -11,6 +11,7 @@ ROOT=$(cd "$HERE/../.." && pwd)
 WORK="$ROOT/results/paper-rebuild"
 cd "$ROOT" || exit 1
 wanted=${1:-all}
+failed=0
 
 # Every variant runs under its own private HOME (config_home.py): the real ~/.config/mc_rtc is
 # never written, so a crash cannot leave a variant installed and there is nothing to restore.
@@ -20,12 +21,31 @@ if [ -n "${KO_LIVE_CONFIG:-}" ]; then
 fi
 
 mapfile -t plan < <(env/bin/python - "$wanted" <<'PY'
+import os
 import sys
 sys.path.insert(0, "scripts/paper_pipeline")
 import manifest as m
 wanted = sys.argv[1]
+# Opt-in: restrict the pass to named datasets. Without KO_PROJECTS every dataset of the variant
+# runs, as before. It exists because a pass is sometimes needed on a subset and nothing else can
+# express that -- re-ticking the three datasets whose outputs a variant run overwrote would
+# otherwise mean re-ticking all thirteen. An unknown name is refused rather than silently
+# dropped, which would produce a pass that quietly did nothing.
+known = set(m.ALL) | set(m.NO_LEFT_HAND) | set(m.ORI_ERROR)
+only = os.environ.get("KO_PROJECTS", "").replace(",", " ").split()
+unknown = [p for p in only if p not in known]
+if unknown:
+    sys.exit(f"ABANDON: jeu de donnees inconnu dans KO_PROJECTS: {' '.join(unknown)}")
 for name, (argument, datasets, _) in m.VARIANTS.items():
     if wanted in ("all", name):
+        if name in m.SHARED_ROUTINE_OBSERVERS:
+            if name != "clean" and wanted == "all":
+                continue
+            name, argument, datasets = "clean", "clean", m.ALL
+        if only:
+            datasets = [p for p in datasets if p in only]
+            if not datasets:
+                continue
         print(f"{name}\t{argument}\t{' '.join(datasets)}")
 PY
 )
@@ -42,7 +62,7 @@ for line in "${plan[@]}"; do
     export KO_CONFIG_HOME="$WORK/homes/$name"
     installed=$(cd "$HERE" && ../../env/bin/python variant_install.py --home "$KO_CONFIG_HOME" "$argument")
   fi
-  if [ $? -ne 0 ]; then echo "[$name] INSTALLATION ECHOUEE, variante ignoree"; continue; fi
+  if [ $? -ne 0 ]; then echo "[$name] INSTALLATION ECHOUEE, variante ignoree"; failed=1; continue; fi
   echo "$installed"
   for p in $datasets; do
     echo "================ $name / $p"
@@ -55,7 +75,11 @@ for line in "${plan[@]}"; do
     else
       unset KO_REBUILD_HARTLEY
     fi
-    if ! "$HERE/chain.sh" "$p"; then echo "[$name/$p] ABANDONNE"; continue; fi
+    if ! "$HERE/chain.sh" "$p"; then echo "[$name/$p] ABANDONNE"; failed=1; continue; fi
+    if [ "$name" = "clean" ]; then
+      env/bin/python "$HERE/snapshot_shared.py" "$p" || exit 1
+      continue
+    fi
     out="Projects/$p/output_data"
     cache="$out/evals/KO/saved_results/traj_est/cached/cached_rel_err.pickle"
     # Provenance: the exact configuration files and their digest travel with the results.
@@ -85,3 +109,4 @@ done
 # Live mode only: never leave a variant installed in ~/.config.
 [ -n "${KO_LIVE_CONFIG:-}" ] && env/bin/python "$HERE/variant_install.py" clean
 echo "STAGE_ROUTINE_DONE"
+exit "$failed"
