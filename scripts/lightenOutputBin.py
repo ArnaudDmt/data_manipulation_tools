@@ -37,16 +37,28 @@ partial_pattern = ['MocapAligner*', 'HartleyIEKF*', 'Accelerometer_linearAcceler
 partial_pattern += [f'Observers_MainObserverPipeline_MCKineticsObserver_{family}*' for family in (
     'debug_contactKine_', 'debug_contactState_', 'debug_wrenchesInCentroid_',
     'MEKF_estimatedState_contact_', 'MEKF_estimatedState_extForceCentr', 'MEKF_estimatedState_extTorqueCentr')]
+# The ROS converter must be able to reconstruct the complete observer input from this log.
+partial_pattern += ['Observers_MainObserverPipeline_MCKineticsObserver_MEKF_initialState*',
+                    'Observers_MainObserverPipeline_MCKineticsObserver_constants_mass',
+                    'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_inputs_*',
+                    'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_estimatedState_*']
+partial_pattern += [f'Observers_MainObserverPipeline_MCKineticsObserver_MEKF_measurements_{family}*'
+                    for family in ('contacts_force_', 'contacts_torque_', 'accelerometer_', 'gyro_')]
+# Named instances need the same replay inputs if selected by the ROS converter.
+partial_pattern += [pattern.replace('_MCKineticsObserver_', f'_{instance}_')
+                    for pattern in tuple(partial_pattern)
+                    if pattern.startswith('Observers_MainObserverPipeline_MCKineticsObserver_')
+                    for instance in ('KOZPC', 'KOWWS', 'KONOANG')]
 # The disturbance-wrench figure needs what the hand sensor measured. Keep that one sensor, not
 # every sensor: on HRP5P_LongWalk (1.47M rows) each extra family costs gigabytes, and
-# extractLightReplayVersion reads the whole CSV into memory in one go.
+# extractLightReplayVersion loads only its selected columns.
 partial_pattern += ['LeftHandForceSensor*']
-# The Passthrough pipeline also runs VALINOR and the KO-ZPC instance, whose channels were being
-# discarded here. Keep only the poses and velocities the figures and metrics consume -- taking
-# the whole KOZPC_* family pulls in its debug contact channels and multiplies the log size.
-partial_pattern += ['Observers_MainObserverPipeline_MCValinor_FloatingBase*',
-                    'Observers_MainObserverPipeline_KOZPC_mcko_fb_posW*',
-                    'Observers_MainObserverPipeline_KOZPC_mcko_fb_velW*']
+# Keep VALINOR pose and velocity for the alignment reference and baseline.
+partial_pattern += ['Observers_MainObserverPipeline_MCValinor_FloatingBase*']
+# Every variant also needs its floating-base pose and velocity for the paper results.
+partial_pattern += [f'Observers_MainObserverPipeline_{instance}_mcko_fb_{field}*'
+                    for instance in ('KOZPC', 'KOWWS', 'KONOANG')
+                    for field in ('posW', 'velW')]
 exact_patterns = ['t', 'perf_GlobalRun']  # Add more column names as needed
 
 keys_set = set(exact_patterns)
@@ -61,11 +73,9 @@ if log_path:
         for line in show.stdout.splitlines()
         if line.startswith("- ")
     }
-    keys_set = {
-        key for key in keys_set
-        if (key.endswith("*") and any(entry.startswith(key[:-1]) for entry in available))
-        or (not key.endswith("*") and key in available)
-    }
+    prefixes = [key[:-1] for key in keys_set if key.endswith("*")]
+    keys_set = {entry for entry in available
+                if entry in keys_set or any(entry.startswith(prefix) for prefix in prefixes)}
 
 import shlex
 

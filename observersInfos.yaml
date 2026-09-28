@@ -116,6 +116,15 @@ observers:
         angVel: [Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wx, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wy, Observers_MainObserverPipeline_KOAPC_mcko_fb_velW_wz]
     lineWidth: 2
 
+  - abbreviation: KO_NOANG
+    name: KO-NoAngular
+    kinematics:
+      FloatingBase:
+        position: [Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_tx, Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_ty, Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_tz]
+        orientation: [Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_qx, Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_qy, Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_qz, Observers_MainObserverPipeline_KONOANG_mcko_fb_posW_qw]
+        linVel: [Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_vx, Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_vy, Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_vz]
+        angVel: [Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_wx, Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_wy, Observers_MainObserverPipeline_KONOANG_mcko_fb_velW_wz]
+    lineWidth: 2
   - abbreviation: KO_WWS
     name: KO-WWS
     kinematics:

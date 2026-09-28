@@ -21,6 +21,27 @@ from kinetics_tune import MC_RTC_KEYS
 
 RETAINED = m.WORK / "configs/clean/MCKineticsObserver.yaml"
 
+# MC_RTC_KEYS is the TUNER's search space: process covariances, the new-contact block and the gyro
+# bias init -- the only things it ever searched. The overlays, however, have to carry the WHOLE
+# retained tuning, or a variant silently runs the previous value of anything outside that list.
+# That is exactly what happened on 2026-09-16: the retained tuning gained four initial covariances
+# (velocities, disturbance wrench, first-contact pose) that no overlay could express, so KO-ZPC and
+# the flexibility variants would have been compared against a KO tuned differently, with nothing in
+# the output saying so. These keys are added here rather than in kinetics_tune so that widening the
+# overlay vocabulary does not widen the tuner's search space.
+EXTRA_KEYS = (
+    ("state_position_initial", slice(0, 3), "statePositionInitVariance"),
+    ("state_orientation_initial", slice(0, 3), "stateOriInitVariance"),
+    ("state_linear_velocity_initial", slice(0, 3), "stateLinVelInitVariance"),
+    ("state_angular_velocity_initial", slice(0, 3), "stateAngVelInitVariance"),
+    ("unmodeled_wrench_initial", slice(0, 3), "unmodeledForceInitVariance"),
+    ("unmodeled_wrench_initial", slice(3, 6), "unmodeledTorqueInitVariance"),
+    ("contact_initial", slice(0, 3), "contactPositionInitVarianceFirstContacts"),
+    ("contact_initial", slice(3, 6), "contactOriInitVarianceFirstContacts"),
+    ("contact_initial", slice(6, 9), "contactForceInitVarianceFirstContacts"),
+    ("contact_initial", slice(9, 12), "contactTorqueInitVarianceFirstContacts"),
+)
+
 # variant label -> what it changes about the retained tuning.
 # `covariances` entries are (field, slice, value) applied after the config is read;
 # `settings` and `per_robot` are copied through as-is.
@@ -56,7 +77,7 @@ def retained_covariances():
         flat.update(config.get(section, {}) or {})
 
     covariances = {}
-    for field, axes, key in MC_RTC_KEYS:
+    for field, axes, key in tuple(MC_RTC_KEYS) + EXTRA_KEYS:
         if key not in flat:
             raise SystemExit(f"{key} absent de {RETAINED}")
         values = [float(v) for v in flat[key]]

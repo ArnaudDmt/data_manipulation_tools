@@ -71,10 +71,12 @@ def retick(name, destination):
     config = replay_config(home / ".config/mc_rtc/mc_rtc.yaml", robot, timestep, tick_directory, "replay")
     started = time.time()
     try:
-        subprocess.run(["mc_rtc_ticker", "-f", str(config), "--no-sync", "--replay-outputs",
-                        "-e", "-l", str(controller_log)], check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT,
-                       env={**os.environ, "HOME": str(home)})
+        ticker_log = destination.with_suffix(".ticker.log")
+        with ticker_log.open("w") as output:
+            subprocess.run(["mc_rtc_ticker", "-f", str(config), "--no-sync", "--replay-outputs",
+                            "-e", "-l", str(controller_log)], check=True,
+                           stdout=output, stderr=subprocess.STDOUT,
+                           env={**os.environ, "HOME": str(home)})
         produced = [p for p in tick_directory.glob("replay*.bin") if "latest" not in p.name]
         if not produced:
             produced = [ke.newest_replay(started)]

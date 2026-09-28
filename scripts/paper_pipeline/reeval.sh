@@ -2,7 +2,7 @@
 # Rebuild evals/<observer>/ from the freshly reformatted trajectories and re-run the RPG
 # evaluation.  Mirrors computeMetrics.sh, minus the plotting, and copies instead of moving so
 # the formatted files stay in place.
-set -u
+set -euo pipefail
 cd /home/arnaud/devel/src/data_manipulation_tools || exit 1
 project=$1; shift
 observers=("$@")

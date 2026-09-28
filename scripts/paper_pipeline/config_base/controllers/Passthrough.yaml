@@ -28,6 +28,11 @@ ObserverPipelines:
       update: true
       config:
         withDebugLogs: false
+        # Same Schmitt thresholds as every Kinetics Observer instance below: VALINOR's contacts are
+        # also the RI-EKF's (HartleyIEKF plugin), so all estimators receive identical contact states.
+        contacts:
+          schmittTriggerLowerPropThreshold: 0.1
+          schmittTriggerUpperPropThreshold: 0.12
         leggedOdometry:
           odometryType: 6D
 
@@ -35,7 +40,63 @@ ObserverPipelines:
       update: false
       config:
         withGui: false
-        withDebugLogs: true
+        withDebugLogs: false
+        leggedOdometry:
+          odometryType: 6D
+        contacts:
+          schmittTriggerLowerPropThreshold: 0.1
+          schmittTriggerUpperPropThreshold: 0.12
+
+    # Every Kinetics Observer variant runs as its own instance in THIS tick, instead of re-ticking
+    # the whole dataset once per variant. `name:` is what puts each one's channels under
+    # Observers_MainObserverPipeline_<name>_*, which observersInfos.yaml maps back to an
+    # abbreviation, so the rest of the chain picks them up on its own.
+    # Valinor stays the last observer with update: true, so it remains the realRobot and the
+    # reference the mocap is cross-correlated against -- neutral to the KO/RI-EKF comparison.
+
+    # KO-ZPC: contact rest poses frozen. The adaptive flag is inert once the process is zero.
+    - type: MCKineticsObserver
+      name: KOZPC
+      update: false
+      config:
+        withGui: false
+        withDebugLogs: false
+        leggedOdometry:
+          odometryType: 6D
+        contacts:
+          schmittTriggerLowerPropThreshold: 0.1
+          schmittTriggerUpperPropThreshold: 0.12
+        ekfStateProcessVariances:
+          contactPositionProcessVariance: [0.0, 0.0, 0.0]
+          contactOrientationProcessVariance: [0.0, 0.0, 0.0]
+        contactCovLoadWeightExponent: 0.0
+
+    # KO-PC, published as "without wrench sensors": pinContacts drops the contact wrench
+    # measurements and the two states that go with them. NOT `ignoreWrenchSensors`, which the
+    # observer never reads -- an instance configured with that key would run as a plain KO.
+    - type: MCKineticsObserver
+      name: KOWWS
+      update: false
+      config:
+        withGui: false
+        withDebugLogs: false
+        pinContacts: true
+        leggedOdometry:
+          odometryType: 6D
+        contacts:
+          schmittTriggerLowerPropThreshold: 0.1
+          schmittTriggerUpperPropThreshold: 0.12
+
+    # No angular visco-elastic contact model at all: no angular stiffness, no angular damping on
+    # any axis. An observer option rather than a configuration override, because the stiffnesses
+    # are declared per robot where an inline override could be silently ignored.
+    - type: MCKineticsObserver
+      name: KONOANG
+      update: false
+      config:
+        withGui: false
+        withDebugLogs: false
+        noAngularFlexibility: true
         leggedOdometry:
           odometryType: 6D
         contacts:

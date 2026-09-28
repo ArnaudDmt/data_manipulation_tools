@@ -18,7 +18,7 @@ nb_contacts: 3
 # Measured inert at the level of the metrics (0.6 mm and 0.014 deg at worst over 409 s).
 # 2026-09-16: tightened to 1e-12 together with the KO, which lost ~10 % yaw on a cold start with
 # 1e-8 (bias state too loose after a short rest). Inert here (+-0.2 % on every metric, 12 datasets).
-gyroBiasInitVariance: [1e-12, 1e-12, 1e-12]
+gyroBiasInitVariance: [1e-8, 1e-8, 1e-8]
 # Random-walk process covariance of the gyroscope bias. The KO declares 1e-18 PER STEP and
 # scales it by dt/0.005; InEKF.cpp:181 integrates this one as Qk*dt, so it is CONTINUOUS and
 # the equivalent value is 1e-18/0.005 = 2e-16. Was setGyroscopeBiasNoise(1e-5), i.e. 1e-10.

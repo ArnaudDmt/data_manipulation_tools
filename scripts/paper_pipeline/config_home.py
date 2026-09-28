@@ -20,6 +20,8 @@ import os
 import shutil
 from pathlib import Path
 
+import yaml
+
 BASE = Path(__file__).resolve().parent / "config_base"
 REAL_HOME = Path(os.environ.get("KO_REAL_HOME", str(Path.home())))
 IGNORED = shutil.ignore_patterns(".git", "build", "*.pre-*", "*.bak*", "*.before-*", "*.with-*", "*.avant-*")
@@ -54,6 +56,85 @@ def materialize(home):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(BASE / relative, target)
     return home
+
+
+def observer_aliases():
+    """Map each paper abbreviation to its controller instance, e.g. KO_ZPC -> KOZPC.
+
+    Derived from observersInfos.yaml instead of hardcoded: its log keys are shaped
+    `Observers_MainObserverPipeline_<instance>_...`, and the instance is exactly the `name:` of
+    the controller entry (or its `type:` when the entry has no name). Deriving it means a new
+    instance needs no edit here.
+    """
+    infos = yaml.safe_load((BASE.parents[2] / "observersInfos.yaml").read_text())
+    aliases = {}
+    for observer in infos["observers"]:
+        for group in observer.get("kinematics", {}).values():
+            keys = [v[0] if isinstance(v, list) else v for v in group.values()]
+            for key in keys:
+                parts = str(key).split("_")
+                if len(parts) > 2 and parts[0] == "Observers":
+                    aliases[observer["abbreviation"]] = parts[2]
+                    break
+            if observer["abbreviation"] in aliases:
+                break
+    return aliases
+
+
+def select_observers(home, selection):
+    """Keep only `selection` in the materialised Passthrough.yaml of `home`.
+
+    Re-ticking one estimator otherwise recomputes all of them, which costs time and -- the sharper
+    problem -- lets a variant's per-robot configuration reach instances it was never meant for.
+    Selecting here rather than by commenting the shared file means the choice is explicit, lands in
+    the private HOME only, and is covered by digest(): two runs with different selections cannot be
+    confused for one another.
+
+    Refuses rather than produces a wrong result:
+      * the Encoder is structural and always kept;
+      * the last observer with `update: true` is the realRobot, and the mocap cross-correlation is
+        aligned on it -- dropping it would silently shift every number in the run;
+      * an unknown name is a typo, and silently keeping nothing would look like a clean result.
+
+    The rewrite drops the file's comments, which is why it is applied only when a selection is
+    asked for: without one the materialised file stays byte-identical to the versioned base.
+    """
+    path = mc_rtc(home) / "controllers/Passthrough.yaml"
+    document = yaml.safe_load(path.read_text())
+    entries = document["ObserverPipelines"]["observers"]
+
+    def identity(entry):
+        return entry.get("name") or entry["type"]
+
+    aliases = observer_aliases()
+    wanted = {aliases.get(name, name) for name in selection}
+    present = {identity(entry) for entry in entries}
+    unknown = wanted - present
+    if unknown:
+        raise RuntimeError(f"unknown observer(s) {sorted(unknown)}; the pipeline has {sorted(present)}")
+
+    updating = [identity(e) for e in entries if e.get("update")]
+    if updating and updating[-1] not in wanted:
+        raise RuntimeError(f"refusing to drop {updating[-1]}: it is the realRobot the mocap is "
+                           f"aligned on, so every result would move. Add it to the selection.")
+
+    kept = [e for e in entries if identity(e) in wanted or e["type"] == "Encoder"]
+    document["ObserverPipelines"]["observers"] = kept
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    return [identity(e) for e in kept]
+
+
+def drop_plugins(home, names):
+    """Remove `names` from the Plugins list of the materialised mc_rtc.yaml.
+
+    This is how the RI-EKF is excluded: it is not an observer of the pipeline but the HartleyIEKF
+    plugin, which writes HartleyInput.txt during the tick.
+    """
+    path = mc_rtc(home) / "mc_rtc.yaml"
+    document = yaml.safe_load(path.read_text())
+    document["Plugins"] = [p for p in document.get("Plugins", []) if p not in set(names)]
+    path.write_text(yaml.safe_dump(document, sort_keys=False))
+    return document["Plugins"]
 
 
 def digest(home):
