@@ -11,10 +11,18 @@ nb_contacts: 3
 # RobotState.cpp, so this file is a no-op until it is deliberately changed.
 # Set HARTLEY_CONFIG to point the parser at a different file.
 
-# Initial covariance of the gyroscope bias state (was RobotState.cpp: 1e-8 * Identity).
-gyroBiasInitVariance: [1e-12, 1e-12, 1e-12]
-# Random-walk process covariance of the gyroscope bias (was setGyroscopeBiasNoise(1e-5)).
-gyroBiasProcessVariance: [1e-10, 1e-10, 1e-10]
+# Initial covariance of the gyroscope bias state (RobotState.cpp: 1e-8 * Identity), kept
+# equal to the Kinetics Observer's gyroBiasInitVariance. It carried 1e-12 from 2026-08-28 to
+# 2026-09-14 -- the value of the line above it in RobotState.cpp, which is the linear
+# velocity -- so the baseline started with a bias state pinned 10000x tighter than the KO's.
+# Measured inert at the level of the metrics (0.6 mm and 0.014 deg at worst over 409 s).
+# 2026-09-16: tightened to 1e-12 together with the KO, which lost ~10 % yaw on a cold start with
+# 1e-8 (bias state too loose after a short rest). Inert here (+-0.2 % on every metric, 12 datasets).
+gyroBiasInitVariance: [1e-8, 1e-8, 1e-8]
+# Random-walk process covariance of the gyroscope bias. The KO declares 1e-18 PER STEP and
+# scales it by dt/0.005; InEKF.cpp:181 integrates this one as Qk*dt, so it is CONTINUOUS and
+# the equivalent value is 1e-18/0.005 = 2e-16. Was setGyroscopeBiasNoise(1e-5), i.e. 1e-10.
+gyroBiasProcessVariance: [2e-16, 2e-16, 2e-16]
 
 # Sensor noise, per robot. These mirror ekfSensorNoiseVariances in the matching
 # observers/MCKineticsObserver/<robot>.yaml, so both estimators trust the same IMU equally.

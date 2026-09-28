@@ -1,4 +1,17 @@
 covariances:
+  contact_initial:
+  - 5.0e-06
+  - 5.0e-06
+  - 2.0e-06
+  - 0.0002
+  - 0.0002
+  - 0.0002
+  - 400.0
+  - 400.0
+  - 400.0
+  - 100.0
+  - 100.0
+  - 100.0
   contact_initial_new:
   - 5.0e-06
   - 5.0e-06
@@ -33,22 +46,45 @@ covariances:
   - 1.0e-18
   - 1.0e-18
   - 1.0e-18
+  state_angular_velocity_initial:
+  - 1.0e-06
+  - 1.0e-06
+  - 1.0e-06
   state_angular_velocity_process:
   - 1.0e-10
   - 1.0e-10
   - 1.0e-10
+  state_linear_velocity_initial:
+  - 1.0e-06
+  - 1.0e-06
+  - 1.0e-06
   state_linear_velocity_process:
   - 1.0e-08
   - 1.0e-08
   - 1.0e-08
+  state_orientation_initial:
+  - 0.0001
+  - 0.0001
+  - 0.0
   state_orientation_process:
   - 1.0e-11
   - 1.0e-11
   - 1.0e-11
+  state_position_initial:
+  - 0.0
+  - 0.0
+  - 0.0
   state_position_process:
   - 1.0e-09
   - 1.0e-09
   - 1.0e-09
+  unmodeled_wrench_initial:
+  - 100.0
+  - 100.0
+  - 100.0
+  - 100.0
+  - 100.0
+  - 100.0
   unmodeled_wrench_process:
   - 0.09
   - 0.09
