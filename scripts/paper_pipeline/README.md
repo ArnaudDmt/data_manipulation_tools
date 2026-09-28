@@ -143,10 +143,13 @@ Traps in those layers:
   2026-09-17). A result identical to the reference usually means an edit did not take.
 - `retick_routine.py` rewrites `plugins/MocapAligner.yaml`'s `bodyName` per dataset (`Body` for
   HRP-5P, `BODY` for RHPS1).
-- The replay does NOT read `config_base/`: it reads `~/.config/mc_rtc` unless given
-  `--observer-config` / `--passthrough-config`, and of `Passthrough.yaml` only the unnamed
-  `MCKineticsObserver` block. `verify_paper_ko.py` reports when those differ from `config_base/`.
-  `stage_replay.sh` copies `configs/clean` into the real `~/.config`.
+- **`~/.config/mc_rtc` is kept equal to `config_base/`** (synced 2026-09-28; the previous files are
+  in `results/paper-rebuild/backups/dotconfig-mc_rtc-20260928/`). The replay reads `~/.config/mc_rtc`
+  unless given `--observer-config` / `--passthrough-config`, any manual mc_rtc run reads it, and
+  every routine pass starts from a copy of it. `verify_paper_ko.py` reports any file that drifts
+  (except `MocapAligner.yaml`, whose `bodyName` is per dataset). Edit `config_base/` first, then copy
+  to `~/.config/mc_rtc`, never the other way round. `stage_replay.sh` copies `configs/clean` into
+  the real `~/.config`.
 - In the replay the contact wrench covariance comes from the BAG, not the configuration: a
   `contact_wrench` covariance overlay is silently inert there. Test wrench trust in the routine.
 - The retained tuning is also kept in `results/paper-rebuild/configs/clean/` (read by

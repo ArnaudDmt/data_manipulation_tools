@@ -64,31 +64,23 @@ def check_hashes():
         same = current == expected
         ok &= same
         print(f"{'ok   ' if same else 'DIFF '} config_base/{name}")
-    # Informational: the replay's default configuration layer is ~/.config/mc_rtc, not config_base/.
-    # Compared by CONTENT (comments do not matter). withDebugLogs is overridden by the controller's
-    # inline block, and of Passthrough.yaml the replay reads only the unnamed MCKineticsObserver
-    # block (kinetics_eval.pipeline_observer_config); VALINOR's block does not reach it.
+    # ~/.config/mc_rtc is kept equal to config_base/ (synced 2026-09-28): the replay and any manual
+    # mc_rtc run read it directly, and every routine pass starts from a copy of it. Compared by
+    # CONTENT, so comments do not matter. MocapAligner.yaml is skipped: its bodyName is rewritten
+    # per dataset before each tick.
     import yaml
 
-    def content(path, name):
+    def content(path):
         # mc_rtc tolerates tabs, PyYAML does not (same workaround as kinetics_eval.read_yaml)
-        data = yaml.safe_load(path.read_text().replace("\t", " ")) or {}
-        if name.endswith("Passthrough.yaml"):
-            pipelines = data.get("ObserverPipelines")
-            pipelines = pipelines if isinstance(pipelines, list) else [pipelines]
-            return [o.get("config") for p in pipelines for o in p.get("observers", [])
-                    if o.get("type") == "MCKineticsObserver" and "name" not in o]
-        if isinstance(data, dict):
-            data.pop("withDebugLogs", None)
-        return data
+        return yaml.safe_load(path.read_text().replace("\t", " ")) or {}
 
     for name in LOCK["config_base_sha256"]:
         live = LIVE / name
-        if name.endswith("MocapAligner.yaml") or not live.exists():
+        if name.endswith("MocapAligner.yaml"):
             continue
-        if content(live, name) != content(BASE / name, name):
-            print(f"note  ~/.config/mc_rtc/{name} differs from config_base/ in what the replay reads: "
-                  f"a replay without --observer-config would not run the paper's tuning")
+        if not live.exists() or content(live) != content(BASE / name):
+            print(f"note  ~/.config/mc_rtc/{name} differs from config_base/: resync it "
+                  f"(cp scripts/paper_pipeline/config_base/{name} ~/.config/mc_rtc/{name})")
     return ok
 
 
