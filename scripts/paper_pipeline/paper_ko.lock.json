@@ -132,12 +132,5 @@
     "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/hrp5_p.yaml": "17eeabd5f8675756111771920d5fee01a6ea6dea0129804bf0930361129ad646",
     "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/rhps1.yaml": "5ec52cdb796bbfe760c37519bde75e11fbe4945c671d00a219d3515b692df556",
     "/home/arnaud/devel/install/lib/mc_observers/etc/MCValinor.yaml": "942144df771d8402ac50b10f005cd3f1145ed89e5ada503573d68e8704621c0d"
-  },
-  "robot_models_sha256": {
-    "note": "local changes to the isri-aist descriptions, see robot_models/README.md",
-    "/home/arnaud/devel/src/catkin_data_ws/src/hrp5_p_description/urdf/HRP5Pmain.urdf": "dcb605986a680a27c475e5de91ec0fe64965999df3af58191e04c30cbd3dd980",
-    "/home/arnaud/devel/src/catkin_data_ws/install/share/hrp5_p_description/urdf/HRP5Pmain.urdf": "dcb605986a680a27c475e5de91ec0fe64965999df3af58191e04c30cbd3dd980",
-    "/home/arnaud/devel/src/catkin_data_ws/src/rhps1_description/urdf/RHPS1main_sake2_sake2.urdf": "80611805e84d980e3d1f9774296c3cd15aba13a96c128e38208abe1755aebae7",
-    "/home/arnaud/devel/src/catkin_data_ws/install/share/rhps1_description/urdf/RHPS1main_sake2_sake2.urdf": "80611805e84d980e3d1f9774296c3cd15aba13a96c128e38208abe1755aebae7"
   }
 }

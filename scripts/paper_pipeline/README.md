@@ -122,8 +122,9 @@ in `config_base/`: mc_rtc.yaml, Passthrough.yaml, the Kinetics Observer AND VALI
 Encoder observer has no configuration file. Add a file here as soon as a run starts depending on
 it. (`KO_LIVE_CONFIG=1` restores the old install-and-restore behaviour.)
 
-The robot models are the other input outside mc_rtc's configuration: both URDFs carry local mass
-changes committed nowhere upstream, saved as patches in `robot_models/` and hashed in the lock.
+Not versioned anywhere: the robot models. Both URDFs in `~/devel/src/catkin_data_ws` (isri-aist
+repositories) carry local mass changes (HRP-5P root body 9.8635 -> 1e-6 kg, RHPS1 chest
+24.326 -> 18.7902 kg) that the paper ran with.
 
 Precedence, lowest first:
 
