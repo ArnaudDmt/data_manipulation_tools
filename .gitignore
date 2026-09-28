@@ -48,3 +48,6 @@ scripts/paper_pipeline/fig_yaw_rpe_longwalk.py
 scripts/paper_pipeline/gyrobias/bilan_newinit.py
 scripts/paper_pipeline/gyrobias/diag_bias_innovation.py
 scripts/paper_pipeline/gyrobias/overlays/
+
+# Chat prompt for starting a variant study; its content is in scripts/paper_pipeline/README.md
+PROMPT_NOUVELLE_VARIANTE.md

@@ -1,5 +1,14 @@
 This repository regroups tools that help alignigning the data obtained from a mocap with the data of mc_rtc. 
 
+## IJRR paper
+
+Everything the IJRR paper measures is rebuilt by `scripts/paper_pipeline/`: read
+[its README](scripts/paper_pipeline/README.md) first. It documents the Kinetics Observer that
+produced the published numbers (tag `ijrr-ko-2026-09-18`, `scripts/paper_pipeline/paper_ko.lock.json`),
+how to check it is still the one installed (`.venv/bin/python scripts/paper_pipeline/verify_paper_ko.py --replay`),
+the configuration layers, the variants and the known traps. The committed summary of every result
+is in `results_summary/`.
+
 ## Fast Kinetics evaluation
 
 Create the repository Python environment once (PEP 668-safe):

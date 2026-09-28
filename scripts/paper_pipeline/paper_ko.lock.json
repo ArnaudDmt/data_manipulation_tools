@@ -1,0 +1,126 @@
+{
+  "what": "Everything that produced the numbers of the IJRR submission (routine runs of 2026-09-18 04:46, metrics_results.tex of 04:49). Checked by verify_paper_ko.py.",
+  "tag": "ijrr-ko-2026-09-18",
+  "repositories": {
+    "state-observation": {
+      "remote": "git@github.com:ArnaudDmt/state-observation.git",
+      "commit": "2b35f2d4993028b8abdf6413db879bc5b3188248"
+    },
+    "mc_state_observation": {
+      "remote": "git@github.com:ArnaudDmt/mc_state_observation.git",
+      "commit": "04e8cf81239cd7f8553ff6e223bafd7894f4541f"
+    },
+    "rpg_trajectory_evaluation": {
+      "remote": "git@github.com:ArnaudDmt/rpg_trajectory_evaluation.git",
+      "commit": "d767669f52f70ce5f005d9bee83d18080eb5b734"
+    },
+    "data_manipulation_tools": {
+      "remote": "git@github.com:ArnaudDmt/data_manipulation_tools",
+      "commit": "the commit carrying the tag above"
+    }
+  },
+  "binaries": {
+    "copy_of_all_three": "results/paper-rebuild/so_paper_20260918/",
+    "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver.so": "aeb58f43f2dadcb6f793ac9595143f72",
+    "/home/arnaud/devel/install/lib/mc_observers/MCValinor.so": "a99a1ab5478abdac2111e875a4e0784a",
+    "/home/arnaud/devel/install/lib/libstate-observation.so.1.6.1": "d15f656e1dcc2008d6c7616e0bed4705"
+  },
+  "replay_binary_for_verification_only": {
+    "/home/arnaud/devel/src/catkin_ws/install/lib/kinetics_observer_ros2/kinetics_offline_replay": "dc532140223a03e52493e68c37ed57bf",
+    "note": "built 2026-09-17 from the uncommitted tree of state_observation_ros2 (branch wip/wrench-tilt-correction); not a source of any published number"
+  },
+  "config_base_sha256": {
+    "controllers/Passthrough.yaml": "8760b9edda4028336400875d9499196def087a97e35c72457e230597e9eed57f",
+    "mc_rtc.yaml": "a8426ad93e6824baad7200c39079bdb1bb1847b559a767e395a0c34c5df59a61",
+    "observers/MCKineticsObserver/hrp5_p.yaml": "8d4fdcf597cd7c4b7e7e880a93b9a6aa45d917a228d79850b374ac2e904a4789",
+    "observers/MCKineticsObserver/rhps1.yaml": "c059cc6b7ddb1cc7e55dc073f9b1cdfce9d1b5abafd96dd047dfac9f2a9dc7b5",
+    "observers/MCKineticsObserver.yaml": "91ae65955755e49ad3b1fc858c6a6113aeccc06a54c770d413467d6dcebb0ced",
+    "plugins/HartleyIEKF.yaml": "ec7830089cb9e554286fc2f1f72f1d85975096b5112841be0837b69350bee916",
+    "plugins/MocapAligner.yaml": "0a4e19ce286938c4480eba15ef0d63e400bb2e20d95a5c60ab4ba4924bc4f82d",
+    "plugins/NoisySensors.yaml": "d88eaceee8066e4faa6ffd568f940d47967c6964c36a244d2256614c8b3c67f0"
+  },
+  "reference_single_datasets": {
+    "HRP5_MultiContact_1": {
+      "sublength_m": 0.3,
+      "count": 8315,
+      "rel_trans_x_y_norm": 0.004342,
+      "rel_trans_z": 0.001292,
+      "rel_yaw": 0.153389,
+      "rel_tilt": 0.31994,
+      "rel_rot": 0.374121,
+      "rel_gravity": 0.321643
+    },
+    "KO_TRO2024_RHPS1_1": {
+      "sublength_m": 1.0,
+      "count": 78755,
+      "rel_trans_x_y_norm": 0.017551,
+      "rel_trans_z": 0.005291,
+      "rel_yaw": 0.371475,
+      "rel_tilt": 0.588188,
+      "rel_rot": 0.735381,
+      "rel_gravity": 0.587415
+    }
+  },
+  "reference_pooled_per_category": {
+    "KO": {
+      "Multicontact": {
+        "sublength_m": 0.3,
+        "rel_trans_x_y_norm": 0.00517,
+        "rel_trans_z": 0.00113,
+        "rel_tilt": 0.220662,
+        "rel_yaw": 0.123557
+      },
+      "Flatodometry": {
+        "sublength_m": 1.0,
+        "rel_trans_x_y_norm": 0.015126,
+        "rel_trans_z": 0.004649,
+        "rel_tilt": 0.50384,
+        "rel_yaw": 0.30894
+      },
+      "Slippingodometry": {
+        "sublength_m": 1.0,
+        "rel_trans_x_y_norm": 0.018004,
+        "rel_trans_z": 0.007013,
+        "rel_tilt": 1.252562,
+        "rel_yaw": 0.377644
+      },
+      "Longwalk": {
+        "sublength_m": 10.0,
+        "rel_trans_x_y_norm": 0.186247,
+        "rel_trans_z": 0.03747,
+        "rel_tilt": 0.568384,
+        "rel_yaw": 0.187393
+      }
+    },
+    "RI-EKF": {
+      "Multicontact": {
+        "sublength_m": 0.3,
+        "rel_trans_x_y_norm": 0.005359,
+        "rel_trans_z": 0.001512,
+        "rel_tilt": 0.215882,
+        "rel_yaw": 0.124024
+      },
+      "Flatodometry": {
+        "sublength_m": 1.0,
+        "rel_trans_x_y_norm": 0.024991,
+        "rel_trans_z": 0.004829,
+        "rel_tilt": 0.498657,
+        "rel_yaw": 0.320592
+      },
+      "Slippingodometry": {
+        "sublength_m": 1.0,
+        "rel_trans_x_y_norm": 0.029731,
+        "rel_trans_z": 0.008345,
+        "rel_tilt": 1.239311,
+        "rel_yaw": 0.36377
+      },
+      "Longwalk": {
+        "sublength_m": 10.0,
+        "rel_trans_x_y_norm": 0.188376,
+        "rel_trans_z": 0.032764,
+        "rel_tilt": 0.901662,
+        "rel_yaw": 0.369266
+      }
+    }
+  }
+}
