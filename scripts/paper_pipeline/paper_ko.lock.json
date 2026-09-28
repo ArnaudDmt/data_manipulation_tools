@@ -37,6 +37,11 @@
     "NoisySensors": {
       "remote": "git@github.com:ArnaudDmt/NoisySensors",
       "commit": "b36c644"
+    },
+    "mc_rtc_Configs": {
+      "remote": "git@github.com:ArnaudDmt/mc_rtc_Configs",
+      "commit": "e04c021",
+      "note": "~/.config/mc_rtc is a symlink to ~/devel/src/mc_rtc_configs"
     }
   },
   "binaries": {

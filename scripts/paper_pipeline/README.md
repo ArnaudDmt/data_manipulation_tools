@@ -27,6 +27,7 @@ recorded in `paper_ko.lock.json`:
 | metric | `ArnaudDmt/rpg_trajectory_evaluation` (submodule) | commit `d767669` |
 | RI-EKF input logging (mc_rtc plugin) | `ArnaudDmt/HartleyIEKF` | commit `27da130` |
 | sensor noise injection (mc_rtc plugin, noise experiments) | `ArnaudDmt/NoisySensors` | commit `b36c644` |
+| user mc_rtc configuration (`~/.config/mc_rtc`) | `ArnaudDmt/mc_rtc_Configs` | commit `e04c021` |
 | ROS 2 replay (verification and variant work only) | `ArnaudDmt/state_observation_ros2` with `kinetics_observer_ros2` and `test_state_obs_ros2` | commits `d7f3d6b`, `06325f9`, `00de2e6` |
 | tuning and controller | `config_base/` in this repository | sha256 of every file in the lock |
 
@@ -147,6 +148,9 @@ Traps in those layers:
   2026-09-17). A result identical to the reference usually means an edit did not take.
 - `retick_routine.py` rewrites `plugins/MocapAligner.yaml`'s `bodyName` per dataset (`Body` for
   HRP-5P, `BODY` for RHPS1).
+- **`~/.config/mc_rtc` is a symlink to `~/devel/src/mc_rtc_configs`** (`ArnaudDmt/mc_rtc_Configs`,
+  branch `KO_IJRR_2026_09`, tag `ijrr-ko-2026-09-18`): writing into `~/.config/mc_rtc` edits that
+  repository's working tree. Commit there too.
 - **`~/.config/mc_rtc` is kept equal to `config_base/`** (synced 2026-09-28; the previous files are
   in `results/paper-rebuild/backups/dotconfig-mc_rtc-20260928/`). The replay reads `~/.config/mc_rtc`
   unless given `--observer-config` / `--passthrough-config`, any manual mc_rtc run reads it, and
