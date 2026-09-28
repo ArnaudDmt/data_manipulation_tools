@@ -33,6 +33,10 @@
     "test_state_obs_ros2": {
       "remote": "git@github.com:ArnaudDmt/test_state_obs_ros2",
       "commit": "00de2e620279f1214767ed58cb5cb9ce4cd1242b"
+    },
+    "NoisySensors": {
+      "remote": "git@github.com:ArnaudDmt/NoisySensors",
+      "commit": "b36c644"
     }
   },
   "binaries": {
