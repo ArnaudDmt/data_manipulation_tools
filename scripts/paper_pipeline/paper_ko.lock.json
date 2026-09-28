@@ -122,5 +122,12 @@
         "rel_yaw": 0.369266
       }
     }
+  },
+  "installed_package_config_sha256": {
+    "note": "lowest configuration layer, installed from mc_state_observation/etc at the tagged commit; mc_rtc reads these copies",
+    "/home/arnaud/devel/install/lib/mc_observers/etc/MCKineticsObserver.yaml": "0c783d7a60a3eff81f660f02c3fc17b11b8a4c7840dbff2bc888e5e5c76b2491",
+    "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/hrp5_p.yaml": "17eeabd5f8675756111771920d5fee01a6ea6dea0129804bf0930361129ad646",
+    "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/rhps1.yaml": "5ec52cdb796bbfe760c37519bde75e11fbe4945c671d00a219d3515b692df556",
+    "/home/arnaud/devel/install/lib/mc_observers/etc/MCValinor.yaml": "942144df771d8402ac50b10f005cd3f1145ed89e5ada503573d68e8704621c0d"
   }
 }

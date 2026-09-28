@@ -47,6 +47,15 @@ def check_hashes():
         same = current == expected
         ok &= same
         print(f"{'ok   ' if same else 'DIFF '} {path}")
+    # The package's own configuration, installed with the observers: the lowest layer, below
+    # config_base/. A reinstall from another revision would change it silently.
+    for path, expected in LOCK.get("installed_package_config_sha256", {}).items():
+        if not path.startswith("/"):
+            continue
+        current = digest(path, "sha256") if Path(path).exists() else "absent"
+        same = current == expected
+        ok &= same
+        print(f"{'ok   ' if same else 'DIFF '} {path}")
     for name, expected in LOCK["config_base_sha256"].items():
         current = digest(BASE / name, "sha256") if (BASE / name).exists() else "absent"
         same = current == expected

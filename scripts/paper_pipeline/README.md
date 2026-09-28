@@ -117,7 +117,10 @@ a private HOME (`config_home.py`, `KO_CONFIG_HOME`), because mc_rtc reads everyt
 `$HOME/.config/mc_rtc`; the real `~/.config` is never written (`KO_LIVE_CONFIG=1` restores the old
 install-and-restore behaviour). Precedence, lowest first:
 
-1. the package's `mc_state_observation/etc/MCKineticsObserver/robots/<robot>.yaml` (installed);
+1. the package's own configuration, `mc_state_observation/etc/`, as INSTALLED in
+   `/home/arnaud/devel/install/lib/mc_observers/` (`etc/MCKineticsObserver.yaml`,
+   `MCKineticsObserver/<robot>.yaml`, `etc/MCValinor.yaml`); mc_rtc reads these copies, not the
+   sources. Their sha256 are in the lock file, since a reinstall would change them silently;
 2. `observers/MCKineticsObserver.yaml`;
 3. `observers/MCKineticsObserver/<robot>.yaml` — **wins over 2**. Keys declared in both (e.g.
    `surfacesForContactDetection`) must be edited in the robot file;
