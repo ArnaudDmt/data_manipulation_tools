@@ -1,0 +1,17 @@
+diff --git a/urdf/HRP5Pmain.urdf b/urdf/HRP5Pmain.urdf
+index 476f818..2254640 100644
+--- a/urdf/HRP5Pmain.urdf
++++ b/urdf/HRP5Pmain.urdf
+@@ -15,9 +15,10 @@
+       </geometry>
+     </collision>
+     <inertial>
+-      <mass value="9.8635" />
++      <!-- The recorded standing load excludes the original 9.8635 kg root-body entry. -->
++      <mass value="1e-6" />
+       <origin xyz="-0.0308 0.0081 0.1756" rpy="0 -0 0"/>
+-      <inertia ixx="0.36871" ixy="-0.002075" ixz="-0.045841" iyy="0.407036" iyz="0.019256" izz="0.11623"/>
++      <inertia ixx="3.73812541187e-8" ixy="-2.10371571957e-10" ixz="-4.64753890607e-9" iyy="4.12668930907e-8" iyz="1.95224818776e-9" izz="1.17838495463e-8"/>
+     </inertial>
+   </link>
+   <gazebo reference="Body">

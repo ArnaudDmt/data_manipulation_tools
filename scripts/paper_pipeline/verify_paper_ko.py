@@ -49,7 +49,10 @@ def check_hashes():
         print(f"{'ok   ' if same else 'DIFF '} {path}")
     # The package's own configuration, installed with the observers: the lowest layer, below
     # config_base/. A reinstall from another revision would change it silently.
-    for path, expected in LOCK.get("installed_package_config_sha256", {}).items():
+    # Same for the robot models: both URDFs carry local changes committed nowhere upstream
+    # (robot_models/README.md).
+    installed = {**LOCK.get("installed_package_config_sha256", {}), **LOCK.get("robot_models_sha256", {})}
+    for path, expected in installed.items():
         if not path.startswith("/"):
             continue
         current = digest(path, "sha256") if Path(path).exists() else "absent"

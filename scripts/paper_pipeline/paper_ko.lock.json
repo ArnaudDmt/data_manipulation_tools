@@ -35,6 +35,9 @@
     "observers/MCKineticsObserver/hrp5_p.yaml": "8d4fdcf597cd7c4b7e7e880a93b9a6aa45d917a228d79850b374ac2e904a4789",
     "observers/MCKineticsObserver/rhps1.yaml": "c059cc6b7ddb1cc7e55dc073f9b1cdfce9d1b5abafd96dd047dfac9f2a9dc7b5",
     "observers/MCKineticsObserver.yaml": "91ae65955755e49ad3b1fc858c6a6113aeccc06a54c770d413467d6dcebb0ced",
+    "observers/MCValinor/hrp5_p.yaml": "4345e486d1e70f15d181e658c94cb42a0783c347d447c7b66c84baa06a248493",
+    "observers/MCValinor/rhps1.yaml": "f6453dba436ba672dfa9d5143fe1cfa48b9af4ecab9bccf85368facbb568fad0",
+    "observers/MCValinor.yaml": "c5f171443886b2b77b975bf29900fd9a95b66b46bf9288e98d71008a85ca4b97",
     "plugins/HartleyIEKF.yaml": "ec7830089cb9e554286fc2f1f72f1d85975096b5112841be0837b69350bee916",
     "plugins/MocapAligner.yaml": "0a4e19ce286938c4480eba15ef0d63e400bb2e20d95a5c60ab4ba4924bc4f82d",
     "plugins/NoisySensors.yaml": "d88eaceee8066e4faa6ffd568f940d47967c6964c36a244d2256614c8b3c67f0"
@@ -129,5 +132,12 @@
     "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/hrp5_p.yaml": "17eeabd5f8675756111771920d5fee01a6ea6dea0129804bf0930361129ad646",
     "/home/arnaud/devel/install/lib/mc_observers/MCKineticsObserver/rhps1.yaml": "5ec52cdb796bbfe760c37519bde75e11fbe4945c671d00a219d3515b692df556",
     "/home/arnaud/devel/install/lib/mc_observers/etc/MCValinor.yaml": "942144df771d8402ac50b10f005cd3f1145ed89e5ada503573d68e8704621c0d"
+  },
+  "robot_models_sha256": {
+    "note": "local changes to the isri-aist descriptions, see robot_models/README.md",
+    "/home/arnaud/devel/src/catkin_data_ws/src/hrp5_p_description/urdf/HRP5Pmain.urdf": "dcb605986a680a27c475e5de91ec0fe64965999df3af58191e04c30cbd3dd980",
+    "/home/arnaud/devel/src/catkin_data_ws/install/share/hrp5_p_description/urdf/HRP5Pmain.urdf": "dcb605986a680a27c475e5de91ec0fe64965999df3af58191e04c30cbd3dd980",
+    "/home/arnaud/devel/src/catkin_data_ws/src/rhps1_description/urdf/RHPS1main_sake2_sake2.urdf": "80611805e84d980e3d1f9774296c3cd15aba13a96c128e38208abe1755aebae7",
+    "/home/arnaud/devel/src/catkin_data_ws/install/share/rhps1_description/urdf/RHPS1main_sake2_sake2.urdf": "80611805e84d980e3d1f9774296c3cd15aba13a96c128e38208abe1755aebae7"
   }
 }

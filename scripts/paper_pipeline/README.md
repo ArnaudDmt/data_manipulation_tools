@@ -112,10 +112,20 @@ and the VALINOR macros of `metrics_results.tex`.
 
 ## Configuration layers
 
-`config_base/` is the versioned configuration of the paper. Every routine pass materialises it into
-a private HOME (`config_home.py`, `KO_CONFIG_HOME`), because mc_rtc reads everything from
-`$HOME/.config/mc_rtc`; the real `~/.config` is never written (`KO_LIVE_CONFIG=1` restores the old
-install-and-restore behaviour). Precedence, lowest first:
+`config_base/` is the versioned configuration of the paper. Every routine pass materialises a
+private HOME (`config_home.py`, `KO_CONFIG_HOME`), because mc_rtc reads everything from
+`$HOME/.config/mc_rtc`: it COPIES the whole real `~/.config/mc_rtc`, then overwrites it with every
+file of `config_base/`. So `~/.config/mc_rtc` is never written, but any file it holds that
+`config_base/` does not is still read by the run. That is why every file the paper's tick reads is
+in `config_base/`: mc_rtc.yaml, Passthrough.yaml, the Kinetics Observer AND VALINOR observer files
+(VALINOR is the mocap alignment reference and the RI-EKF's contact source), and the plugins. The
+Encoder observer has no configuration file. Add a file here as soon as a run starts depending on
+it. (`KO_LIVE_CONFIG=1` restores the old install-and-restore behaviour.)
+
+The robot models are the other input outside mc_rtc's configuration: both URDFs carry local mass
+changes committed nowhere upstream, saved as patches in `robot_models/` and hashed in the lock.
+
+Precedence, lowest first:
 
 1. the package's own configuration, `mc_state_observation/etc/`, as INSTALLED in
    `/home/arnaud/devel/install/lib/mc_observers/` (`etc/MCKineticsObserver.yaml`,

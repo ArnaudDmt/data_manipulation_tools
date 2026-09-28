@@ -1,0 +1,3 @@
+contacts:
+  contactsDetection: Surfaces
+  surfacesForContactDetection: [RightFootCenter, LeftFootCenter, LeftHandCloseContact] # [LeftHandCloseContact] 
