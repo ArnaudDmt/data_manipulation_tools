@@ -42,6 +42,11 @@
       "remote": "git@github.com:ArnaudDmt/mc_rtc_Configs",
       "commit": "e04c021",
       "note": "~/.config/mc_rtc is a symlink to ~/devel/src/mc_rtc_configs"
+    },
+    "mc-rtc-superbuild": {
+      "remote": "git@github.com:ArnaudDmt/mc-rtc-superbuild.git",
+      "commit": "b9de109",
+      "note": "~/devel/mc-rtc-superbuild; its recipes pin every project above to origin/KO_IJRR_2026_09"
     }
   },
   "binaries": {

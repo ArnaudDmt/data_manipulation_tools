@@ -28,6 +28,7 @@ recorded in `paper_ko.lock.json`:
 | RI-EKF input logging (mc_rtc plugin) | `ArnaudDmt/HartleyIEKF` | commit `27da130` |
 | sensor noise injection (mc_rtc plugin, noise experiments) | `ArnaudDmt/NoisySensors` | commit `b36c644` |
 | user mc_rtc configuration (`~/.config/mc_rtc`) | `ArnaudDmt/mc_rtc_Configs` | commit `e04c021` |
+| superbuild recipes (`~/devel/mc-rtc-superbuild`), pinning all of the above to `origin/KO_IJRR_2026_09` | `ArnaudDmt/mc-rtc-superbuild` | commit `b9de109` |
 | ROS 2 replay (verification and variant work only) | `ArnaudDmt/state_observation_ros2` with `kinetics_observer_ros2` and `test_state_obs_ros2` | commits `d7f3d6b`, `06325f9`, `00de2e6` |
 | tuning and controller | `config_base/` in this repository | sha256 of every file in the lock |
 
