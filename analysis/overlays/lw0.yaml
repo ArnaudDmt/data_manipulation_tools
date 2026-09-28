@@ -1,5 +1,0 @@
-# Exponent 0: the arithmetic mean, i.e. exactly the current law. This must reproduce the control
-# bit for bit -- if it does not, the change is not inert when it should be and nothing after it
-# can be trusted.
-settings:
-  contact_cov_load_weight_exponent: 0.0

@@ -1,8 +1,0 @@
-KO_TRO2024_RHPS1_1
-   samples: still  32315   moving  23379   (of 81792)
-   STILL (<2 cm/s)      |ext force xy| median   135.1 N   ext force z median     -2.1 N
-   MOVING (>15 cm/s)    |ext force xy| median   153.2 N   ext force z median     +2.6 N
-KO_TRO_2024_RHPS1_SLIPPAGE_1
-   samples: still   3701   moving   8200   (of 20800)
-   STILL (<2 cm/s)      |ext force xy| median   142.7 N   ext force z median    -31.3 N
-   MOVING (>15 cm/s)    |ext force xy| median   157.7 N   ext force z median    -16.8 N

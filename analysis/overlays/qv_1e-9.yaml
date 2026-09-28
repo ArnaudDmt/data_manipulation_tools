@@ -1,5 +1,0 @@
-# Per-step variance of the contact slip velocity. 1e-12 is the plumbing check: the state exists but
-# cannot move, so the filter must reproduce the control. The rest sweep the magnitude, after 6e-6
-# diverged (translation 74x the RI-EKF, 936x on one dataset).
-settings:
-  contact_slip_vel_process_variance: 1e-9

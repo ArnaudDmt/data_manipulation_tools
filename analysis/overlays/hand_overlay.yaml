@@ -1,8 +1,0 @@
-# Hand contact fused kinematically only: its measured wrench is given effectively infinite
-# variance, which is the idiom hrp5_p.yaml already uses for "ignore this sensor". This matches how
-# the RI-EKF treats LeftHandCloseContact (pose plus a 6x6 covariance, no wrench fusion) and is the
-# one place the two estimators differ. The hand's visco-elastic violation measures 89-97 N median
-# across the four MultiContact runs, about twice the feet's 45-60 N.
-covariances_per_contact:
-  LeftHandCloseContact:
-    contact_wrench: [9.0e90, 9.0e90, 9.0e90, 9.0e90, 9.0e90, 9.0e90]

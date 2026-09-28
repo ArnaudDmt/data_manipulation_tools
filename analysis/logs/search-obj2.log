@@ -1,7 +1,0 @@
-recycled 12 of 1499 earlier points as seeds (best re-scores to J=+0.3851)
-screening skipped: seeding the full phase with 16 points
-/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:873: FutureWarning: `x0` has been deprecated in v4.9.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v4.9.0.
-  sampler=self.optuna.samplers.CmaEsSampler(
-/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:873: FutureWarning: `sigma0` has been deprecated in v4.9.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v4.9.0.
-  sampler=self.optuna.samplers.CmaEsSampler(
-phase full: 200 trials on 13 datasets, 12 workers

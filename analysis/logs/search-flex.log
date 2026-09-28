@@ -1,5 +1,0 @@
-screening skipped: seeding the full phase with 4 points
-/home/arnaud/devel/src/data_manipulation_tools/scripts/kinetics_tune.py:653: FutureWarning: `restart_strategy` has been deprecated in v4.4.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v4.4.0. From v4.4.0 onward, `restart_strategy` automatically falls back to `None`. `restart_strategy` will be supported in OptunaHub.
-  sampler=self.optuna.samplers.CmaEsSampler(seed=SEED, restart_strategy="ipop"),
-phase full: 120 trials on 13 datasets, 8 workers
-  [full 0002] failed J=+5.0000 geomean=nan worst=nan wins=0/1 (149s)

@@ -1,6 +1,0 @@
-# Exponent 1: the pinned mean is the load-weighted anchor centroid instead of the arithmetic one.
-# A contact enters at 10% of body weight, so at the gait transitions this changes the reference
-# from 50/50 to something near 10/90, and a slipping or unloading foot stops dragging the anchor
-# of the foot that is carrying the robot.
-settings:
-  contact_cov_load_weight_exponent: 1.0

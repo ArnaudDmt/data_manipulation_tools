@@ -1,7 +1,0 @@
-=== RUN uw1.8e-2 (on top of calibration) ===
-[kinetics_observer_node-1] [INFO] [1788758778.925561290] [kinetics_observer]: Kinetics Observer configured (3 contacts, 1 IMUs).
-=== RUN uw4.5e-3 (on top of calibration) ===
-Plotly report: /home/arnaud/devel/src/data_manipulation_tools/results/UW2_4.5e-3-bc61c728d8/report.html
-=== RUN uw9e-4 (on top of calibration) ===
-Plotly report: /home/arnaud/devel/src/data_manipulation_tools/results/UW2_9e-4-22f8734242/report.html
-=== UW2 DONE ===

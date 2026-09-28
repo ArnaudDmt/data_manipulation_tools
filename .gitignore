@@ -3,3 +3,48 @@ env/
 *.avi
 *.mp4
 .venv/
+
+# --- Kept on disk, deliberately out of the repository (2026-09-28) --------------------------------
+# The repository holds the chain that rebuilds the IJRR paper and the scripts behind each of its
+# claims (scripts/paper_pipeline/README.md). Investigation material stays local.
+
+# Build products and local tooling
+build
+compile_commands.json
+install/
+log/
+__pycache__/
+.codegraph/
+scripts/.ko_cache.json
+
+# Investigation working files (2026-09-02 .. 2026-09-17); their conclusions are in the notes
+analysis/
+ablations/
+KINETICS_CONTEXT.md
+KINETICS_INVESTIGATION.md
+KINETICS_PAPER_EXPERIMENTS.md
+KO_SHARED_REPLAY_HANDOFF.md
+.codex_handoff_shared.tmp.md
+kinetics_eval.yaml
+replay_rhps1_*.yaml
+test.py
+test_viking.py
+matchPoseAtIndex.lyx
+
+# One-off scripts: diagnostics, overnight sweeps, fix-ups of past runs, exploratory figures
+scripts/kinetics_check.py
+scripts/kinetics_consistency.py
+scripts/evaluate_wrench_process.py
+scripts/utils/
+scripts/paper_pipeline/yawsearch/
+scripts/paper_pipeline/overnight.sh
+scripts/paper_pipeline/fixup_*.sh
+scripts/paper_pipeline/decide_uw.py
+scripts/paper_pipeline/rebold.py
+scripts/paper_pipeline/report_tables.py
+scripts/paper_pipeline/fig_gyrobias_plotly.py
+scripts/paper_pipeline/fig_gyrobias_unbiased.py
+scripts/paper_pipeline/fig_yaw_rpe_longwalk.py
+scripts/paper_pipeline/gyrobias/bilan_newinit.py
+scripts/paper_pipeline/gyrobias/diag_bias_innovation.py
+scripts/paper_pipeline/gyrobias/overlays/

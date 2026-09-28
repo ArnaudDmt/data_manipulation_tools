@@ -1,8 +1,0 @@
-KO_TRO2024_RHPS1_1
-   sum of measured contact forces, xy:   median    23.7 N
-   Newton residual (true external), xy:  median    23.7 N
-   filter's unmodeled force estimate xy: median   137.2 N
-KO_TRO_2024_RHPS1_SLIPPAGE_1
-   sum of measured contact forces, xy:   median    46.9 N
-   Newton residual (true external), xy:  median    46.9 N
-   filter's unmodeled force estimate xy: median   157.0 N

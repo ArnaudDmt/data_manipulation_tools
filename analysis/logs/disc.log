@@ -1,6 +1,0 @@
-KO_TRO2024_RHPS1_1, n=51913
-  accelerometer innovation      median   0.701  std   2.831 m/s^2
-  contact force error / mass    median   0.577  std   2.699 m/s^2
-  |angular acceleration|        median   0.205 rad/s^2
-
-  correlation(accelerometer innovation, force error/mass) = +0.957

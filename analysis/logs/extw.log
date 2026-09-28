@@ -1,6 +1,0 @@
-run            |force| all  |force| still   |torque| all |torque| still
-                       [N]            [N]          [N.m]          [N.m]
-baseline             139.1          135.1         129.01         125.66   (n=81792, still=29720)
-calibrated            28.5           27.4          15.57          15.46   (n=81792, still=29720)
-
-truth: 0 N / 0 N.m -- nothing touches the robot in these datasets

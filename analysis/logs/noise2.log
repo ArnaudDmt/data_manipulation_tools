@@ -1,8 +1,0 @@
-sensor noise: white component, unloaded only (N and N.m)
-
-robot   sensor                        fx       fy       fz       cx       cy       cz
-RHPS1   RightFootForceSensor      0.7318   0.5634   1.0321   0.0291   0.0458   0.0359
-RHPS1   LeftFootForceSensor       0.9694   0.7016   1.1999   0.0531   0.0984   0.0399
-HRP5P   RightFootForceSensor      1.2359   0.7753   1.2908   0.0310   0.0629   0.0541
-HRP5P   LeftFootForceSensor       1.3868   0.8708   1.4130   0.0282   0.0535   0.0527
-HRP5P   LeftHandForceSensor       0.7641   0.6846   0.9779   0.0846   0.1129   0.0570

@@ -1,4 +1,0 @@
-# Release the adaptive law's pin on a lone contact's rest pose. Everything else is the stock
-# configuration, so this is the only difference from the control run.
-settings:
-  free_single_contact_rest_pose: true

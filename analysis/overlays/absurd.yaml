@@ -1,5 +1,0 @@
-# Deliberately absurd: if the replay honours the configured contact wrench covariance at all, a
-# 1e6 torque variance must visibly change the estimate. If the output is unchanged, the config
-# path is dead and contact_wrench has never been tunable.
-covariance_scales:
-  contact_wrench: [1.0, 1.0, 1.0, 1.0e9, 1.0e9, 1.0e9]
