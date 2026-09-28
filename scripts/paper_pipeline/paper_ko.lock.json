@@ -17,6 +17,22 @@
     "data_manipulation_tools": {
       "remote": "git@github.com:ArnaudDmt/data_manipulation_tools",
       "commit": "the commit carrying the tag above"
+    },
+    "HartleyIEKF": {
+      "remote": "git@github.com:ArnaudDmt/HartleyIEKF",
+      "commit": "27da1308e214ace444568a734d2c37e9374dd109"
+    },
+    "state_observation_ros2": {
+      "remote": "git@github.com:ArnaudDmt/state_observation_ros2",
+      "commit": "d7f3d6b72a004006c5a7bd270935bbabb983e20e"
+    },
+    "kinetics_observer_ros2": {
+      "remote": "git@github.com:ArnaudDmt/kinetics_observer_ros2",
+      "commit": "06325f98a0667b0342e687ba737454d5b59d06c9"
+    },
+    "test_state_obs_ros2": {
+      "remote": "git@github.com:ArnaudDmt/test_state_obs_ros2",
+      "commit": "00de2e620279f1214767ed58cb5cb9ce4cd1242b"
     }
   },
   "binaries": {
@@ -27,7 +43,7 @@
   },
   "replay_binary_for_verification_only": {
     "/home/arnaud/devel/src/catkin_ws/install/lib/kinetics_observer_ros2/kinetics_offline_replay": "dc532140223a03e52493e68c37ed57bf",
-    "note": "built 2026-09-17 from the uncommitted tree of state_observation_ros2 (branch wip/wrench-tilt-correction); not a source of any published number"
+    "note": "built 2026-09-17 from kinetics_observer_ros2 at the tag above (the committed source differs from what was compiled by comments only); not a source of any published number"
   },
   "config_base_sha256": {
     "controllers/Passthrough.yaml": "8760b9edda4028336400875d9499196def087a97e35c72457e230597e9eed57f",

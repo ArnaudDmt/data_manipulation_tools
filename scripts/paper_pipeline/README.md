@@ -25,6 +25,8 @@ recorded in `paper_ko.lock.json`:
 | estimator library | `ArnaudDmt/state-observation` | commit `2b35f2d4`; `libstate-observation.so.1.6.1` md5 `d15f656e…` |
 | mc_rtc observers (KO, VALINOR) | `ArnaudDmt/mc_state_observation`, branch `KO_IJRR_2026_09` | commit `04e8cf8`; `MCKineticsObserver.so` md5 `aeb58f43…`, `MCValinor.so` md5 `a99a1ab5…` |
 | metric | `ArnaudDmt/rpg_trajectory_evaluation` (submodule) | commit `d767669` |
+| RI-EKF input logging (mc_rtc plugin) | `ArnaudDmt/HartleyIEKF` | commit `27da130` |
+| ROS 2 replay (verification and variant work only) | `ArnaudDmt/state_observation_ros2` with `kinetics_observer_ros2` and `test_state_obs_ros2` | commits `d7f3d6b`, `06325f9`, `00de2e6` |
 | tuning and controller | `config_base/` in this repository | sha256 of every file in the lock |
 
 A copy of the three binaries is kept in `results/paper-rebuild/so_paper_20260918/`.
